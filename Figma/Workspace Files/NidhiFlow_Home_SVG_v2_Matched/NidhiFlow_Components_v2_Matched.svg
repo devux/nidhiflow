@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="700" viewBox="0 0 1000 700">
+<defs>
+  <filter id="cardShadow" x="-10%" y="-10%" width="120%" height="135%">
+    <feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#0F172A" flood-opacity="0.055"/>
+  </filter>
+  <filter id="flowShadow" x="-35%" y="-35%" width="170%" height="170%">
+    <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#16A34A" flood-opacity="0.28"/>
+  </filter>
+  <radialGradient id="flowBall" cx="42%" cy="38%" r="70%">
+    <stop offset="0%" stop-color="#7DF28F"/>
+    <stop offset="55%" stop-color="#17A34A"/>
+    <stop offset="100%" stop-color="#076B2D"/>
+  </radialGradient>
+  <style>
+    .font { font-family: Inter, Arial, sans-serif; }
+    .title { font-family: Inter, Arial, sans-serif; font-size: 22px; font-weight: 900; fill: #111827; }
+    .small { font-family: Inter, Arial, sans-serif; font-size: 12px; font-weight: 700; fill: #64748B; }
+  </style>
+</defs>
+<rect width="1000" height="700" fill="#FFFFFF"/>
+<text x="40" y="56" class="font" font-size="32" font-weight="900" fill="#087B32">NidhiFlow Components v2</text>
+
+<text x="60" y="120" class="title">Orbiting Flow AI Button</text>
+<g transform="translate(90,150) scale(1.4)">
+  <circle cx="42" cy="42" r="34" fill="#FFFFFF" opacity="0.96"/>
+  <circle cx="42" cy="42" r="31" fill="url(#flowBall)" filter="url(#flowShadow)"/>
+  <ellipse cx="42" cy="42" rx="47" ry="19" fill="none" stroke="#16A34A" stroke-width="2" opacity="0.85" transform="rotate(20 42 42)"/>
+  <ellipse cx="42" cy="42" rx="47" ry="19" fill="none" stroke="#22C55E" stroke-width="2" opacity="0.8" transform="rotate(-23 42 42)"/>
+  <ellipse cx="42" cy="42" rx="45" ry="18" fill="none" stroke="#0D8E35" stroke-width="1.5" opacity="0.6" transform="rotate(78 42 42)"/>
+  <circle cx="80" cy="54" r="4.8" fill="#16A34A"/>
+  <circle cx="12" cy="30" r="4.2" fill="#22C55E"/>
+  <circle cx="55" cy="8" r="3.8" fill="#0D8E35"/>
+  <text x="22" y="83" class="font" font-size="11" font-weight="900" fill="#087B32">✨ Flow</text>
+</g>
+
+<text x="360" y="120" class="title">Quick Action Cards</text>
+<rect x="360" y="150" width="180" height="76" rx="20" fill="#FFFFFF" stroke="#EEF2F0" filter="url(#cardShadow)"/>
+<circle cx="394" cy="188" r="22" fill="#15A93E"/>
+<path d="M394 178V198M384 188H404" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+<text x="426" y="184" class="font" font-size="15" font-weight="900" fill="#111827">Add Expense</text>
+<text x="426" y="204" class="small">Track spending</text>
+
+<rect x="560" y="150" width="180" height="76" rx="20" fill="#FFFFFF" stroke="#EEF2F0" filter="url(#cardShadow)"/>
+<circle cx="594" cy="188" r="22" fill="#15A93E"/>
+<path d="M594 178V198M584 188H604" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+<text x="626" y="184" class="font" font-size="15" font-weight="900" fill="#111827">Add Income</text>
+<text x="626" y="204" class="small">Record earnings</text>
+
+<text x="60" y="360" class="title">Family Budget Card</text>
+<rect x="60" y="390" width="346" height="209" rx="22" fill="#FFFFFF" stroke="#EEF2F0" filter="url(#cardShadow)"/>
+<text x="78" y="423" class="font" font-size="16" font-weight="900" fill="#111827">Family Budget</text>
+<text x="192" y="423" class="font" font-size="16">👨 👩 🧒</text>
+<rect x="276" y="406" width="57" height="25" rx="13" fill="#DCFCE7"/>
+<text x="288" y="422" class="font" font-size="10" font-weight="900" fill="#078B32">Shared</text>
+<circle cx="126" cy="497" r="53" fill="none" stroke="#DDF5E2" stroke-width="13"/>
+<circle cx="126" cy="497" r="53" fill="none" stroke="#16A34A" stroke-width="13" stroke-linecap="round" stroke-dasharray="225 333" transform="rotate(-90 126 497)"/>
+<circle cx="126" cy="497" r="33" fill="#F5FFF7"/>
+<text x="115" y="504" class="font" font-size="14" font-weight="900" fill="#0A7A31">53%</text>
+<text x="206" y="475" class="font" font-size="13" font-weight="900" fill="#111827">Budget</text>
+<text x="335" y="475" class="font" font-size="15" font-weight="900" fill="#111827" text-anchor="end">₹50,000</text>
+<line x1="206" y1="491" x2="380" y2="491" stroke="#E8ECEF"/>
+<text x="206" y="525" class="font" font-size="13" font-weight="900" fill="#111827">Spent</text>
+<text x="335" y="525" class="font" font-size="15" font-weight="900" fill="#111827" text-anchor="end">₹26,770</text>
+<line x1="206" y1="541" x2="380" y2="541" stroke="#E8ECEF"/>
+<text x="206" y="575" class="font" font-size="13" font-weight="900" fill="#111827">Remaining</text>
+<text x="335" y="575" class="font" font-size="15" font-weight="900" fill="#079333" text-anchor="end">₹23,230</text>
+
+<text x="510" y="360" class="title">Bottom Navigation</text>
+<rect x="510" y="390" width="346" height="60" rx="30" fill="#FFFFFF" stroke="#EEF2F0" filter="url(#cardShadow)"/>
+<text x="535" y="426" class="font" font-size="22" fill="#16A34A">⌂</text>
+<text x="525" y="445" class="font" font-size="10" font-weight="900" fill="#16A34A">Home</text>
+<text x="604" y="426" class="font" font-size="22" fill="#64748B">◔</text>
+<text x="586" y="445" class="small">Activity</text>
+<text x="755" y="426" class="font" font-size="22" fill="#64748B">☆</text>
+<text x="748" y="445" class="small">Plan</text>
+<text x="818" y="426" class="font" font-size="22" fill="#64748B">○</text>
+<text x="815" y="445" class="small">You</text>
+</svg>

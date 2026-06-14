@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844">
+<rect width="390" height="844" rx="28" fill="#F7F8FC"/>
+<rect x="20" y="24" width="350" height="796" rx="24" fill="white" stroke="#D9DDE8"/>
+<text x="36" y="64" font-family="Arial" font-size="22" font-weight="700" fill="#1D2433">Add Expense</text>
+<text x="36" y="122" font-family="Arial" font-size="14" fill="#596174">Amount</text>
+<rect x="36" y="138" width="318" height="70" rx="16" fill="white" stroke="#D9DDE8"/><text x="58" y="183" font-family="Arial" font-size="32" font-weight="700" fill="#1D2433">₹0.00</text>
+<text x="36" y="244" font-family="Arial" font-size="14" fill="#596174">Category</text>
+<rect x="36" y="260" width="318" height="54" rx="14" fill="white" stroke="#D9DDE8"/><text x="56" y="293" font-family="Arial" font-size="15" fill="#1D2433">Select category</text>
+<text x="36" y="350" font-family="Arial" font-size="14" fill="#596174">Account</text>
+<rect x="36" y="366" width="318" height="54" rx="14" fill="white" stroke="#D9DDE8"/><text x="56" y="399" font-family="Arial" font-size="15" fill="#1D2433">Cash wallet</text>
+<text x="36" y="456" font-family="Arial" font-size="14" fill="#596174">Date</text>
+<rect x="36" y="472" width="318" height="54" rx="14" fill="white" stroke="#D9DDE8"/><text x="56" y="505" font-family="Arial" font-size="15" fill="#1D2433">Today</text>
+<text x="36" y="562" font-family="Arial" font-size="14" fill="#596174">Notes</text>
+<rect x="36" y="578" width="318" height="92" rx="14" fill="white" stroke="#D9DDE8"/><text x="56" y="612" font-family="Arial" font-size="15" fill="#8A93A6">Add optional note</text>
+<rect x="36" y="704" width="318" height="56" rx="16" fill="#4263EB"/><text x="142" y="739" font-family="Arial" font-size="16" font-weight="700" fill="white">Save Expense</text>
+</svg>

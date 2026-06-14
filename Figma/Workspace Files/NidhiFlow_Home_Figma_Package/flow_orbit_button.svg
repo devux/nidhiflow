@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">
+<defs>
+<radialGradient id="g" cx="50%" cy="45%" r="60%">
+<stop offset="0%" stop-color="#5EEA83"/>
+<stop offset="60%" stop-color="#16A34A"/>
+<stop offset="100%" stop-color="#166534"/>
+</radialGradient>
+<filter id="s" x="-30%" y="-30%" width="160%" height="160%">
+<feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#16A34A" flood-opacity="0.35"/>
+</filter>
+</defs>
+<circle cx="80" cy="72" r="38" fill="url(#g)" filter="url(#s)"/>
+<ellipse cx="80" cy="72" rx="58" ry="25" fill="none" stroke="#16A34A" stroke-width="3" opacity="0.8" transform="rotate(20 80 72)"/>
+<ellipse cx="80" cy="72" rx="58" ry="25" fill="none" stroke="#22C55E" stroke-width="3" opacity="0.7" transform="rotate(-22 80 72)"/>
+<circle cx="127" cy="86" r="6" fill="#16A34A"/>
+<circle cx="36" cy="58" r="5" fill="#22C55E"/>
+<text x="51" y="130" font-family="Inter,Arial" font-size="20" font-weight="800" fill="#166534">✨ Flow</text>
+</svg>

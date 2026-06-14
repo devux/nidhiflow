@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1024" viewBox="0 0 1440 1024">
+<rect width="1440" height="1024" fill="#F7F8FC"/>
+<rect x="32" y="32" width="260" height="960" rx="24" fill="white" stroke="#D9DDE8"/>
+<text x="64" y="86" font-family="Arial" font-size="28" font-weight="700" fill="#1D2433">NidhiFlow</text>
+<text x="64" y="150" font-family="Arial" font-size="16" fill="#4263EB">Dashboard</text>
+<text x="64" y="198" font-family="Arial" font-size="16" fill="#596174">Transactions</text>
+<text x="64" y="246" font-family="Arial" font-size="16" fill="#596174">Budgets</text>
+<text x="64" y="294" font-family="Arial" font-size="16" fill="#596174">Goals</text>
+<text x="64" y="342" font-family="Arial" font-size="16" fill="#596174">Reports</text>
+<text x="332" y="86" font-family="Arial" font-size="30" font-weight="700" fill="#1D2433">Dashboard</text>
+<rect x="332" y="124" width="500" height="160" rx="24" fill="white" stroke="#D9DDE8"/>
+<text x="364" y="176" font-family="Arial" font-size="18" font-weight="700" fill="#1D2433">Current Balance</text>
+<text x="364" y="238" font-family="Arial" font-size="42" font-weight="700" fill="#1D2433">₹24,500</text>
+<rect x="864" y="124" width="240" height="160" rx="24" fill="white" stroke="#D9DDE8"/>
+<text x="896" y="176" font-family="Arial" font-size="18" font-weight="700" fill="#1D2433">Income</text>
+<text x="896" y="238" font-family="Arial" font-size="34" font-weight="700" fill="#12B886">₹42,000</text>
+<rect x="1132" y="124" width="240" height="160" rx="24" fill="white" stroke="#D9DDE8"/>
+<text x="1164" y="176" font-family="Arial" font-size="18" font-weight="700" fill="#1D2433">Expense</text>
+<text x="1164" y="238" font-family="Arial" font-size="34" font-weight="700" fill="#FA5252">₹17,500</text>
+<rect x="332" y="324" width="620" height="280" rx="24" fill="white" stroke="#D9DDE8"/>
+<text x="364" y="376" font-family="Arial" font-size="20" font-weight="700" fill="#1D2433">Budget Progress</text>
+<rect x="364" y="448" width="520" height="18" rx="9" fill="#ECEFF6"/><rect x="364" y="448" width="354" height="18" rx="9" fill="#12B886"/>
+<rect x="984" y="324" width="388" height="280" rx="24" fill="white" stroke="#D9DDE8"/>
+<text x="1016" y="376" font-family="Arial" font-size="20" font-weight="700" fill="#1D2433">Savings Goal</text>
+<rect x="1016" y="448" width="300" height="18" rx="9" fill="#ECEFF6"/><rect x="1016" y="448" width="135" height="18" rx="9" fill="#F59F00"/>
+<rect x="332" y="644" width="1040" height="260" rx="24" fill="white" stroke="#D9DDE8"/>
+<text x="364" y="696" font-family="Arial" font-size="20" font-weight="700" fill="#1D2433">Recent Transactions</text>
+<line x1="364" y1="744" x2="1324" y2="744" stroke="#ECEFF6"/>
+<text x="364" y="790" font-family="Arial" font-size="16" fill="#596174">Groceries</text>
+<text x="1240" y="790" font-family="Arial" font-size="16" fill="#FA5252">-₹850</text>
+<text x="364" y="842" font-family="Arial" font-size="16" fill="#596174">Salary</text>
+<text x="1240" y="842" font-family="Arial" font-size="16" fill="#12B886">+₹42,000</text>
+</svg>

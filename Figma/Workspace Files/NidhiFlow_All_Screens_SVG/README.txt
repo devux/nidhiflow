@@ -1,0 +1,1 @@
+NidhiFlow all screens SVG package. Drag each SVG into Figma, then right-click > Ungroup to edit. These are editable SVG mockups, not native .fig files.

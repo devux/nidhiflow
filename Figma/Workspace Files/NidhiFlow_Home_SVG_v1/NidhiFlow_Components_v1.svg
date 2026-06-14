@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="700" viewBox="0 0 1000 700">
+  <defs>
+    <linearGradient id="flowGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#22C55E"/>
+      <stop offset="100%" stop-color="#166534"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.08"/>
+    </filter>
+    <filter id="flowShadow" x="-35%" y="-35%" width="170%" height="170%">
+      <feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#16A34A" flood-opacity="0.32"/>
+    </filter>
+    <style>
+      .font { font-family: Inter, Arial, sans-serif; }
+      .label { font-family: Inter, Arial, sans-serif; font-size: 22px; font-weight: 800; fill: #0F172A; }
+      .small { font-family: Inter, Arial, sans-serif; font-size: 13px; font-weight: 700; fill: #64748B; }
+      .title { font-family: Inter, Arial, sans-serif; font-size: 17px; font-weight: 800; fill: #0F172A; }
+    </style>
+  </defs>
+  <rect width="1000" height="700" fill="#F8FFF9"/>
+  <text x="40" y="54" class="font" font-size="30" font-weight="900" fill="#166534">NidhiFlow Home Components</text>
+
+  <!-- Flow component -->
+  <text x="60" y="115" class="label">Orbit Flow Button</text>
+  <g transform="translate(120,150)">
+    <circle cx="60" cy="60" r="42" fill="url(#flowGrad)" filter="url(#flowShadow)"/>
+    <ellipse cx="60" cy="60" rx="68" ry="26" fill="none" stroke="#16A34A" stroke-width="4" opacity="0.75" transform="rotate(21 60 60)"/>
+    <ellipse cx="60" cy="60" rx="68" ry="26" fill="none" stroke="#22C55E" stroke-width="4" opacity="0.65" transform="rotate(-24 60 60)"/>
+    <circle cx="112" cy="78" r="7" fill="#22C55E"/>
+    <circle cx="12" cy="42" r="5" fill="#16A34A"/>
+    <text x="44" y="58" class="font" font-size="24" font-weight="900" fill="#FFFFFF">✨</text>
+    <text x="31" y="86" class="font" font-size="20" font-weight="900" fill="#FFFFFF">Flow</text>
+  </g>
+
+  <!-- Action cards -->
+  <text x="340" y="115" class="label">Action Cards</text>
+  <rect x="340" y="150" width="190" height="84" rx="24" fill="#FFFFFF" filter="url(#shadow)"/>
+  <circle cx="376" cy="192" r="22" fill="#DCFCE7"/>
+  <path d="M376 183V201M367 192H385" stroke="#166534" stroke-width="3" stroke-linecap="round"/>
+  <text x="412" y="187" class="title">Add Expense</text>
+  <text x="412" y="210" class="small">Track spending</text>
+
+  <rect x="560" y="150" width="190" height="84" rx="24" fill="#FFFFFF" filter="url(#shadow)"/>
+  <circle cx="596" cy="192" r="22" fill="#DCFCE7"/>
+  <path d="M596 183V201M587 192H605" stroke="#166534" stroke-width="3" stroke-linecap="round"/>
+  <text x="632" y="187" class="title">Add Income</text>
+  <text x="632" y="210" class="small">Record earnings</text>
+
+  <!-- Budget card component -->
+  <text x="60" y="340" class="label">Family Budget Card</text>
+  <rect x="60" y="370" width="358" height="214" rx="28" fill="#FFFFFF" filter="url(#shadow)"/>
+  <text x="80" y="406" class="title">Family Budget</text>
+  <text x="204" y="406" class="font" font-size="17">👨 👩 🧒</text>
+  <rect x="286" y="387" width="72" height="28" rx="14" fill="#DCFCE7"/>
+  <text x="302" y="405" class="small" fill="#166534">Shared</text>
+  <circle cx="132" cy="484" r="54" fill="none" stroke="#DCFCE7" stroke-width="12"/>
+  <circle cx="132" cy="484" r="54" fill="none" stroke="#16A34A" stroke-width="12" stroke-linecap="round"
+          stroke-dasharray="180 340" transform="rotate(-90 132 484)"/>
+  <circle cx="132" cy="484" r="34" fill="#F0FDF4"/>
+  <text x="121" y="489" class="font" font-size="13" font-weight="900" fill="#166534">53%</text>
+  <text x="206" y="466" class="small">Budget</text>
+  <text x="206" y="490" class="title">₹50,000</text>
+  <text x="206" y="530" class="small">Spent</text>
+  <text x="206" y="554" class="title">₹26,770</text>
+
+  <!-- Goal card component -->
+  <text x="510" y="340" class="label">Goal Card</text>
+  <rect x="510" y="370" width="358" height="112" rx="28" fill="#FFFFFF" filter="url(#shadow)"/>
+  <text x="530" y="404" class="title">Goals</text>
+  <circle cx="562" cy="446" r="28" fill="#BAE6FD"/>
+  <text x="638" y="434" class="title">Goa Trip 🧳</text>
+  <text x="638" y="458" class="small">₹18,000 / ₹40,000</text>
+  <rect x="638" y="466" width="178" height="7" rx="4" fill="#E5E7EB"/>
+  <rect x="638" y="466" width="80" height="7" rx="4" fill="#16A34A"/>
+  <rect x="832" y="436" width="44" height="28" rx="14" fill="#DCFCE7"/>
+  <text x="843" y="454" class="small" fill="#166534">45%</text>
+
+  <!-- Bottom nav -->
+  <text x="510" y="545" class="label">Bottom Navigation</text>
+  <rect x="510" y="575" width="358" height="58" rx="29" fill="#FFFFFF" filter="url(#shadow)"/>
+  <text x="538" y="608" class="font" font-size="18" fill="#16A34A">⌂</text>
+  <text x="530" y="625" class="small" fill="#16A34A">Home</text>
+  <text x="612" y="608" class="font" font-size="18" fill="#94A3B8">◔</text>
+  <text x="594" y="625" class="small">Activity</text>
+  <text x="747" y="608" class="font" font-size="18" fill="#94A3B8">☆</text>
+  <text x="740" y="625" class="small">Plan</text>
+  <text x="812" y="608" class="font" font-size="18" fill="#94A3B8">○</text>
+  <text x="808" y="625" class="small">You</text>
+</svg>

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844">
+<rect width="390" height="844" rx="28" fill="#F7F8FC"/>
+<rect x="20" y="24" width="350" height="796" rx="24" fill="white" stroke="#D9DDE8"/>
+<text x="36" y="64" font-family="Arial" font-size="22" font-weight="700" fill="#1D2433">Budgets</text>
+
+<rect x="36" y="88" width="318" height="96" rx="16" fill="#FFFFFF" stroke="#D9DDE8"/>
+<text x="52" y="116" font-family="Arial" font-size="15" font-weight="700" fill="#1D2433">Monthly Budget</text>
+<text x="52" y="142" font-family="Arial" font-size="13" font-weight="400" fill="#596174">₹17,500 spent of ₹30,000</text>
+
+<rect x="52" y="152" width="270" height="12" rx="6" fill="#ECEFF6"/><rect x="52" y="152" width="158" height="12" rx="6" fill="#12B886"/>
+
+<rect x="36" y="214" width="318" height="80" rx="16" fill="#FFFFFF" stroke="#D9DDE8"/>
+<text x="52" y="242" font-family="Arial" font-size="15" font-weight="700" fill="#1D2433">Food</text>
+<text x="52" y="268" font-family="Arial" font-size="13" font-weight="400" fill="#596174">₹6,200 / ₹8,000</text>
+
+<rect x="52" y="266" width="270" height="10" rx="5" fill="#ECEFF6"/><rect x="52" y="266" width="209" height="10" rx="5" fill="#F59F00"/>
+
+<rect x="36" y="314" width="318" height="80" rx="16" fill="#FFFFFF" stroke="#D9DDE8"/>
+<text x="52" y="342" font-family="Arial" font-size="15" font-weight="700" fill="#1D2433">Transport</text>
+<text x="52" y="368" font-family="Arial" font-size="13" font-weight="400" fill="#596174">₹2,100 / ₹4,000</text>
+
+<rect x="52" y="366" width="270" height="10" rx="5" fill="#ECEFF6"/><rect x="52" y="366" width="142" height="10" rx="5" fill="#4263EB"/>
+
+<rect x="36" y="414" width="318" height="80" rx="16" fill="#FFFFFF" stroke="#D9DDE8"/>
+<text x="52" y="442" font-family="Arial" font-size="15" font-weight="700" fill="#1D2433">Shopping</text>
+<text x="52" y="468" font-family="Arial" font-size="13" font-weight="400" fill="#596174">₹5,800 / ₹5,000</text>
+
+<rect x="52" y="466" width="270" height="10" rx="5" fill="#ECEFF6"/><rect x="52" y="466" width="270" height="10" rx="5" fill="#FA5252"/>
+<rect x="36" y="530" width="318" height="64" rx="16" fill="#FFF5F5" stroke="#FFC9C9"/><text x="56" y="568" font-family="Arial" font-size="15" font-weight="700" fill="#C92A2A">Shopping budget exceeded</text>
+<rect x="36" y="704" width="318" height="56" rx="16" fill="#4263EB"/><text x="138" y="739" font-family="Arial" font-size="16" font-weight="700" fill="white">Create Budget</text>
+</svg>
