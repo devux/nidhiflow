@@ -1,0 +1,36 @@
+{
+  "name": "nidhiflow",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "NidhiFlow application monorepo",
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=10.0.0"
+  },
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "dev": "node scripts/dev.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint . --max-warnings=0",
+    "test": "npm run test --workspaces --if-present",
+    "test:integration": "npm run test:integration --workspace @nidhiflow/backend",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build",
+    "db:migrate": "npm run db:migrate --workspace @nidhiflow/backend",
+    "db:rollback": "npm run db:rollback --workspace @nidhiflow/backend"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.28.0",
+    "eslint": "^9.28.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^16.2.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.33.1"
+  }
+}

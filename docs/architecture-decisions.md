@@ -50,28 +50,38 @@ are derived; only asynchronous generated export artifacts need a
 
 ## Missing Architectural Decisions
 
-1. Monorepo/package manager/build orchestration
-2. ORM/query builder and migration framework
-3. Concrete frontend libraries for query state, local state, forms, schemas,
+1. Concrete frontend libraries for query state, local state, forms,
    IndexedDB, charts, and testing
-4. Server hosting, database provider, object storage, CDN, email, and queue
-5. Browser access-token transport, cookie domains, and final CSRF strategy
-6. JWT signing algorithm, key management, and rotation process
-7. Workspace manager naming, transfer, last-manager, and member-removal rules
-8. Personal plus family workspace limits and active-workspace behavior
-9. Account creation timing relative to email verification
-10. Guest encryption/key strategy and supported browsers
-11. Guest-to-account duplicate fingerprint and conflict UI
-12. Soft deletion, reversal, and immutable-ledger depth for transactions
-13. Workspace currency and future multi-currency/conversion policy
-14. Recurrence rule format and scheduler/queue architecture
-15. Attachment limits, malware scanner, retention, and storage provider
-16. Notification providers, retry policy, quiet hours, and templates
-17. Legal retention, account deletion, shared records, and supported regions
-18. Subscription/premium feature model shown in exploratory designs
-19. Flow model/provider, regional processing, retention, cost limits, and
-   evaluation framework
-20. Offline writes and conflict resolution for authenticated users
+2. Server hosting, database provider, object storage, CDN, email, and queue
+3. Browser access-token transport, cookie domains, and final CSRF strategy
+4. JWT signing algorithm, key management, and rotation process
+5. Workspace manager naming, transfer, last-manager, and member-removal rules
+6. Personal plus family workspace limits and active-workspace behavior
+7. Account creation timing relative to email verification
+8. Guest encryption/key strategy and supported browsers
+9. Guest-to-account duplicate fingerprint and conflict UI
+10. Soft deletion, reversal, and immutable-ledger depth for transactions
+11. Workspace currency and future multi-currency/conversion policy
+12. Recurrence rule format and scheduler/queue architecture
+13. Attachment limits, malware scanner, retention, and storage provider
+14. Notification providers, retry policy, quiet hours, and templates
+15. Legal retention, account deletion, shared records, and supported regions
+16. Subscription/premium feature model shown in exploratory designs
+17. Flow model/provider, regional processing, retention, cost limits, and
+    evaluation framework
+18. Offline writes and conflict resolution for authenticated users
+
+## Milestone 1 Decisions
+
+- Use an npm-workspaces monorepo under `codebase/`, with separate frontend and
+  backend applications and shared root quality commands.
+- Use Webpack 5 for the React build and development server.
+- Use `pg` directly for the initial PostgreSQL connection layer and
+  `node-pg-migrate` for version-controlled migrations. A higher-level query
+  builder remains optional when product repositories are introduced.
+- Use Zod for startup environment validation on both frontend and backend.
+- Use Jest and Testing Library for frontend behavior tests. Use Vitest for
+  backend unit and integration tests, and Supertest for Express HTTP tests.
 
 ## Recommended Improvements
 

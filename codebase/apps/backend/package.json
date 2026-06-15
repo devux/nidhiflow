@@ -1,0 +1,38 @@
+{
+  "name": "@nidhiflow/backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js",
+    "test": "vitest run --config vitest.config.ts",
+    "test:integration": "dotenv -e ../../.env -- vitest run --config vitest.integration.config.ts",
+    "typecheck": "tsc -b --pretty false",
+    "db:migrate": "dotenv -e ../../.env -- node-pg-migrate up --migrations-dir migrations --database-url-var DATABASE_URL",
+    "db:rollback": "dotenv -e ../../.env -- node-pg-migrate down --migrations-dir migrations --database-url-var DATABASE_URL"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "pg": "^8.16.0",
+    "pino": "^9.7.0",
+    "pino-http": "^10.4.0",
+    "zod": "^3.25.42"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.2",
+    "@types/node": "^22.15.29",
+    "@types/pg": "^8.15.4",
+    "@types/supertest": "^6.0.3",
+    "dotenv-cli": "^8.0.0",
+    "node-pg-migrate": "^8.0.4",
+    "supertest": "^7.1.1",
+    "tsx": "^4.19.4",
+    "vitest": "^4.1.9"
+  }
+}
