@@ -1,0 +1,36 @@
+:root {
+  --color-brand: #16a34a;
+  --color-brand-strong: #08752f;
+  --color-brand-soft: #eaf8ee;
+  --color-brand-faint: #f5fcf7;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f6f8f7;
+  --color-canvas: #f3f7f4;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #526078;
+  --color-text-muted: #718096;
+  --color-border: #dfe7e2;
+  --color-success: #087f35;
+  --color-warning: #9a5b05;
+  --color-danger: #b42318;
+  --color-info: #175cd3;
+  --color-focus: #2563eb;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --radius-control: 0.875rem;
+  --radius-card: 1.5rem;
+  --radius-modal: 1.75rem;
+  --radius-pill: 999px;
+  --shadow-card: 0 0.625rem 2rem rgb(15 23 42 / 8%);
+  --shadow-navigation: 0 -0.5rem 2rem rgb(15 23 42 / 10%);
+  --shadow-flow: 0 0.75rem 2rem rgb(22 163 74 / 28%);
+  --motion-fast: 120ms;
+  --motion-standard: 220ms;
+  --navigation-height: 5.75rem;
+}

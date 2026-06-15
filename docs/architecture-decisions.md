@@ -50,8 +50,7 @@ are derived; only asynchronous generated export artifacts need a
 
 ## Missing Architectural Decisions
 
-1. Concrete frontend libraries for query state, local state, forms,
-   IndexedDB, charts, and testing
+1. Concrete frontend libraries for server query state, forms, and charts
 2. Server hosting, database provider, object storage, CDN, email, and queue
 3. Browser access-token transport, cookie domains, and final CSRF strategy
 4. JWT signing algorithm, key management, and rotation process
@@ -82,6 +81,23 @@ are derived; only asynchronous generated export artifacts need a
 - Use Zod for startup environment validation on both frontend and backend.
 - Use Jest and Testing Library for frontend behavior tests. Use Vitest for
   backend unit and integration tests, and Supertest for Express HTTP tests.
+
+## Milestone 2 Decisions
+
+- Use React Router for guest-compatible client routes and route-level code
+  splitting.
+- Use `idb` as the typed IndexedDB adapter. The initial versioned guest
+  database stores local preferences only; finance stores and their migrations
+  are added with the owning milestones.
+- Use React context for the small guest preference and theme state. IndexedDB
+  remains the durable source of truth.
+- Derive the initial locale, timezone, and currency from browser settings and
+  allow the guest to change supported values locally.
+- Use semantic CSS tokens for light/dark themes and responsive behavior rather
+  than screen-specific styling.
+- Use `jest-axe` as an automated accessibility smoke check alongside
+  interaction tests. Manual keyboard, zoom, contrast, and screen-reader checks
+  remain required before production launch.
 
 ## Recommended Improvements
 

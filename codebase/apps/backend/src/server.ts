@@ -19,7 +19,14 @@ const server = app.listen(environment.PORT, "0.0.0.0", () => {
   logger.info({ port: environment.PORT }, "Backend server started");
 });
 
+let shutdownStarted = false;
+
 function shutdown(signal: string) {
+  if (shutdownStarted) {
+    return;
+  }
+
+  shutdownStarted = true;
   logger.info({ signal }, "Backend server shutting down");
 
   server.close(async (error) => {

@@ -1,17 +1,50 @@
-import { environment } from "../config/environment";
+import { Suspense, lazy } from "react";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+
+import type { GuestPreferencesRepository } from "../data/guest/guestPreferencesRepository";
+import { LoadingScreen } from "../shared/components/LoadingScreen";
+import { GuestPreferencesProvider } from "./providers/GuestPreferencesProvider";
+import { ThemeProvider } from "./providers/ThemeProvider";
+import { AppShell } from "./shell/AppShell";
+import "../styles/tokens.css";
+import "../styles/themes.css";
 import "../styles/globals.css";
 
-export function App() {
+const HomePage = lazy(async () => ({
+  default: (await import("../features/dashboard/pages/HomePage")).HomePage,
+}));
+const ActivityPage = lazy(async () => ({
+  default: (await import("../features/activity/pages/ActivityPage")).ActivityPage,
+}));
+const FlowPage = lazy(async () => ({
+  default: (await import("../features/flow/pages/FlowPage")).FlowPage,
+}));
+const PlanPage = lazy(async () => ({
+  default: (await import("../features/budgets/pages/PlanPage")).PlanPage,
+}));
+const YouPage = lazy(async () => ({
+  default: (await import("../features/profile/pages/YouPage")).YouPage,
+}));
+
+export function App({ repository }: { repository?: GuestPreferencesRepository }) {
   return (
-    <main className="foundation">
-      <section aria-labelledby="foundation-title" className="foundation__card">
-        <p className="foundation__eyebrow">Project foundation</p>
-        <h1 id="foundation-title">NidhiFlow is ready to grow.</h1>
-        <p>The frontend is running with strict TypeScript and validated configuration.</p>
-        <p className="foundation__status">
-          API endpoint: <code>{environment.NIDHIFLOW_API_BASE_URL}</code>
-        </p>
-      </section>
-    </main>
+    <GuestPreferencesProvider repository={repository}>
+      <ThemeProvider>
+        <BrowserRouter>
+          <Suspense fallback={<LoadingScreen />}>
+            <Routes>
+              <Route element={<AppShell />}>
+                <Route element={<HomePage />} index />
+                <Route element={<ActivityPage />} path="activity" />
+                <Route element={<FlowPage />} path="flow" />
+                <Route element={<PlanPage />} path="plan" />
+                <Route element={<YouPage />} path="you" />
+                <Route element={<Navigate replace to="/" />} path="*" />
+              </Route>
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </ThemeProvider>
+    </GuestPreferencesProvider>
   );
 }

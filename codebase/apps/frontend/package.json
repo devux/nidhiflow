@@ -10,8 +10,10 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
+    "idb": "^8.0.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-router-dom": "^7.17.0",
     "zod": "^3.25.42"
   },
   "devDependencies": {
@@ -22,15 +24,19 @@
     "@jest/globals": "^30.0.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/jest": "^29.5.14",
+    "@types/jest-axe": "^3.5.9",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.5",
     "babel-jest": "^30.0.0",
     "babel-loader": "^10.0.0",
     "css-loader": "^7.1.2",
     "dotenv": "^16.5.0",
+    "fake-indexeddb": "^6.2.5",
     "html-webpack-plugin": "^5.6.3",
     "jest": "^30.0.0",
+    "jest-axe": "^10.0.0",
     "jest-environment-jsdom": "^30.0.0",
     "jsdom": "^26.1.0",
     "style-loader": "^4.0.0",

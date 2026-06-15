@@ -4,15 +4,17 @@
 
 - React
 - TypeScript with strict mode
-- React Router
+- React Router for client routing and route-level code splitting
 - TanStack Query for server state
 - A lightweight client-state store only where React context/state is
   insufficient
 - React Hook Form with a shared schema validator such as Zod
-- IndexedDB through a typed repository adapter for guest finance data
+- IndexedDB through the typed `idb` adapter for guest finance data
 
-Exact libraries remain architectural decisions until the application is
-scaffolded, but responsibilities in this document are mandatory.
+Webpack 5 provides frontend development and production builds. Jest, Testing
+Library, and `jest-axe` cover frontend behavior and accessibility smoke tests.
+TanStack Query, React Hook Form, charting, and any additional client-state
+library remain feature-driven decisions.
 
 ## Architecture Layers
 

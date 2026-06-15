@@ -1,3 +1,4 @@
+const path = require("node:path");
 const http = require("node:http");
 
 const webpack = require("webpack");
@@ -16,8 +17,13 @@ const middleware = webpackDevMiddleware(compiler, {
 
 const server = http.createServer((request, response) => {
   middleware(request, response, () => {
-    response.statusCode = 404;
-    response.end("Not found");
+    middleware.waitUntilValid(() => {
+      const indexPath = path.join(compiler.outputPath, "index.html");
+      const indexHtml = middleware.context.outputFileSystem.readFileSync(indexPath);
+
+      response.setHeader("Content-Type", "text/html; charset=utf-8");
+      response.end(indexHtml);
+    });
   });
 });
 
