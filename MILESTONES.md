@@ -12,7 +12,7 @@ stabilize Phase 1 before implementing Phase 2 AI capabilities.
 
 ### Scope
 
-- React, TypeScript, and Vite frontend
+- React and TypeScript frontend
 - Node.js, Express, and TypeScript backend
 - PostgreSQL development environment
 - Database migration framework

@@ -9,7 +9,7 @@ sanitization process.
 
 ## Build Artifacts
 
-- Frontend: immutable Vite production assets served through a CDN/static host
+- Frontend: immutable production assets served through a CDN/static host
 - Backend: versioned container image built from pinned dependencies
 - Database: version-controlled migrations executed as a controlled release step
 - OpenAPI document: generated/validated in CI and published with the release

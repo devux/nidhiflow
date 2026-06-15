@@ -115,7 +115,7 @@ it changes product behavior, security, stored data, or public contracts.
 
 ## Engineering Rules
 
-- Use React, TypeScript, and Vite for the frontend.
+- Use React and TypeScript for the frontend.
 - Use Node.js, Express, and TypeScript for the backend.
 - Use PostgreSQL with migrations and foreign-key constraints.
 - Validate all external input at the system boundary.
