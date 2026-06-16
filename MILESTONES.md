@@ -202,6 +202,8 @@ Financial calculations must use fixed-precision money handling.
 
 ## Milestone 9: Reports and Dashboard
 
+**Status:** Complete as of June 16, 2026.
+
 ### Scope
 
 - Monthly cash-flow summary

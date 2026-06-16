@@ -157,6 +157,14 @@ describe("API foundation", () => {
     expect(body.paths["/workspaces/{workspaceId}/budgets"]).toBeDefined();
     expect(body.paths["/workspaces/{workspaceId}/goals"]).toBeDefined();
     expect(body.paths["/workspaces/{workspaceId}/bills"]).toBeDefined();
+    expect(body.paths["/workspaces/{workspaceId}/reports/summary"]).toBeDefined();
+    expect(body.paths["/workspaces/{workspaceId}/reports/categories"]).toBeDefined();
+    expect(body.paths["/workspaces/{workspaceId}/reports/cash-flow"]).toBeDefined();
+    expect(body.paths["/workspaces/{workspaceId}/reports/exports"]).toBeDefined();
+    expect(body.paths["/workspaces/{workspaceId}/reports/exports/{exportId}"]).toBeDefined();
+    expect(
+      body.paths["/workspaces/{workspaceId}/reports/exports/{exportId}/download"],
+    ).toBeDefined();
     expect(body.paths["/workspaces/{workspaceId}/recurring-transactions"]).toBeDefined();
   });
 

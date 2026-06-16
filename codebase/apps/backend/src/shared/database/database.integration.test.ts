@@ -55,8 +55,8 @@ describe("PostgreSQL integration", () => {
         const tables = await migratedClient.query<{ table_name: string }>(
           `SELECT table_name
            FROM information_schema.tables
-           WHERE table_schema = 'public'
-             AND table_name IN ('users', 'workspaces', 'categories', 'transactions', 'budgets', 'goals', 'goal_contributions', 'bills', 'recurring_transactions', 'feedback', 'audit_logs', 'auth_sessions', 'guest_migrations')
+          WHERE table_schema = 'public'
+             AND table_name IN ('users', 'workspaces', 'categories', 'transactions', 'budgets', 'goals', 'goal_contributions', 'bills', 'recurring_transactions', 'feedback', 'audit_logs', 'auth_sessions', 'guest_migrations', 'generated_reports')
            ORDER BY table_name`,
         );
         const categories = await migratedClient.query<{ count: string }>(
@@ -70,6 +70,7 @@ describe("PostgreSQL integration", () => {
           "budgets",
           "categories",
           "feedback",
+          "generated_reports",
           "goal_contributions",
           "goals",
           "guest_migrations",

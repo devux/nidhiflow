@@ -251,6 +251,11 @@ malware scanning succeed.
 | GET | `/workspaces/:workspaceId/reports/cash-flow` | Protected | Trend |
 | POST | `/workspaces/:workspaceId/reports/exports` | Protected | Generate export |
 | GET | `/workspaces/:workspaceId/reports/exports/:exportId` | Protected | Export status/link |
+| GET | `/workspaces/:workspaceId/reports/exports/:exportId/download` | Protected | Download CSV |
+
+Report filters use `period=thisMonth|lastMonth|thisYear|custom`. Custom ranges require
+`from` and `to` in `YYYY-MM-DD` form and are interpreted in the workspace timezone.
+The export request accepts `reportType=summary|categories|cashFlow`.
 
 ### Feedback
 

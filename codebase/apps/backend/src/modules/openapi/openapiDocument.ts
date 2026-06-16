@@ -623,6 +623,63 @@ export const openApiDocument = {
         },
       },
     },
+    "/workspaces/{workspaceId}/reports/summary": {
+      get: {
+        operationId: "getReportSummary",
+        responses: {
+          "200": { description: "Report summary retrieved" },
+          "401": { description: "Authentication required" },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/reports/categories": {
+      get: {
+        operationId: "getReportCategories",
+        responses: {
+          "200": { description: "Report categories retrieved" },
+          "401": { description: "Authentication required" },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/reports/cash-flow": {
+      get: {
+        operationId: "getReportCashFlow",
+        responses: {
+          "200": { description: "Report cash flow retrieved" },
+          "401": { description: "Authentication required" },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/reports/exports": {
+      post: {
+        operationId: "createReportExport",
+        responses: {
+          "201": { description: "Report export created" },
+          "401": { description: "Authentication required" },
+          "422": { description: "Validation error" },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/reports/exports/{exportId}": {
+      get: {
+        operationId: "getReportExport",
+        responses: {
+          "200": { description: "Report export retrieved" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Report export not found" },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/reports/exports/{exportId}/download": {
+      get: {
+        operationId: "downloadReportExport",
+        responses: {
+          "200": { description: "Report export CSV download" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Report export not found" },
+        },
+      },
+    },
     "/workspaces/{workspaceId}/recurring-transactions": {
       get: {
         operationId: "listRecurringTransactions",

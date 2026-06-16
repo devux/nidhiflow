@@ -187,6 +187,17 @@ are derived; only asynchronous generated export artifacts need a
   the default expense classification when a bill does not carry a custom
   category.
 
+## Milestone 9 Decisions
+
+- Treat reports as derived workspace views over transactions rather than as a
+  primary stored finance ledger. Summary, category, and cash-flow endpoints
+  read directly from transaction history and honor the workspace reporting
+  currency.
+- Store generated CSV exports as metadata in `generated_reports` and regenerate
+  the CSV on demand from the stored filter parameters. This keeps the first
+  export implementation auditable without introducing a separate object-storage
+  dependency.
+
 ## Recommended Improvements
 
 - Adopt ADRs for material choices.
