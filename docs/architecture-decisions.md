@@ -198,6 +198,16 @@ are derived; only asynchronous generated export artifacts need a
   export implementation auditable without introducing a separate object-storage
   dependency.
 
+## Milestone 10 Decisions
+
+- Keep the family-workspace role model intentionally small: managers administer
+  invitations, removals, leaving edge cases, and workspace lifecycle, while all
+  members can collaborate on ordinary finance resources.
+- Store invitation tokens only as hashes and return raw debug tokens only in
+  non-production environments until email delivery is implemented.
+- Prevent removing or leaving the last manager of a family workspace so shared
+  membership administration cannot become orphaned.
+
 ## Recommended Improvements
 
 - Adopt ADRs for material choices.

@@ -52,6 +52,14 @@ Never store plain-text passwords or provider tokens.
 
 Role must not restrict ordinary Phase 1 finance collaboration.
 
+### workspace_invitations
+
+- `id` PK, `workspace_id` FK
+- invited email, inviting user, hashed invitation token
+- status (`pending`, `accepted`, `revoked`, `expired`)
+- expiry, accepted user/time, revoked time
+- timestamps
+
 ### accounts
 
 - `id`, `workspace_id`

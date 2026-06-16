@@ -151,7 +151,12 @@ describe("API foundation", () => {
     expect(body.paths["/feedback"]).toBeDefined();
     expect(body.paths["/users/me/guest-migrations/preview"]).toBeDefined();
     expect(body.paths["/users/me/guest-migrations"]).toBeDefined();
+    expect(body.paths["/workspace-invitations/{token}/accept"]).toBeDefined();
     expect(body.paths["/workspaces/{workspaceId}/accounts"]).toBeDefined();
+    expect(body.paths["/workspaces/{workspaceId}/members"]).toBeDefined();
+    expect(body.paths["/workspaces/{workspaceId}/invitations"]).toBeDefined();
+    expect(body.paths["/workspaces/{workspaceId}/members/{userId}"]).toBeDefined();
+    expect(body.paths["/workspaces/{workspaceId}/leave"]).toBeDefined();
     expect(body.paths["/workspaces/{workspaceId}/categories"]).toBeDefined();
     expect(body.paths["/workspaces/{workspaceId}/transactions"]).toBeDefined();
     expect(body.paths["/workspaces/{workspaceId}/budgets"]).toBeDefined();

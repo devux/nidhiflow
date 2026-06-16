@@ -56,7 +56,7 @@ describe("PostgreSQL integration", () => {
           `SELECT table_name
            FROM information_schema.tables
           WHERE table_schema = 'public'
-             AND table_name IN ('users', 'workspaces', 'categories', 'transactions', 'budgets', 'goals', 'goal_contributions', 'bills', 'recurring_transactions', 'feedback', 'audit_logs', 'auth_sessions', 'guest_migrations', 'generated_reports')
+             AND table_name IN ('users', 'workspaces', 'workspace_invitations', 'categories', 'transactions', 'budgets', 'goals', 'goal_contributions', 'bills', 'recurring_transactions', 'feedback', 'audit_logs', 'auth_sessions', 'guest_migrations', 'generated_reports')
            ORDER BY table_name`,
         );
         const categories = await migratedClient.query<{ count: string }>(
@@ -77,6 +77,7 @@ describe("PostgreSQL integration", () => {
           "recurring_transactions",
           "transactions",
           "users",
+          "workspace_invitations",
           "workspaces",
         ]);
         expect(Number(categories.rows[0]?.count ?? "0")).toBeGreaterThanOrEqual(13);

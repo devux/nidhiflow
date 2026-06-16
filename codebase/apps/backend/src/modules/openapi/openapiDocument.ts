@@ -306,6 +306,23 @@ export const openApiDocument = {
           },
         },
       },
+      post: {
+        operationId: "createWorkspace",
+        responses: {
+          "201": {
+            description: "Workspace created",
+          },
+          "401": {
+            description: "Authentication required",
+          },
+          "409": {
+            description: "Workspace conflict",
+          },
+          "422": {
+            description: "Validation error",
+          },
+        },
+      },
     },
     "/workspaces/{workspaceId}": {
       get: {
@@ -330,6 +347,104 @@ export const openApiDocument = {
           "404": {
             description: "Workspace not found",
           },
+        },
+      },
+      patch: {
+        operationId: "updateWorkspace",
+        responses: {
+          "200": {
+            description: "Workspace updated",
+          },
+          "401": {
+            description: "Authentication required",
+          },
+          "403": {
+            description: "Manager access required",
+          },
+          "404": {
+            description: "Workspace not found",
+          },
+          "422": {
+            description: "Validation error",
+          },
+        },
+      },
+      delete: {
+        operationId: "archiveWorkspace",
+        responses: {
+          "200": {
+            description: "Workspace archived",
+          },
+          "401": {
+            description: "Authentication required",
+          },
+          "403": {
+            description: "Manager access required",
+          },
+          "404": {
+            description: "Workspace not found",
+          },
+          "409": {
+            description: "Workspace cannot be archived",
+          },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/members": {
+      get: {
+        operationId: "listWorkspaceMembers",
+        responses: {
+          "200": { description: "Workspace members retrieved" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Workspace not found" },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/invitations": {
+      post: {
+        operationId: "createWorkspaceInvitation",
+        responses: {
+          "201": { description: "Workspace invitation created" },
+          "401": { description: "Authentication required" },
+          "403": { description: "Manager access required" },
+          "404": { description: "Workspace not found" },
+          "409": { description: "Workspace does not support invitations" },
+          "422": { description: "Validation error" },
+        },
+      },
+    },
+    "/workspace-invitations/{token}/accept": {
+      post: {
+        operationId: "acceptWorkspaceInvitation",
+        responses: {
+          "200": { description: "Workspace invitation accepted" },
+          "401": { description: "Authentication required" },
+          "403": { description: "Invitation is for a different account" },
+          "404": { description: "Invitation not found" },
+          "409": { description: "Invitation unavailable or expired" },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/members/{userId}": {
+      delete: {
+        operationId: "removeWorkspaceMember",
+        responses: {
+          "200": { description: "Workspace member removed" },
+          "401": { description: "Authentication required" },
+          "403": { description: "Manager access required" },
+          "404": { description: "Workspace or member not found" },
+          "409": { description: "Member cannot be removed" },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/leave": {
+      post: {
+        operationId: "leaveWorkspace",
+        responses: {
+          "200": { description: "Workspace left" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Workspace not found" },
+          "409": { description: "Workspace cannot be left" },
         },
       },
     },

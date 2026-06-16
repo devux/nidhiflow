@@ -8,6 +8,7 @@ import { createAuthRouter } from "../modules/auth/auth.routes.js";
 import { createOpenApiRouter } from "../modules/openapi/openapi.routes.js";
 import { createUsersRouter } from "../modules/users/user.routes.js";
 import { createWorkspacesRouter } from "../modules/workspaces/workspace.routes.js";
+import { createWorkspaceInvitationsRouter } from "../modules/workspaces/workspace-invitation.routes.js";
 import { createAccountsRouter } from "../modules/accounts/account.routes.js";
 import { createTransactionsRouter } from "../modules/transactions/transaction.routes.js";
 import { createBudgetsRouter } from "../modules/budgets/budget.routes.js";
@@ -36,6 +37,7 @@ export function createApiRoutes({
   router.use("/openapi.json", createOpenApiRouter());
   router.use("/auth", createAuthRouter({ database, environment }));
   router.use("/users", createUsersRouter({ database, environment }));
+  router.use("/workspace-invitations", createWorkspaceInvitationsRouter({ database, environment }));
   router.use("/workspaces", createWorkspacesRouter({ database, environment }));
   router.use("/workspaces/:workspaceId/accounts", createAccountsRouter({ database, environment }));
   router.use(

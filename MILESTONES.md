@@ -224,6 +224,8 @@ Financial calculations must use fixed-precision money handling.
 
 ## Milestone 10: Family Collaboration
 
+**Status:** Complete as of June 16, 2026.
+
 ### Scope
 
 - Shared family workspace

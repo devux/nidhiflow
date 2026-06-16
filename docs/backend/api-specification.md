@@ -137,6 +137,12 @@ Migration request example:
 | DELETE | `/workspaces/:workspaceId/members/:userId` | Manager | Remove member |
 | POST | `/workspaces/:workspaceId/leave` | Protected | Leave workspace |
 
+Family workspaces use the minimal manager role only for membership and
+workspace lifecycle actions. All members may view and edit ordinary shared
+finance resources. In non-production environments, invitation creation returns
+a `debugToken` so local development and automated tests can complete the join
+flow before email delivery infrastructure exists.
+
 ### Accounts
 
 | Method | Endpoint | Access |
