@@ -41,6 +41,8 @@ workspace resources render a safe not-found state.
 
 - Guest data is stored in IndexedDB or an equivalent secure structured local
   store, not raw localStorage.
+- Guest transaction amounts are stored as integer minor-unit strings and
+  calculated with `BigInt`; derived dashboard totals are never persisted.
 - Small non-sensitive preferences may use localStorage.
 - A local data version supports client-side migrations.
 - Account mode uses the API and server state cache.

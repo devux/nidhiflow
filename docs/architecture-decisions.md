@@ -59,7 +59,7 @@ are derived; only asynchronous generated export artifacts need a
 7. Account creation timing relative to email verification
 8. Guest encryption/key strategy and supported browsers
 9. Guest-to-account duplicate fingerprint and conflict UI
-10. Soft deletion, reversal, and immutable-ledger depth for transactions
+10. Server-side reversal and immutable-ledger depth for authenticated transactions
 11. Workspace currency and future multi-currency/conversion policy
 12. Recurrence rule format and scheduler/queue architecture
 13. Attachment limits, malware scanner, retention, and storage provider
@@ -98,6 +98,24 @@ are derived; only asynchronous generated export artifacts need a
 - Use `jest-axe` as an automated accessibility smoke check alongside
   interaction tests. Manual keyboard, zoom, contrast, and screen-reader checks
   remain required before production launch.
+
+## Milestone 3 Decisions
+
+- Store guest transaction amounts as canonical integer minor-unit strings.
+  Domain calculations use `BigInt`; formatting replaces localized fractional
+  parts without converting financial values to JavaScript `Number`.
+- Upgrade the local `nidhiflow-guest` IndexedDB schema from version 1 to 2,
+  preserving preferences and adding an indexed transaction store.
+- Keep the Milestone 3 transaction scope to income and expense. Accounts and
+  transfers remain owned by Milestone 7.
+- Use the documented system quick categories. Custom categories and
+  subcategories remain owned by Milestone 7.
+- Removing a guest transaction records `deletedAt` and excludes it from lists
+  and totals. The local record is retained for safer history semantics; the
+  server-side reversal/audit model remains a future backend decision.
+- Keep Activity search, type, category, and date filters in the URL. IndexedDB
+  remains the durable source of truth, while React context holds only the
+  currently displayed guest transaction collection.
 
 ## Recommended Improvements
 

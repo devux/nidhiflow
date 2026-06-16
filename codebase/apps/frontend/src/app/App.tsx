@@ -2,8 +2,10 @@ import { Suspense, lazy } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import type { GuestPreferencesRepository } from "../data/guest/guestPreferencesRepository";
+import type { GuestTransactionRepository } from "../data/guest/guestTransactionRepository";
 import { LoadingScreen } from "../shared/components/LoadingScreen";
 import { GuestPreferencesProvider } from "./providers/GuestPreferencesProvider";
+import { GuestTransactionsProvider } from "./providers/GuestTransactionsProvider";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import { AppShell } from "./shell/AppShell";
 import "../styles/tokens.css";
@@ -25,26 +27,38 @@ const PlanPage = lazy(async () => ({
 const YouPage = lazy(async () => ({
   default: (await import("../features/profile/pages/YouPage")).YouPage,
 }));
+const TransactionFormPage = lazy(async () => ({
+  default: (await import("../features/transactions/pages/TransactionFormPage")).TransactionFormPage,
+}));
 
-export function App({ repository }: { repository?: GuestPreferencesRepository }) {
+interface AppProps {
+  repository?: GuestPreferencesRepository;
+  transactionRepository?: GuestTransactionRepository;
+}
+
+export function App({ repository, transactionRepository }: AppProps) {
   return (
     <GuestPreferencesProvider repository={repository}>
-      <ThemeProvider>
-        <BrowserRouter>
-          <Suspense fallback={<LoadingScreen />}>
-            <Routes>
-              <Route element={<AppShell />}>
-                <Route element={<HomePage />} index />
-                <Route element={<ActivityPage />} path="activity" />
-                <Route element={<FlowPage />} path="flow" />
-                <Route element={<PlanPage />} path="plan" />
-                <Route element={<YouPage />} path="you" />
-                <Route element={<Navigate replace to="/" />} path="*" />
-              </Route>
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </ThemeProvider>
+      <GuestTransactionsProvider repository={transactionRepository}>
+        <ThemeProvider>
+          <BrowserRouter>
+            <Suspense fallback={<LoadingScreen />}>
+              <Routes>
+                <Route element={<AppShell />}>
+                  <Route element={<HomePage />} index />
+                  <Route element={<ActivityPage />} path="activity" />
+                  <Route element={<FlowPage />} path="flow" />
+                  <Route element={<PlanPage />} path="plan" />
+                  <Route element={<YouPage />} path="you" />
+                  <Route element={<TransactionFormPage />} path="transactions/new" />
+                  <Route element={<TransactionFormPage />} path="transactions/:id/edit" />
+                  <Route element={<Navigate replace to="/" />} path="*" />
+                </Route>
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </ThemeProvider>
+      </GuestTransactionsProvider>
     </GuestPreferencesProvider>
   );
 }

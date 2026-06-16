@@ -3,6 +3,7 @@ import type { ReactNode, SVGProps } from "react";
 export type IconName =
   | "activity"
   | "arrow"
+  | "back"
   | "bell"
   | "calendar"
   | "chart"
@@ -20,6 +21,7 @@ export type IconName =
   | "plan"
   | "plus"
   | "report"
+  | "search"
   | "shield"
   | "sparkles"
   | "sun"
@@ -39,6 +41,7 @@ export function Icon({ name, size = 24, ...props }: IconProps) {
       </>
     ),
     arrow: <path d="M5 12h14m-5-5 5 5-5 5" />,
+    back: <path d="M19 12H5m5 5-5-5 5-5" />,
     bell: (
       <>
         <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
@@ -118,6 +121,12 @@ export function Icon({ name, size = 24, ...props }: IconProps) {
     report: (
       <>
         <path d="M4 20V10m5 10V4m5 16v-7m5 7V7" />
+      </>
+    ),
+    search: (
+      <>
+        <circle cx="11" cy="11" r="7" />
+        <path d="m16 16 5 5" />
       </>
     ),
     shield: (

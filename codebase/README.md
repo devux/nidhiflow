@@ -11,6 +11,11 @@ The instructions below were verified on Linux Mint 22.3, based on Ubuntu
 24.04. Other Debian or Ubuntu releases should be similar, but package names
 may differ.
 
+Guest preferences and transaction history are stored only in the browser's
+IndexedDB database named `nidhiflow-guest`. They are not sent to the backend.
+Clearing site data, using private browsing, uninstalling the browser, or losing
+the device can permanently remove this local history.
+
 ## Local Services
 
 | Service    | Address                              | Purpose                                 |

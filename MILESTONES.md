@@ -60,6 +60,8 @@ stabilize Phase 1 before implementing Phase 2 AI capabilities.
 
 ## Milestone 3: Guest Transaction Vertical
 
+**Status:** Complete as of June 15, 2026.
+
 This is the first usable product milestone.
 
 ### Scope
