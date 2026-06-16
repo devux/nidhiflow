@@ -448,5 +448,244 @@ export const openApiDocument = {
         },
       },
     },
+    "/workspaces/{workspaceId}/budgets": {
+      get: {
+        operationId: "listBudgets",
+        responses: {
+          "200": { description: "Budgets retrieved" },
+          "401": { description: "Authentication required" },
+        },
+      },
+      post: {
+        operationId: "createBudget",
+        responses: {
+          "201": { description: "Budget created" },
+          "401": { description: "Authentication required" },
+          "422": { description: "Validation error" },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/budgets/summary": {
+      get: {
+        operationId: "getBudgetSummary",
+        responses: {
+          "200": { description: "Budget summary retrieved" },
+          "401": { description: "Authentication required" },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/budgets/{budgetId}": {
+      get: {
+        operationId: "getBudget",
+        responses: {
+          "200": { description: "Budget retrieved" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Budget not found" },
+        },
+      },
+      patch: {
+        operationId: "updateBudget",
+        responses: {
+          "200": { description: "Budget updated" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Budget not found" },
+          "422": { description: "Validation error" },
+        },
+      },
+      delete: {
+        operationId: "archiveBudget",
+        responses: {
+          "200": { description: "Budget archived" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Budget not found" },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/goals": {
+      get: {
+        operationId: "listGoals",
+        responses: {
+          "200": { description: "Goals retrieved" },
+          "401": { description: "Authentication required" },
+        },
+      },
+      post: {
+        operationId: "createGoal",
+        responses: {
+          "201": { description: "Goal created" },
+          "401": { description: "Authentication required" },
+          "422": { description: "Validation error" },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/goals/{goalId}": {
+      get: {
+        operationId: "getGoal",
+        responses: {
+          "200": { description: "Goal retrieved" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Goal not found" },
+        },
+      },
+      patch: {
+        operationId: "updateGoal",
+        responses: {
+          "200": { description: "Goal updated" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Goal not found" },
+          "409": { description: "Goal cannot be completed yet" },
+          "422": { description: "Validation error" },
+        },
+      },
+      delete: {
+        operationId: "archiveGoal",
+        responses: {
+          "200": { description: "Goal archived" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Goal not found" },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/goals/{goalId}/contributions": {
+      post: {
+        operationId: "createGoalContribution",
+        responses: {
+          "201": { description: "Goal contribution created" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Goal not found" },
+          "409": { description: "Goal not active" },
+          "422": { description: "Validation error" },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/goals/{goalId}/contributions/{contributionId}": {
+      delete: {
+        operationId: "deleteGoalContribution",
+        responses: {
+          "200": { description: "Goal contribution deleted" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Goal not found" },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/bills": {
+      get: {
+        operationId: "listBills",
+        responses: {
+          "200": { description: "Bills retrieved" },
+          "401": { description: "Authentication required" },
+        },
+      },
+      post: {
+        operationId: "createBill",
+        responses: {
+          "201": { description: "Bill created" },
+          "401": { description: "Authentication required" },
+          "422": { description: "Validation error" },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/bills/{billId}": {
+      get: {
+        operationId: "getBill",
+        responses: {
+          "200": { description: "Bill retrieved" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Bill not found" },
+        },
+      },
+      patch: {
+        operationId: "updateBill",
+        responses: {
+          "200": { description: "Bill updated" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Bill not found" },
+          "422": { description: "Validation error" },
+        },
+      },
+      delete: {
+        operationId: "archiveBill",
+        responses: {
+          "200": { description: "Bill archived" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Bill not found" },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/bills/{billId}/mark-paid": {
+      post: {
+        operationId: "markBillPaid",
+        responses: {
+          "200": { description: "Bill marked paid" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Bill not found" },
+          "422": { description: "Validation error" },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/recurring-transactions": {
+      get: {
+        operationId: "listRecurringTransactions",
+        responses: {
+          "200": { description: "Recurring transactions retrieved" },
+          "401": { description: "Authentication required" },
+        },
+      },
+      post: {
+        operationId: "createRecurringTransaction",
+        responses: {
+          "201": { description: "Recurring transaction created" },
+          "401": { description: "Authentication required" },
+          "422": { description: "Validation error" },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/recurring-transactions/{recurringTransactionId}": {
+      get: {
+        operationId: "getRecurringTransaction",
+        responses: {
+          "200": { description: "Recurring transaction retrieved" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Recurring transaction not found" },
+        },
+      },
+      patch: {
+        operationId: "updateRecurringTransaction",
+        responses: {
+          "200": { description: "Recurring transaction updated" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Recurring transaction not found" },
+          "422": { description: "Validation error" },
+        },
+      },
+      delete: {
+        operationId: "archiveRecurringTransaction",
+        responses: {
+          "200": { description: "Recurring transaction archived" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Recurring transaction not found" },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/recurring-transactions/{recurringTransactionId}/pause": {
+      post: {
+        operationId: "pauseRecurringTransaction",
+        responses: {
+          "200": { description: "Recurring transaction paused" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Recurring transaction not found" },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/recurring-transactions/{recurringTransactionId}/resume": {
+      post: {
+        operationId: "resumeRecurringTransaction",
+        responses: {
+          "200": { description: "Recurring transaction resumed" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Recurring transaction not found" },
+        },
+      },
+    },
   },
 } as const;

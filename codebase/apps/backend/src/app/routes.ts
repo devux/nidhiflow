@@ -10,6 +10,10 @@ import { createUsersRouter } from "../modules/users/user.routes.js";
 import { createWorkspacesRouter } from "../modules/workspaces/workspace.routes.js";
 import { createAccountsRouter } from "../modules/accounts/account.routes.js";
 import { createTransactionsRouter } from "../modules/transactions/transaction.routes.js";
+import { createBudgetsRouter } from "../modules/budgets/budget.routes.js";
+import { createGoalsRouter } from "../modules/goals/goal.routes.js";
+import { createBillsRouter } from "../modules/bills/bill.routes.js";
+import { createRecurringTransactionsRouter } from "../modules/recurringTransactions/recurringTransaction.routes.js";
 import type { Database } from "../shared/database/database.js";
 import { createRateLimit } from "./middleware/rateLimit.js";
 
@@ -40,6 +44,13 @@ export function createApiRoutes({
   router.use(
     "/workspaces/:workspaceId/transactions",
     createTransactionsRouter({ database, environment }),
+  );
+  router.use("/workspaces/:workspaceId/budgets", createBudgetsRouter({ database, environment }));
+  router.use("/workspaces/:workspaceId/goals", createGoalsRouter({ database, environment }));
+  router.use("/workspaces/:workspaceId/bills", createBillsRouter({ database, environment }));
+  router.use(
+    "/workspaces/:workspaceId/recurring-transactions",
+    createRecurringTransactionsRouter({ database, environment }),
   );
   router.use("/categories/system", createCategoriesRouter({ database }));
   router.use(

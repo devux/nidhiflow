@@ -180,6 +180,8 @@ Financial calculations must use fixed-precision money handling.
 
 ## Milestone 8: Budgets, Goals, and Bills
 
+**Status:** Complete as of June 16, 2026.
+
 ### Scope
 
 - Monthly total budgets

@@ -56,7 +56,7 @@ describe("PostgreSQL integration", () => {
           `SELECT table_name
            FROM information_schema.tables
            WHERE table_schema = 'public'
-             AND table_name IN ('users', 'workspaces', 'categories', 'transactions', 'feedback', 'audit_logs', 'auth_sessions', 'guest_migrations')
+             AND table_name IN ('users', 'workspaces', 'categories', 'transactions', 'budgets', 'goals', 'goal_contributions', 'bills', 'recurring_transactions', 'feedback', 'audit_logs', 'auth_sessions', 'guest_migrations')
            ORDER BY table_name`,
         );
         const categories = await migratedClient.query<{ count: string }>(
@@ -66,9 +66,14 @@ describe("PostgreSQL integration", () => {
         expect(tables.rows.map((row) => row.table_name)).toEqual([
           "audit_logs",
           "auth_sessions",
+          "bills",
+          "budgets",
           "categories",
           "feedback",
+          "goal_contributions",
+          "goals",
           "guest_migrations",
+          "recurring_transactions",
           "transactions",
           "users",
           "workspaces",

@@ -174,6 +174,19 @@ are derived; only asynchronous generated export artifacts need a
   precision math, and keep transfers out of income/expense classification so
   net worth remains tied to account movement rather than reporting buckets.
 
+## Milestone 8 Decisions
+
+- Model budgets, goals, bills, and recurring transaction templates as
+  authenticated workspace resources with soft-delete/archive semantics so the
+  history needed for reporting and reminders stays intact.
+- Keep budget and goal progress derived from transactions and contributions
+  rather than storing derived totals, which makes the finance math easier to
+  reconcile after edits and retries.
+- Treat bill marking as idempotent by reusing the first generated payment
+  transaction when the action is retried, and use the shared Bills category as
+  the default expense classification when a bill does not carry a custom
+  category.
+
 ## Recommended Improvements
 
 - Adopt ADRs for material choices.
