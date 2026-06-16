@@ -15,6 +15,9 @@
    onboarding policy.
 5. Issue short-lived access credentials and a rotating refresh session.
 
+For Milestone 5, NidhiFlow creates the personal workspace at successful email
+verification time and immediately starts the first authenticated session.
+
 ## JWT Strategy
 
 - Short-lived access JWT with minimal claims: subject, session ID, issuer,
@@ -29,6 +32,10 @@
 Prefer an opaque rotating refresh token stored in a `Secure`, `HttpOnly`,
 `SameSite` cookie for browser clients. Store only a hash server-side. Detect
 reuse, revoke the token family, and record a security event.
+
+Milestone 5 uses the refresh cookie for server-managed session rotation. In
+non-production environments, verification and password-reset flows may return a
+debug token in the success payload until email delivery infrastructure exists.
 
 Access token storage must minimize XSS exposure. The final browser token
 transport and CSRF design must be decided before implementation.

@@ -10,8 +10,8 @@
     "test": "vitest run --config vitest.config.ts",
     "test:integration": "dotenv -e ../../.env -- vitest run --config vitest.integration.config.ts",
     "typecheck": "tsc -b --pretty false",
-    "db:migrate": "dotenv -e ../../.env -- node-pg-migrate up --migrations-dir migrations --database-url-var DATABASE_URL",
-    "db:rollback": "dotenv -e ../../.env -- node-pg-migrate down --migrations-dir migrations --database-url-var DATABASE_URL"
+    "db:migrate": "dotenv -e ../../.env -- node-pg-migrate up --check-order false --migrations-dir migrations --database-url-var DATABASE_URL",
+    "db:rollback": "dotenv -e ../../.env -- node-pg-migrate down --check-order false --migrations-dir migrations --database-url-var DATABASE_URL"
   },
   "dependencies": {
     "cors": "^2.8.5",

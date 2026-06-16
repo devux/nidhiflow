@@ -59,6 +59,11 @@ transactions/
 └── transaction.test.ts
 ```
 
+Milestone 4 starts this structure with shared middleware plus public
+`categories`, `feedback`, and `openapi` modules under `/api/v1`. Milestone 5
+adds `auth`, `users`, and `workspaces` modules plus authentication middleware
+for protected routes.
+
 ## Responsibilities
 
 - **Routes:** HTTP path, middleware, controller binding

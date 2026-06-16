@@ -90,6 +90,8 @@ Financial calculations must use fixed-precision money handling.
 
 ## Milestone 4: Backend Foundation
 
+**Status:** Complete as of June 16, 2026.
+
 ### Scope
 
 - Modular backend structure
@@ -111,6 +113,8 @@ Financial calculations must use fixed-precision money handling.
 - Database migrations run from an empty database.
 
 ## Milestone 5: Authentication and Accounts
+
+**Status:** Complete as of June 16, 2026.
 
 ### Scope
 

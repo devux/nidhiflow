@@ -1,3 +1,5 @@
+import crypto from "node:crypto";
+
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
@@ -6,6 +8,10 @@ import { pinoHttp } from "pino-http";
 import type { Environment } from "./config/environment.js";
 import type { Database } from "../shared/database/database.js";
 import type { Logger } from "../shared/logging/logger.js";
+import { errorHandler } from "./middleware/errorHandler.js";
+import { requestContext } from "./middleware/requestContext.js";
+import { sendError } from "./http.js";
+import { createApiRoutes } from "./routes.js";
 
 interface AppDependencies {
   database: Database;
@@ -18,6 +24,7 @@ export function createApp({ database, environment, logger }: AppDependencies) {
 
   app.disable("x-powered-by");
   app.use(helmet());
+  app.use(requestContext);
   app.use(
     cors({
       origin: environment.CORS_ORIGINS,
@@ -28,9 +35,27 @@ export function createApp({ database, environment, logger }: AppDependencies) {
   app.use(
     pinoHttp({
       logger,
+      genReqId: (request, response) => {
+        const requestId = response.locals.requestId as string | undefined;
+
+        if (requestId) {
+          return requestId;
+        }
+
+        const generated =
+          typeof request.id === "string" && request.id.length > 0
+            ? request.id
+            : crypto.randomUUID();
+        response.locals.requestId = generated;
+        response.setHeader("X-Request-Id", generated);
+        return generated;
+      },
       autoLogging: {
         ignore: (request) => request.url === "/health/live",
       },
+      customProps: (_request, response) => ({
+        requestId: response.locals.requestId as string | undefined,
+      }),
       redact: ["req.headers.authorization", "req.headers.cookie"],
     }),
   );
@@ -54,14 +79,25 @@ export function createApp({ database, environment, logger }: AppDependencies) {
     }
   });
 
+  app.use(
+    "/api/v1",
+    createApiRoutes({
+      database,
+      environment,
+      feedbackRateLimitMax: environment.FEEDBACK_RATE_LIMIT_MAX,
+      feedbackRateLimitWindowMs: environment.API_RATE_LIMIT_WINDOW_MS,
+    }),
+  );
+
   app.use((_request, response) => {
-    response.status(404).json({
-      error: {
-        code: "NOT_FOUND",
-        message: "The requested resource was not found.",
-      },
+    sendError(response, {
+      code: "NOT_FOUND",
+      message: "The requested resource was not found.",
+      status: 404,
     });
   });
+
+  app.use(errorHandler);
 
   return app;
 }

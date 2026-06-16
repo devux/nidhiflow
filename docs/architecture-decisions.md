@@ -117,6 +117,39 @@ are derived; only asynchronous generated export artifacts need a
   remains the durable source of truth, while React context holds only the
   currently displayed guest transaction collection.
 
+## Milestone 4 Decisions
+
+- Keep `/health/live` and `/health/ready` as operational routes outside the
+  versioned `/api/v1` surface.
+- Use a standard JSON success/error envelope for `/api/v1` routes, with
+  `X-Request-Id` echoed in response headers and response metadata.
+- Start the modular backend structure with public `categories`, `feedback`,
+  and `openapi` modules plus shared middleware for validation, request
+  context, rate limiting, and centralized error handling.
+- Use an in-memory rate-limit foundation for public endpoints in development
+  and tests. A distributed store remains a later operational hardening
+  decision.
+- Seed the documented quick categories in the core schema migration so guest
+  and future authenticated flows share the same category vocabulary.
+- Use text columns plus explicit check constraints for phase-foundation enum
+  values in the initial core schema migration. This keeps the migration more
+  resilient while preserving domain constraints.
+
+## Milestone 5 Decisions
+
+- Create the personal workspace during successful email verification, not
+  during initial registration. This keeps unverified accounts from gaining
+  protected workspace state while preserving a straightforward onboarding flow.
+- Use a short-lived HMAC-signed access JWT plus opaque rotating refresh
+  cookies for the milestone implementation. Asymmetric signing and managed key
+  rotation remain a later operational decision.
+- Keep verification and password-reset endpoints account-discovery-safe in
+  normal responses. In non-production environments, return a debug token in
+  the success payload so local development and automated tests can complete the
+  flows before email delivery infrastructure exists.
+- Treat revoked or expired sessions as invalid for access-token validation, and
+  revoke the whole refresh-token family if a rotated refresh session is reused.
+
 ## Recommended Improvements
 
 - Adopt ADRs for material choices.

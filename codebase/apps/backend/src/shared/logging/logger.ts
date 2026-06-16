@@ -5,6 +5,7 @@ import type { Environment } from "../../app/config/environment.js";
 export function createLogger(environment: Environment) {
   return pino({
     level: environment.LOG_LEVEL,
+    timestamp: pino.stdTimeFunctions.isoTime,
     base: {
       environment: environment.APP_ENV,
       service: "nidhiflow-backend",

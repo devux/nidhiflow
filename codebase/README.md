@@ -18,13 +18,14 @@ the device can permanently remove this local history.
 
 ## Local Services
 
-| Service    | Address                              | Purpose                                 |
-| ---------- | ------------------------------------ | --------------------------------------- |
-| Frontend   | `http://127.0.0.1:5173`              | React development application           |
-| Backend    | `http://127.0.0.1:3000`              | Express API                             |
-| Liveness   | `http://127.0.0.1:3000/health/live`  | Confirms the backend process is running |
-| Readiness  | `http://127.0.0.1:3000/health/ready` | Confirms PostgreSQL is reachable        |
-| PostgreSQL | `127.0.0.1:5432`                     | Local development database              |
+| Service    | Address                                     | Purpose                                 |
+| ---------- | ------------------------------------------- | --------------------------------------- |
+| Frontend   | `http://127.0.0.1:5173`                     | React development application           |
+| Backend    | `http://127.0.0.1:3000`                     | Express API                             |
+| Liveness   | `http://127.0.0.1:3000/health/live`         | Confirms the backend process is running |
+| Readiness  | `http://127.0.0.1:3000/health/ready`        | Confirms PostgreSQL is reachable        |
+| OpenAPI    | `http://127.0.0.1:3000/api/v1/openapi.json` | Versioned API contract                  |
+| PostgreSQL | `127.0.0.1:5432`                            | Local development database              |
 
 ## Required Software
 
@@ -183,20 +184,61 @@ issues, or reuse its password in staging or production.
 
 ### Environment Variables
 
-| Variable                 | Local purpose                                            |
-| ------------------------ | -------------------------------------------------------- |
-| `APP_ENV`                | Backend runtime environment                              |
-| `PORT`                   | Backend HTTP port                                        |
-| `LOG_LEVEL`              | Backend structured logging level                         |
-| `DATABASE_URL`           | PostgreSQL connection used by the backend and migrations |
-| `DATABASE_SSL`           | Whether the backend requires PostgreSQL TLS              |
-| `CORS_ORIGINS`           | Browser origins permitted to call the backend            |
-| `POSTGRES_USER`          | User created by the PostgreSQL container                 |
-| `POSTGRES_PASSWORD`      | Password created by the PostgreSQL container             |
-| `POSTGRES_DB`            | Database created by the PostgreSQL container             |
-| `NIDHIFLOW_API_BASE_URL` | Backend URL compiled into the local frontend             |
+| Variable                       | Local purpose                                            |
+| ------------------------------ | -------------------------------------------------------- |
+| `APP_ENV`                      | Backend runtime environment                              |
+| `PORT`                         | Backend HTTP port                                        |
+| `LOG_LEVEL`                    | Backend structured logging level                         |
+| `DATABASE_URL`                 | PostgreSQL connection used by the backend and migrations |
+| `DATABASE_SSL`                 | Whether the backend requires PostgreSQL TLS              |
+| `API_RATE_LIMIT_WINDOW_MS`     | Shared backend rate-limit window in milliseconds         |
+| `API_RATE_LIMIT_MAX`           | Reserved foundation default for broader API limits       |
+| `AUTH_RATE_LIMIT_MAX`          | Auth requests allowed per window                         |
+| `FEEDBACK_RATE_LIMIT_MAX`      | Public feedback requests allowed per window              |
+| `JWT_ACCESS_SECRET`            | Explicit JWT signing secret for staging or production    |
+| `JWT_ACCESS_ISSUER`            | Expected JWT issuer                                      |
+| `JWT_ACCESS_AUDIENCE`          | Expected JWT audience                                    |
+| `JWT_ACCESS_TTL_SECONDS`       | Access-token lifetime in seconds                         |
+| `REFRESH_SESSION_TTL_DAYS`     | Refresh-session lifetime in days                         |
+| `EMAIL_VERIFICATION_TTL_HOURS` | Email verification token lifetime in hours               |
+| `PASSWORD_RESET_TTL_HOURS`     | Password reset token lifetime in hours                   |
+| `CORS_ORIGINS`                 | Browser origins permitted to call the backend            |
+| `POSTGRES_USER`                | User created by the PostgreSQL container                 |
+| `POSTGRES_PASSWORD`            | Password created by the PostgreSQL container             |
+| `POSTGRES_DB`                  | Database created by the PostgreSQL container             |
+| `NIDHIFLOW_API_BASE_URL`       | Backend URL compiled into the local frontend             |
 
 The default local configuration binds PostgreSQL only to `127.0.0.1`.
+
+In local development, the backend derives a JWT signing secret automatically if
+`JWT_ACCESS_SECRET` is omitted. Set an explicit secret for staging and
+production.
+
+## Milestone 5 Auth Routes
+
+Milestone 5 adds these backend endpoints under `http://127.0.0.1:3000/api/v1`:
+
+- `POST /auth/register`
+- `POST /auth/login`
+- `POST /auth/refresh`
+- `POST /auth/logout`
+- `POST /auth/logout-all`
+- `POST /auth/verify-email`
+- `POST /auth/resend-verification`
+- `POST /auth/forgot-password`
+- `POST /auth/reset-password`
+- `GET /users/me`
+- `PATCH /users/me`
+- `GET /users/me/sessions`
+- `DELETE /users/me/sessions/:sessionId`
+- `GET /workspaces`
+- `GET /workspaces/:workspaceId`
+
+For local development and tests, non-production auth responses include a
+`debugToken` field during registration, resend-verification, and
+forgot-password flows. This allows the email-verification and password-reset
+journeys to be exercised before an email delivery service exists. Production
+must not rely on this behavior.
 
 ## 5. Install JavaScript Dependencies
 

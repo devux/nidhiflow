@@ -1,3 +1,7 @@
+import { fileURLToPath } from "node:url";
+
+import { runner } from "node-pg-migrate";
+import { Client } from "pg";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { parseEnvironment } from "../../app/config/environment.js";
@@ -13,5 +17,74 @@ describe("PostgreSQL integration", () => {
 
   it("connects to the configured database", async () => {
     await expect(database.isReady()).resolves.toBe(true);
+  });
+
+  it("runs migrations from an empty database", async () => {
+    const migrationDatabaseName = `nidhiflow_m4_${Date.now()}`;
+    const adminUrl = new URL(environment.DATABASE_URL);
+    adminUrl.pathname = "/postgres";
+    const migrationUrl = new URL(environment.DATABASE_URL);
+    migrationUrl.pathname = `/${migrationDatabaseName}`;
+    const adminClient = new Client({
+      connectionString: adminUrl.toString(),
+      ssl: environment.DATABASE_SSL ? { rejectUnauthorized: true } : false,
+    });
+    const migrationsDirectory = fileURLToPath(new URL("../../../migrations", import.meta.url));
+
+    await adminClient.connect();
+    await adminClient.query(`CREATE DATABASE ${migrationDatabaseName} TEMPLATE template0`);
+
+    try {
+      await runner({
+        checkOrder: false,
+        databaseUrl: migrationUrl.toString(),
+        dir: migrationsDirectory,
+        direction: "up",
+        log: () => undefined,
+        migrationsTable: "pgmigrations",
+        singleTransaction: false,
+      });
+
+      const migratedClient = new Client({
+        connectionString: migrationUrl.toString(),
+        ssl: environment.DATABASE_SSL ? { rejectUnauthorized: true } : false,
+      });
+
+      try {
+        await migratedClient.connect();
+        const tables = await migratedClient.query<{ table_name: string }>(
+          `SELECT table_name
+           FROM information_schema.tables
+           WHERE table_schema = 'public'
+             AND table_name IN ('users', 'workspaces', 'categories', 'transactions', 'feedback', 'audit_logs')
+           ORDER BY table_name`,
+        );
+        const categories = await migratedClient.query<{ count: string }>(
+          "SELECT COUNT(*)::text AS count FROM categories WHERE is_system = TRUE",
+        );
+
+        expect(tables.rows.map((row) => row.table_name)).toEqual([
+          "audit_logs",
+          "categories",
+          "feedback",
+          "transactions",
+          "users",
+          "workspaces",
+        ]);
+        expect(Number(categories.rows[0]?.count ?? "0")).toBeGreaterThanOrEqual(13);
+      } finally {
+        await migratedClient.end();
+      }
+    } finally {
+      await adminClient.query(
+        `SELECT pg_terminate_backend(pid)
+         FROM pg_stat_activity
+         WHERE datname = $1
+           AND pid <> pg_backend_pid()`,
+        [migrationDatabaseName],
+      );
+      await adminClient.query(`DROP DATABASE IF EXISTS ${migrationDatabaseName}`);
+      await adminClient.end();
+    }
   });
 });
