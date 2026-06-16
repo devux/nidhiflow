@@ -5,6 +5,7 @@ import { AppError } from "../../shared/errors/appError.js";
 
 interface ValidationSchemas {
   body?: ZodTypeAny;
+  headers?: ZodTypeAny;
   params?: ZodTypeAny;
   query?: ZodTypeAny;
 }
@@ -22,6 +23,10 @@ export function validate(schemas: ValidationSchemas) {
     try {
       if (schemas.params) {
         Object.assign(request.params, schemas.params.parse(request.params));
+      }
+
+      if (schemas.headers) {
+        Object.assign(request.headers, schemas.headers.parse(request.headers));
       }
 
       if (schemas.query) {

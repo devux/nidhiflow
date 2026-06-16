@@ -220,6 +220,41 @@ export const openApiDocument = {
         },
       },
     },
+    "/users/me/guest-migrations/preview": {
+      post: {
+        operationId: "previewGuestMigration",
+        responses: {
+          "200": {
+            description: "Guest migration preview generated",
+          },
+          "401": {
+            description: "Authentication required",
+          },
+          "422": {
+            description: "Validation error",
+          },
+        },
+      },
+    },
+    "/users/me/guest-migrations": {
+      post: {
+        operationId: "commitGuestMigration",
+        responses: {
+          "201": {
+            description: "Guest migration committed",
+          },
+          "401": {
+            description: "Authentication required",
+          },
+          "409": {
+            description: "Duplicate migration or idempotency conflict",
+          },
+          "422": {
+            description: "Validation error",
+          },
+        },
+      },
+    },
     "/users/me/sessions": {
       get: {
         operationId: "listCurrentUserSessions",

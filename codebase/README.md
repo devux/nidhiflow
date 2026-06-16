@@ -240,6 +240,16 @@ forgot-password flows. This allows the email-verification and password-reset
 journeys to be exercised before an email delivery service exists. Production
 must not rely on this behavior.
 
+## Milestone 6 Guest Migration Routes
+
+Milestone 6 adds these authenticated migration endpoints:
+
+- `POST /users/me/guest-migrations/preview`
+- `POST /users/me/guest-migrations`
+
+The commit route requires `Idempotency-Key` and explicit `confirm: true`. Guest
+transactions stay local until the user chooses to migrate them.
+
 ## 5. Install JavaScript Dependencies
 
 Install exactly from the workspace lockfile:

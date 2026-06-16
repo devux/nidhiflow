@@ -137,6 +137,8 @@ Financial calculations must use fixed-precision money handling.
 
 ## Milestone 6: Guest-to-Account Migration
 
+**Status:** Complete as of June 16, 2026.
+
 ### Scope
 
 - Guest-data migration preview

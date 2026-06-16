@@ -75,6 +75,48 @@ export class WorkspaceRepository {
     );
   }
 
+  async updateWorkspaceSettings(
+    workspaceId: string,
+    updates: {
+      name?: string;
+      reportingCurrency?: string;
+      timezone?: string;
+    },
+    queryable: Queryable = this.database,
+  ) {
+    const assignments: string[] = [];
+    const values: unknown[] = [];
+
+    if (updates.name !== undefined) {
+      values.push(updates.name);
+      assignments.push(`name = $${values.length}`);
+    }
+
+    if (updates.reportingCurrency !== undefined) {
+      values.push(updates.reportingCurrency);
+      assignments.push(`reporting_currency = $${values.length}`);
+    }
+
+    if (updates.timezone !== undefined) {
+      values.push(updates.timezone);
+      assignments.push(`timezone = $${values.length}`);
+    }
+
+    if (assignments.length === 0) {
+      return;
+    }
+
+    values.push(workspaceId);
+
+    await queryable.query(
+      `UPDATE workspaces
+          SET ${assignments.join(", ")},
+              updated_at = CURRENT_TIMESTAMP
+        WHERE id = $${values.length}`,
+      values,
+    );
+  }
+
   async listMemberships(userId: string, queryable: Queryable = this.database) {
     const result = await queryable.query<WorkspaceDetailRecord>(
       `SELECT w.id,

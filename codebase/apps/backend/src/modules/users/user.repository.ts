@@ -47,9 +47,10 @@ export class UserRepository {
       theme: string;
       timezone: string;
     }>,
+    queryable: Queryable = this.database,
   ) {
     const assignments: string[] = [];
-    const values: unknown[] = [userId];
+    const values: unknown[] = [];
 
     if (updates.displayName !== undefined) {
       values.push(updates.displayName);
@@ -77,12 +78,13 @@ export class UserRepository {
     }
 
     values.push(userId);
+    const userIdPlaceholder = values.length;
 
-    await this.database.query(
+    await queryable.query(
       `UPDATE users
           SET ${assignments.join(", ")},
               updated_at = CURRENT_TIMESTAMP
-        WHERE id = $${values.length}`,
+        WHERE id = $${userIdPlaceholder}`,
       values,
     );
 

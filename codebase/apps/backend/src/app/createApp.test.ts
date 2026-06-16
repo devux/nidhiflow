@@ -149,6 +149,8 @@ describe("API foundation", () => {
     expect(response.status).toBe(200);
     expect(body.openapi).toBe("3.1.0");
     expect(body.paths["/feedback"]).toBeDefined();
+    expect(body.paths["/users/me/guest-migrations/preview"]).toBeDefined();
+    expect(body.paths["/users/me/guest-migrations"]).toBeDefined();
   });
 
   it("validates request bodies with the standard 422 envelope", async () => {

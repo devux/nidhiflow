@@ -150,6 +150,18 @@ are derived; only asynchronous generated export artifacts need a
 - Treat revoked or expired sessions as invalid for access-token validation, and
   revoke the whole refresh-token family if a rotated refresh session is reused.
 
+## Milestone 6 Decisions
+
+- Accept guest migration payloads only through authenticated preview/commit
+  endpoints. The commit endpoint requires explicit confirmation plus an
+  `Idempotency-Key`.
+- Treat `transactions.client_id` as the server-side guest-to-account mapping
+  anchor so retries and duplicate detection can safely refer back to the same
+  imported records.
+- Use a single migration record to persist the preview summary, final outcome,
+  and guest-to-server ID mapping so a successful retry can return the original
+  result without duplicating imported data.
+
 ## Recommended Improvements
 
 - Adopt ADRs for material choices.
