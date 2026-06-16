@@ -145,6 +145,7 @@ Migration request example:
 | GET, PATCH, DELETE | `/workspaces/:workspaceId/accounts/:accountId` | Protected |
 | POST | `/workspaces/:workspaceId/accounts/:accountId/archive` | Protected |
 | POST | `/workspaces/:workspaceId/accounts/:accountId/restore` | Protected |
+| GET | `/workspaces/:workspaceId/accounts/summary` | Protected |
 
 Create example:
 
@@ -163,6 +164,8 @@ Create example:
 | GET | `/categories/system` | Public |
 | GET, POST | `/workspaces/:workspaceId/categories` | Protected |
 | GET, PATCH, DELETE | `/workspaces/:workspaceId/categories/:categoryId` | Protected |
+| POST | `/workspaces/:workspaceId/categories/:categoryId/archive` | Protected |
+| POST | `/workspaces/:workspaceId/categories/:categoryId/restore` | Protected |
 
 ### Transactions
 

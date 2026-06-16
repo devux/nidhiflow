@@ -3,7 +3,7 @@ export const openApiDocument = {
   info: {
     title: "NidhiFlow API",
     version: "0.1.0",
-    description: "Milestone 5 executable contract for the NidhiFlow backend foundation.",
+    description: "Executable contract for the NidhiFlow backend foundation.",
   },
   servers: [{ url: "/api/v1" }],
   paths: {
@@ -330,6 +330,121 @@ export const openApiDocument = {
           "404": {
             description: "Workspace not found",
           },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/accounts": {
+      get: {
+        operationId: "listAccounts",
+        responses: {
+          "200": { description: "Accounts retrieved" },
+          "401": { description: "Authentication required" },
+        },
+      },
+      post: {
+        operationId: "createAccount",
+        responses: {
+          "201": { description: "Account created" },
+          "401": { description: "Authentication required" },
+          "422": { description: "Validation error" },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/accounts/{accountId}": {
+      get: {
+        operationId: "getAccount",
+        responses: {
+          "200": { description: "Account retrieved" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Account not found" },
+        },
+      },
+      patch: {
+        operationId: "updateAccount",
+        responses: {
+          "200": { description: "Account updated" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Account not found" },
+          "422": { description: "Validation error" },
+        },
+      },
+      delete: {
+        operationId: "archiveAccount",
+        responses: {
+          "200": { description: "Account archived" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Account not found" },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/accounts/summary": {
+      get: {
+        operationId: "getAccountSummary",
+        responses: {
+          "200": { description: "Account summary retrieved" },
+          "401": { description: "Authentication required" },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/categories": {
+      get: {
+        operationId: "listWorkspaceCategories",
+        responses: {
+          "200": { description: "Categories retrieved" },
+          "401": { description: "Authentication required" },
+        },
+      },
+      post: {
+        operationId: "createWorkspaceCategory",
+        responses: {
+          "201": { description: "Category created" },
+          "401": { description: "Authentication required" },
+          "422": { description: "Validation error" },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/categories/{categoryId}": {
+      get: {
+        operationId: "getWorkspaceCategory",
+        responses: {
+          "200": { description: "Category retrieved" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Category not found" },
+        },
+      },
+      patch: {
+        operationId: "updateWorkspaceCategory",
+        responses: {
+          "200": { description: "Category updated" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Category not found" },
+          "422": { description: "Validation error" },
+        },
+      },
+      delete: {
+        operationId: "archiveWorkspaceCategory",
+        responses: {
+          "200": { description: "Category archived" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Category not found" },
+        },
+      },
+    },
+    "/workspaces/{workspaceId}/transactions": {
+      get: {
+        operationId: "listTransactions",
+        responses: {
+          "200": { description: "Transactions retrieved" },
+          "401": { description: "Authentication required" },
+        },
+      },
+      post: {
+        operationId: "createTransaction",
+        responses: {
+          "201": { description: "Transaction created" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Linked resource not found" },
+          "422": { description: "Validation error" },
         },
       },
     },

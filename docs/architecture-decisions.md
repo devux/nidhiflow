@@ -162,6 +162,18 @@ are derived; only asynchronous generated export artifacts need a
   and guest-to-server ID mapping so a successful retry can return the original
   result without duplicating imported data.
 
+## Milestone 7 Decisions
+
+- Expose authenticated workspace finance routes for accounts, workspace
+  categories, and transactions under the existing versioned API surface rather
+  than introducing a separate finance subdomain.
+- Treat account and category archive/restore as soft-state changes so history
+  remains available for balance reconciliation and shared-workspace audit
+  history.
+- Calculate account summaries from stored decimal balances using fixed-
+  precision math, and keep transfers out of income/expense classification so
+  net worth remains tied to account movement rather than reporting buckets.
+
 ## Recommended Improvements
 
 - Adopt ADRs for material choices.

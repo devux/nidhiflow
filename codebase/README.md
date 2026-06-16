@@ -250,6 +250,32 @@ Milestone 6 adds these authenticated migration endpoints:
 The commit route requires `Idempotency-Key` and explicit `confirm: true`. Guest
 transactions stay local until the user chooses to migrate them.
 
+## Milestone 7 Finance Routes
+
+Milestone 7 adds these authenticated workspace finance endpoints:
+
+- `GET /workspaces/:workspaceId/accounts`
+- `POST /workspaces/:workspaceId/accounts`
+- `GET /workspaces/:workspaceId/accounts/summary`
+- `GET /workspaces/:workspaceId/accounts/:accountId`
+- `PATCH /workspaces/:workspaceId/accounts/:accountId`
+- `POST /workspaces/:workspaceId/accounts/:accountId/archive`
+- `DELETE /workspaces/:workspaceId/accounts/:accountId`
+- `POST /workspaces/:workspaceId/accounts/:accountId/restore`
+- `GET /workspaces/:workspaceId/categories`
+- `POST /workspaces/:workspaceId/categories`
+- `GET /workspaces/:workspaceId/categories/:categoryId`
+- `PATCH /workspaces/:workspaceId/categories/:categoryId`
+- `POST /workspaces/:workspaceId/categories/:categoryId/archive`
+- `POST /workspaces/:workspaceId/categories/:categoryId/restore`
+- `DELETE /workspaces/:workspaceId/categories/:categoryId`
+- `GET /workspaces/:workspaceId/transactions`
+- `POST /workspaces/:workspaceId/transactions`
+
+These routes enforce workspace membership, preserve archived history, and use
+the server-side PostgreSQL balance model for account summaries and transfer
+effects.
+
 ## 5. Install JavaScript Dependencies
 
 Install exactly from the workspace lockfile:

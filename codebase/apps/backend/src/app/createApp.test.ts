@@ -151,6 +151,9 @@ describe("API foundation", () => {
     expect(body.paths["/feedback"]).toBeDefined();
     expect(body.paths["/users/me/guest-migrations/preview"]).toBeDefined();
     expect(body.paths["/users/me/guest-migrations"]).toBeDefined();
+    expect(body.paths["/workspaces/{workspaceId}/accounts"]).toBeDefined();
+    expect(body.paths["/workspaces/{workspaceId}/categories"]).toBeDefined();
+    expect(body.paths["/workspaces/{workspaceId}/transactions"]).toBeDefined();
   });
 
   it("validates request bodies with the standard 422 envelope", async () => {

@@ -18,6 +18,16 @@ verification.
 - Updates and deletions/reversals are audited.
 - Recurring schedules generate ordinary transactions idempotently.
 
+## Accounts and Categories
+
+- Manual accounts store an opening balance and derive current balance from the
+  opening amount plus transaction effects.
+- Account summaries split liabilities from assets using the account type
+  classification and keep transfers out of income/expense reporting.
+- Workspace categories are editable only inside their owning workspace.
+- System categories are shared read-only vocabulary and remain available even
+  when workspace categories are customized.
+
 ## Balances
 
 Balances derive from opening balance and transaction effects. Cache/materialize

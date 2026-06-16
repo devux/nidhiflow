@@ -159,6 +159,8 @@ Financial calculations must use fixed-precision money handling.
 
 ## Milestone 7: Accounts and Categories
 
+**Status:** Complete as of June 16, 2026.
+
 ### Scope
 
 - Cash, bank, credit card, loan, wallet, and other manual accounts
