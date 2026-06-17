@@ -71,6 +71,10 @@ interface ErrorResponseBody {
 }
 
 interface OpenApiResponseBody {
+  components: {
+    schemas: Record<string, unknown>;
+    securitySchemes: Record<string, unknown>;
+  };
   openapi: string;
   paths: Record<string, unknown>;
 }
@@ -167,36 +171,54 @@ describe("API foundation", () => {
     const body = response.body as OpenApiResponseBody;
 
     expect(response.status).toBe(200);
-    expect(body.openapi).toBe("3.1.0");
-    expect(body.paths["/feedback"]).toBeDefined();
-    expect(body.paths["/users/me/guest-migrations/preview"]).toBeDefined();
-    expect(body.paths["/users/me/guest-migrations"]).toBeDefined();
-    expect(body.paths["/users/me/notification-preferences"]).toBeDefined();
-    expect(body.paths["/notifications"]).toBeDefined();
-    expect(body.paths["/notifications/{notificationId}/read"]).toBeDefined();
-    expect(body.paths["/notifications/read-all"]).toBeDefined();
-    expect(body.paths["/flow-launch-subscriptions"]).toBeDefined();
-    expect(body.paths["/flow-launch-subscriptions/{token}"]).toBeDefined();
-    expect(body.paths["/workspace-invitations/{token}/accept"]).toBeDefined();
-    expect(body.paths["/workspaces/{workspaceId}/accounts"]).toBeDefined();
-    expect(body.paths["/workspaces/{workspaceId}/members"]).toBeDefined();
-    expect(body.paths["/workspaces/{workspaceId}/invitations"]).toBeDefined();
-    expect(body.paths["/workspaces/{workspaceId}/members/{userId}"]).toBeDefined();
-    expect(body.paths["/workspaces/{workspaceId}/leave"]).toBeDefined();
-    expect(body.paths["/workspaces/{workspaceId}/categories"]).toBeDefined();
-    expect(body.paths["/workspaces/{workspaceId}/transactions"]).toBeDefined();
-    expect(body.paths["/workspaces/{workspaceId}/budgets"]).toBeDefined();
-    expect(body.paths["/workspaces/{workspaceId}/goals"]).toBeDefined();
-    expect(body.paths["/workspaces/{workspaceId}/bills"]).toBeDefined();
-    expect(body.paths["/workspaces/{workspaceId}/reports/summary"]).toBeDefined();
-    expect(body.paths["/workspaces/{workspaceId}/reports/categories"]).toBeDefined();
-    expect(body.paths["/workspaces/{workspaceId}/reports/cash-flow"]).toBeDefined();
-    expect(body.paths["/workspaces/{workspaceId}/reports/exports"]).toBeDefined();
-    expect(body.paths["/workspaces/{workspaceId}/reports/exports/{exportId}"]).toBeDefined();
+    expect(body.openapi).toBe("3.0.3");
+    expect(body.components.securitySchemes.bearerAuth).toBeDefined();
+    expect(body.components.schemas.SuccessResponse).toBeDefined();
+    expect(body.components.schemas.ErrorResponse).toBeDefined();
+    expect(body.components.schemas.Transaction).toBeDefined();
+    expect(body.paths["/api/v1/feedback"]).toBeDefined();
+    expect(body.paths["/api/v1/users/me/guest-migrations/preview"]).toBeDefined();
+    expect(body.paths["/api/v1/users/me/guest-migrations"]).toBeDefined();
+    expect(body.paths["/api/v1/users/me/notification-preferences"]).toBeDefined();
+    expect(body.paths["/api/v1/notifications"]).toBeDefined();
+    expect(body.paths["/api/v1/notifications/{notificationId}/read"]).toBeDefined();
+    expect(body.paths["/api/v1/notifications/read-all"]).toBeDefined();
+    expect(body.paths["/api/v1/flow-launch-subscriptions"]).toBeDefined();
+    expect(body.paths["/api/v1/flow-launch-subscriptions/{token}"]).toBeDefined();
+    expect(body.paths["/api/v1/workspace-invitations/{token}/accept"]).toBeDefined();
+    expect(body.paths["/api/v1/workspaces/{workspaceId}/accounts"]).toBeDefined();
+    expect(body.paths["/api/v1/workspaces/{workspaceId}/members"]).toBeDefined();
+    expect(body.paths["/api/v1/workspaces/{workspaceId}/invitations"]).toBeDefined();
+    expect(body.paths["/api/v1/workspaces/{workspaceId}/members/{userId}"]).toBeDefined();
+    expect(body.paths["/api/v1/workspaces/{workspaceId}/leave"]).toBeDefined();
+    expect(body.paths["/api/v1/workspaces/{workspaceId}/categories"]).toBeDefined();
+    expect(body.paths["/api/v1/workspaces/{workspaceId}/transactions"]).toBeDefined();
+    expect(body.paths["/api/v1/workspaces/{workspaceId}/budgets"]).toBeDefined();
+    expect(body.paths["/api/v1/workspaces/{workspaceId}/goals"]).toBeDefined();
+    expect(body.paths["/api/v1/workspaces/{workspaceId}/bills"]).toBeDefined();
+    expect(body.paths["/api/v1/workspaces/{workspaceId}/reports/summary"]).toBeDefined();
+    expect(body.paths["/api/v1/workspaces/{workspaceId}/reports/categories"]).toBeDefined();
+    expect(body.paths["/api/v1/workspaces/{workspaceId}/reports/cash-flow"]).toBeDefined();
+    expect(body.paths["/api/v1/workspaces/{workspaceId}/reports/exports"]).toBeDefined();
+    expect(body.paths["/api/v1/workspaces/{workspaceId}/reports/exports/{exportId}"]).toBeDefined();
     expect(
-      body.paths["/workspaces/{workspaceId}/reports/exports/{exportId}/download"],
+      body.paths["/api/v1/workspaces/{workspaceId}/reports/exports/{exportId}/download"],
     ).toBeDefined();
-    expect(body.paths["/workspaces/{workspaceId}/recurring-transactions"]).toBeDefined();
+    expect(body.paths["/api/v1/workspaces/{workspaceId}/recurring-transactions"]).toBeDefined();
+  });
+
+  it("serves Swagger UI at /api-docs", async () => {
+    const app = createApp({
+      database: createTestDatabase(vi.fn().mockResolvedValue(true)).database,
+      environment,
+      logger: pino({ enabled: false }),
+    });
+
+    const response = await request(app).get("/api-docs");
+
+    expect(response.status).toBe(200);
+    expect(response.text).toContain("NidhiFlow API Docs");
+    expect(response.text).toContain("/api-docs/swagger-ui-bundle.js");
   });
 
   it("validates request bodies with the standard 422 envelope", async () => {

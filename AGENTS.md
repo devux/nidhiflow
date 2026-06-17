@@ -126,6 +126,9 @@ it changes product behavior, security, stored data, or public contracts.
   access in repositories.
 - Apply authentication, workspace ownership, and authorization checks to every
   protected operation.
+- When changing any backend API route, request schema, response schema,
+  authentication requirement, validation rule, status code, or error code,
+  update the Swagger/OpenAPI documentation in the same change.
 - Do not upload guest financial data without explicit migration confirmation.
 - Never expose stack traces, database errors, secrets, or sensitive data.
 - Include loading, empty, success, validation, and error states in UI work.
@@ -142,6 +145,7 @@ A change is complete only when:
 - Accessibility and localization are considered.
 - Validation, error handling, authorization, privacy, and audit needs are met.
 - Public API or schema changes are documented and migrated safely.
+- Swagger/OpenAPI is updated for every API contract change.
 - Tests cover success and important failure paths.
 - No unrelated user changes are reverted.
 

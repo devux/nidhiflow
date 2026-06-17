@@ -1,0 +1,12 @@
+{
+	"servers": {
+		"figma": {
+			"url": "https://mcp.figma.com/mcp",
+			"type": "http",
+			"headers": {
+				"Authorization": "figd_GGX_7JIg8ftoJ1Peg8l0rtlKeisbi4mH98FO8l6x"
+			}
+		}
+	},
+	"inputs": []
+}

@@ -12,6 +12,11 @@ import { errorHandler } from "./middleware/errorHandler.js";
 import { requestContext } from "./middleware/requestContext.js";
 import { sendError } from "./http.js";
 import { createApiRoutes } from "./routes.js";
+import {
+  createSwaggerInitializer,
+  createSwaggerUiHtml,
+  swaggerUiAssetsPath,
+} from "../modules/openapi/swaggerUi.js";
 
 interface AppDependencies {
   database: Database;
@@ -78,6 +83,20 @@ export function createApp({ database, environment, logger }: AppDependencies) {
       response.status(503).json({ status: "unavailable" });
     }
   });
+
+  app.get("/api-docs", (_request, response) => {
+    response.type("html").status(200).send(createSwaggerUiHtml());
+  });
+
+  app.get("/api-docs/", (_request, response) => {
+    response.type("html").status(200).send(createSwaggerUiHtml());
+  });
+
+  app.get("/api-docs/swagger-initializer.js", (_request, response) => {
+    response.type("application/javascript").status(200).send(createSwaggerInitializer());
+  });
+
+  app.use("/api-docs", express.static(swaggerUiAssetsPath));
 
   app.use(
     "/api/v1",

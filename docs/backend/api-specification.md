@@ -12,6 +12,9 @@
 - `X-Request-Id` accepted/generated and returned in response metadata
 - Maximum page size: 100
 - OpenAPI is the executable contract
+- Any backend API route, request schema, response schema, authentication
+  requirement, validation rule, status code, or error code change must update
+  Swagger/OpenAPI in the same change.
 
 ## Response Envelopes
 
@@ -299,3 +302,5 @@ responses may include a `debugToken` for local testing.
 - Do not expose internal IDs if a public opaque identifier is intended.
 - Keep contracts backward-compatible within `/v1`.
 - Document all endpoints, schemas, examples, and error codes in OpenAPI.
+- Keep Swagger/OpenAPI synchronized with every API contract change before the
+  change is considered complete.
