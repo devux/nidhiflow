@@ -160,6 +160,14 @@ Unique active budget per workspace/category/period.
 - quiet hours/timezone
 - timestamps
 
+### flow_launch_subscriptions
+
+- `id`, nullable `user_id`
+- consented email when no account exists
+- hashed unsubscribe token
+- consent and unsubscribe timestamps
+- timestamps
+
 ### feedback
 
 - `id`, nullable `user_id`

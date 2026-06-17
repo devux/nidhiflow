@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 
+import { GuestProtectionReminder } from "../../features/profile/components/GuestProtectionReminder";
 import { BottomNavigation } from "./BottomNavigation";
 
 export function AppShell() {
@@ -11,6 +12,7 @@ export function AppShell() {
       <div className="app-shell__content">
         <Outlet />
       </div>
+      <GuestProtectionReminder />
       <BottomNavigation />
     </div>
   );

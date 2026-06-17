@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
+import { environment } from "../../../config/environment";
 import {
   supportedCurrencies,
   supportedLocales,
@@ -37,6 +38,11 @@ const currencyLabels: Record<SupportedCurrency, string> = {
 export function YouPage() {
   const { preferences, savePreferences } = useGuestPreferences();
   const [displayName, setDisplayName] = useState(preferences.displayName);
+  const [feedbackCategory, setFeedbackCategory] = useState<"general" | "issue" | "suggestion">(
+    "suggestion",
+  );
+  const [feedbackDescription, setFeedbackDescription] = useState("");
+  const [feedbackState, setFeedbackState] = useState<"error" | "idle" | "sent" | "sending">("idle");
   const [fieldError, setFieldError] = useState("");
   const [saveState, setSaveState] = useState<"error" | "idle" | "saved">("idle");
 
@@ -66,6 +72,31 @@ export function YouPage() {
 
     setFieldError("");
     void persist({ ...preferences, displayName: normalizedName });
+  }
+
+  async function handleFeedbackSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setFeedbackState("sending");
+
+    try {
+      const response = await fetch(`${environment.NIDHIFLOW_API_BASE_URL}/api/v1/feedback`, {
+        body: JSON.stringify({
+          category: feedbackCategory,
+          description: feedbackDescription,
+        }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error("Feedback failed");
+      }
+
+      setFeedbackDescription("");
+      setFeedbackState("sent");
+    } catch {
+      setFeedbackState("error");
+    }
   }
 
   return (
@@ -104,6 +135,17 @@ export function YouPage() {
       {saveState === "error" ? (
         <div className="error-message" role="alert">
           Preferences could not be saved. Your previous settings remain unchanged.
+        </div>
+      ) : null}
+      {feedbackState === "sent" ? (
+        <div className="success-message" role="status">
+          <Icon name="check" size={20} />
+          Feedback received. Thank you for helping shape NidhiFlow.
+        </div>
+      ) : null}
+      {feedbackState === "error" ? (
+        <div className="error-message" role="alert">
+          Feedback could not be sent. Your local finance data was not uploaded.
         </div>
       ) : null}
 
@@ -154,6 +196,47 @@ export function YouPage() {
               <Icon name="chevron" />
             </button>
           ))}
+        </Card>
+      </section>
+
+      <section aria-labelledby="feedback-title">
+        <div className="section-heading">
+          <h2 id="feedback-title">Feedback</h2>
+        </div>
+        <Card>
+          <form className="settings-form" onSubmit={(event) => void handleFeedbackSubmit(event)}>
+            <label className="select-field" htmlFor="feedback-category">
+              <span>
+                <strong>Category</strong>
+                <small>Anonymous unless you choose to create an account later</small>
+              </span>
+              <select
+                id="feedback-category"
+                onChange={(event) =>
+                  setFeedbackCategory(event.target.value as typeof feedbackCategory)
+                }
+                value={feedbackCategory}
+              >
+                <option value="suggestion">Suggestion</option>
+                <option value="issue">Issue</option>
+                <option value="general">General</option>
+              </select>
+            </label>
+            <label htmlFor="feedback-description">Message</label>
+            <textarea
+              id="feedback-description"
+              maxLength={1000}
+              minLength={10}
+              onChange={(event) => setFeedbackDescription(event.target.value)}
+              required
+              rows={4}
+              value={feedbackDescription}
+            />
+            <Button disabled={feedbackState === "sending"} type="submit">
+              <Icon name="feedback" size={20} />
+              {feedbackState === "sending" ? "Sending" : "Send feedback"}
+            </Button>
+          </form>
         </Card>
       </section>
 
@@ -237,6 +320,24 @@ export function YouPage() {
                 void persist({
                   ...preferences,
                   reminderEnabled: event.target.checked,
+                })
+              }
+              type="checkbox"
+            />
+          </label>
+
+          <label className="toggle-field">
+            <span>
+              <strong>Repeat reminder</strong>
+              <small>Show the data-protection reminder every five active minutes</small>
+            </span>
+            <input
+              checked={preferences.reminderRepeatEnabled}
+              disabled={!preferences.reminderEnabled}
+              onChange={(event) =>
+                void persist({
+                  ...preferences,
+                  reminderRepeatEnabled: event.target.checked,
                 })
               }
               type="checkbox"

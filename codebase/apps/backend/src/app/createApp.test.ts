@@ -151,6 +151,12 @@ describe("API foundation", () => {
     expect(body.paths["/feedback"]).toBeDefined();
     expect(body.paths["/users/me/guest-migrations/preview"]).toBeDefined();
     expect(body.paths["/users/me/guest-migrations"]).toBeDefined();
+    expect(body.paths["/users/me/notification-preferences"]).toBeDefined();
+    expect(body.paths["/notifications"]).toBeDefined();
+    expect(body.paths["/notifications/{notificationId}/read"]).toBeDefined();
+    expect(body.paths["/notifications/read-all"]).toBeDefined();
+    expect(body.paths["/flow-launch-subscriptions"]).toBeDefined();
+    expect(body.paths["/flow-launch-subscriptions/{token}"]).toBeDefined();
     expect(body.paths["/workspace-invitations/{token}/accept"]).toBeDefined();
     expect(body.paths["/workspaces/{workspaceId}/accounts"]).toBeDefined();
     expect(body.paths["/workspaces/{workspaceId}/members"]).toBeDefined();

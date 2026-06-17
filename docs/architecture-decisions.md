@@ -208,6 +208,18 @@ are derived; only asynchronous generated export artifacts need a
 - Prevent removing or leaving the last manager of a family workspace so shared
   membership administration cannot become orphaned.
 
+## Milestone 11 Decisions
+
+- Keep guest data-protection reminders local to the browser. The first reminder
+  may appear automatically after five active minutes, while repeated five-minute
+  reminders require explicit opt-in.
+- Implement notification preferences as authenticated account settings with
+  in-app and email channels plus event-level toggles. Delivery workers remain a
+  later operational concern.
+- Store Flow launch subscriptions separately from accounts, using explicit
+  email consent and hashed unsubscribe tokens. Non-production responses may
+  return debug unsubscribe tokens for local testing.
+
 ## Recommended Improvements
 
 - Adopt ADRs for material choices.

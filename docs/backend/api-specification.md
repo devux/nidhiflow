@@ -286,6 +286,10 @@ approved upload flow.
 | POST | `/flow-launch-subscriptions` | Public consent or protected |
 | DELETE | `/flow-launch-subscriptions/:token` | Unsubscribe token |
 
+Flow launch subscriptions require an email address when used without an
+account. Store only hashed unsubscribe tokens server-side; non-production
+responses may include a `debugToken` for local testing.
+
 ## Security and Contract Rules
 
 - Validate every input and enforce body/file limits.

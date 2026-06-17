@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 
+import { environment } from "../../../config/environment";
 import { Button } from "../../../shared/components/Button";
 import { Card } from "../../../shared/components/Card";
 import { Icon, type IconName } from "../../../shared/components/Icon";
@@ -30,7 +31,35 @@ const previewItems: Array<{ description: string; icon: IconName; title: string }
 ];
 
 export function FlowPage() {
-  const [showAccountNotice, setShowAccountNotice] = useState(false);
+  const [email, setEmail] = useState("");
+  const [subscribeState, setSubscribeState] = useState<"error" | "idle" | "saved" | "saving">(
+    "idle",
+  );
+
+  async function handleNotifySubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSubscribeState("saving");
+
+    try {
+      const response = await fetch(
+        `${environment.NIDHIFLOW_API_BASE_URL}/api/v1/flow-launch-subscriptions`,
+        {
+          body: JSON.stringify({ email }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Subscription failed");
+      }
+
+      setEmail("");
+      setSubscribeState("saved");
+    } catch {
+      setSubscribeState("error");
+    }
+  }
 
   return (
     <main className="page page--flow" id="main-content">
@@ -47,10 +76,14 @@ export function FlowPage() {
         </p>
       </section>
 
-      {showAccountNotice ? (
+      {subscribeState === "saved" ? (
         <InlineAlert title="Notifications need consent">
-          Saved launch notifications will be enabled with account or contact-consent features in a
-          later milestone.
+          You are on the Flow launch list. You can unsubscribe from the email when it arrives.
+        </InlineAlert>
+      ) : null}
+      {subscribeState === "error" ? (
+        <InlineAlert title="Could not save notification">
+          Please check the email address and try again. No finance data was sent.
         </InlineAlert>
       ) : null}
 
@@ -70,10 +103,26 @@ export function FlowPage() {
           ))}
         </ul>
       </Card>
-      <Button fullWidth onClick={() => setShowAccountNotice(true)}>
-        <Icon name="bell" size={20} />
-        Notify me when Flow is ready
-      </Button>
+      <Card aria-labelledby="flow-notify-title">
+        <form className="settings-form" onSubmit={(event) => void handleNotifySubmit(event)}>
+          <h2 id="flow-notify-title">Notify me when Flow is ready</h2>
+          <label htmlFor="flow-notify-email">Email</label>
+          <div className="field-row">
+            <input
+              id="flow-notify-email"
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="you@example.com"
+              required
+              type="email"
+              value={email}
+            />
+            <Button disabled={subscribeState === "saving"} type="submit">
+              <Icon name="bell" size={20} />
+              {subscribeState === "saving" ? "Saving" : "Notify me"}
+            </Button>
+          </div>
+        </form>
+      </Card>
     </main>
   );
 }

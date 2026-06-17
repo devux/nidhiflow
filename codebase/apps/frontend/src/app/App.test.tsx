@@ -14,6 +14,7 @@ const defaultPreferences: GuestPreferences = {
   displayName: "Guest",
   locale: "en-US",
   reminderEnabled: true,
+  reminderRepeatEnabled: false,
   theme: "system",
   timezone: "UTC",
 };

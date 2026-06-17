@@ -4,6 +4,11 @@ import type { Environment } from "./config/environment.js";
 import { createCategoriesRouter } from "../modules/categories/category.routes.js";
 import { createWorkspaceCategoriesRouter } from "../modules/categories/workspace-category.routes.js";
 import { createFeedbackRouter } from "../modules/feedback/feedback.routes.js";
+import {
+  createFlowLaunchSubscriptionsRouter,
+  createNotificationPreferencesRouter,
+  createNotificationsRouter,
+} from "../modules/notifications/notification.routes.js";
 import { createAuthRouter } from "../modules/auth/auth.routes.js";
 import { createOpenApiRouter } from "../modules/openapi/openapi.routes.js";
 import { createUsersRouter } from "../modules/users/user.routes.js";
@@ -37,6 +42,15 @@ export function createApiRoutes({
   router.use("/openapi.json", createOpenApiRouter());
   router.use("/auth", createAuthRouter({ database, environment }));
   router.use("/users", createUsersRouter({ database, environment }));
+  router.use(
+    "/users/me/notification-preferences",
+    createNotificationPreferencesRouter({ database, environment }),
+  );
+  router.use("/notifications", createNotificationsRouter({ database, environment }));
+  router.use(
+    "/flow-launch-subscriptions",
+    createFlowLaunchSubscriptionsRouter({ database, environment }),
+  );
   router.use("/workspace-invitations", createWorkspaceInvitationsRouter({ database, environment }));
   router.use("/workspaces", createWorkspacesRouter({ database, environment }));
   router.use("/workspaces/:workspaceId/accounts", createAccountsRouter({ database, environment }));

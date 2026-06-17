@@ -4,8 +4,15 @@ import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProv
 import { formatMonth, formatWholeCurrency } from "../../../domain/formatting/localizedFormatting";
 import { Card } from "../../../shared/components/Card";
 import { EmptyState } from "../../../shared/components/EmptyState";
+import { Icon } from "../../../shared/components/Icon";
 import { PageHeader } from "../../../shared/components/PageHeader";
 import { SegmentedControl } from "../../../shared/components/SegmentedControl";
+
+const lessons = [
+  "Check whether one category is growing faster than income.",
+  "Plan bills before goals so essentials stay covered.",
+  "Use goals for direction, not pressure.",
+];
 
 export function PlanPage() {
   const { preferences } = useGuestPreferences();
@@ -67,6 +74,31 @@ export function PlanPage() {
           icon={section === "bills" ? "calendar" : "plan"}
           title={section === "bills" ? "No bills scheduled" : "No budget categories yet"}
         />
+      </Card>
+      <section aria-labelledby="learning-title">
+        <div className="section-heading">
+          <h2 id="learning-title">Practical lessons</h2>
+        </div>
+        <Card className="settings-list">
+          {lessons.map((lesson) => (
+            <button key={lesson} type="button">
+              <span className="icon-tile">
+                <Icon name="sparkles" />
+              </span>
+              <span>
+                <strong>{lesson}</strong>
+                <small>Short guidance you can use without creating an account</small>
+              </span>
+            </button>
+          ))}
+        </Card>
+      </section>
+      <Card className="privacy-card" subtle>
+        <Icon name="shield" />
+        <span>
+          <h2>Healthy progress only</h2>
+          <p>Badges and streaks will stay optional and reward useful finance habits.</p>
+        </span>
       </Card>
     </main>
   );

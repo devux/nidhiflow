@@ -117,6 +117,38 @@ p {
   padding-bottom: calc(var(--navigation-height) + var(--space-8) + env(safe-area-inset-bottom));
 }
 
+.guest-reminder {
+  position: fixed;
+  z-index: 40;
+  right: var(--space-3);
+  bottom: calc(var(--navigation-height) + var(--space-3) + env(safe-area-inset-bottom));
+  left: var(--space-3);
+  display: grid;
+  max-width: 42rem;
+  padding: var(--space-4);
+  margin-inline: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  grid-template-columns: auto 1fr;
+  gap: var(--space-3);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.guest-reminder h2 {
+  margin-bottom: var(--space-1);
+}
+
+.guest-reminder p {
+  margin-bottom: var(--space-3);
+}
+
+.guest-reminder__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 .page {
   width: min(100%, 48rem);
   min-height: 100vh;

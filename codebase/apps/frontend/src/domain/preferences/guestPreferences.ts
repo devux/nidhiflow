@@ -11,6 +11,7 @@ export interface GuestPreferences {
   displayName: string;
   locale: SupportedLocale;
   reminderEnabled: boolean;
+  reminderRepeatEnabled: boolean;
   theme: ThemePreference;
   timezone: string;
 }
@@ -52,6 +53,7 @@ export function createDefaultGuestPreferences(): GuestPreferences {
     displayName: "Guest",
     locale,
     reminderEnabled: true,
+    reminderRepeatEnabled: false,
     theme: "system",
     timezone,
   };

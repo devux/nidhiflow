@@ -16,7 +16,10 @@ export class IndexedDbGuestPreferencesRepository implements GuestPreferencesRepo
     const storedPreferences = await database.get("preferences", preferencesKey);
 
     if (storedPreferences) {
-      return storedPreferences;
+      return {
+        ...createDefaultGuestPreferences(),
+        ...storedPreferences,
+      };
     }
 
     const defaultPreferences = createDefaultGuestPreferences();

@@ -245,6 +245,8 @@ Financial calculations must use fixed-precision money handling.
 
 ## Milestone 11: Engagement and Communication
 
+**Status:** Complete as of June 17, 2026.
+
 ### Scope
 
 - In-app and email notifications

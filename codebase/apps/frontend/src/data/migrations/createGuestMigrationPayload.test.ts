@@ -9,6 +9,7 @@ describe("createGuestMigrationPayload", () => {
       displayName: "Asha",
       locale: "en-IN",
       reminderEnabled: true,
+      reminderRepeatEnabled: false,
       theme: "dark",
       timezone: "Asia/Kolkata",
     };

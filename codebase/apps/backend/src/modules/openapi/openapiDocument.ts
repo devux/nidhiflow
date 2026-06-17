@@ -859,5 +859,68 @@ export const openApiDocument = {
         },
       },
     },
+    "/notifications": {
+      get: {
+        operationId: "listNotifications",
+        responses: {
+          "200": { description: "Notifications retrieved" },
+          "401": { description: "Authentication required" },
+        },
+      },
+    },
+    "/notifications/{notificationId}/read": {
+      patch: {
+        operationId: "markNotificationRead",
+        responses: {
+          "200": { description: "Notification marked read" },
+          "401": { description: "Authentication required" },
+          "404": { description: "Notification not found" },
+        },
+      },
+    },
+    "/notifications/read-all": {
+      post: {
+        operationId: "markAllNotificationsRead",
+        responses: {
+          "200": { description: "Notifications marked read" },
+          "401": { description: "Authentication required" },
+        },
+      },
+    },
+    "/users/me/notification-preferences": {
+      get: {
+        operationId: "getNotificationPreferences",
+        responses: {
+          "200": { description: "Notification preferences retrieved" },
+          "401": { description: "Authentication required" },
+        },
+      },
+      patch: {
+        operationId: "updateNotificationPreferences",
+        responses: {
+          "200": { description: "Notification preferences updated" },
+          "401": { description: "Authentication required" },
+          "422": { description: "Validation error" },
+        },
+      },
+    },
+    "/flow-launch-subscriptions": {
+      post: {
+        operationId: "createFlowLaunchSubscription",
+        responses: {
+          "201": { description: "Flow launch subscription created" },
+          "422": { description: "Validation error" },
+        },
+      },
+    },
+    "/flow-launch-subscriptions/{token}": {
+      delete: {
+        operationId: "unsubscribeFlowLaunchSubscription",
+        responses: {
+          "200": { description: "Flow launch subscription removed" },
+          "404": { description: "Subscription not found" },
+        },
+      },
+    },
   },
 } as const;

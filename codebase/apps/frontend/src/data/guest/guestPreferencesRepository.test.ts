@@ -13,6 +13,7 @@ describe("IndexedDbGuestPreferencesRepository", () => {
       displayName: "Sam",
       locale: "en-GB",
       reminderEnabled: false,
+      reminderRepeatEnabled: false,
       theme: "dark",
       timezone: "Europe/London",
     };
