@@ -10,6 +10,8 @@ export type IconName =
   | "check"
   | "chevron"
   | "cloud"
+  | "delete"
+  | "edit"
   | "expense"
   | "feedback"
   | "flow"
@@ -65,6 +67,17 @@ export function Icon({ name, size = 24, ...props }: IconProps) {
       <>
         <path d="M7 18h11a4 4 0 0 0 .5-8A7 7 0 0 0 5 8.5 4.5 4.5 0 0 0 7 18Z" />
         <path d="m12 10 3 3h-2v4h-2v-4H9l3-3Z" />
+      </>
+    ),
+    delete: (
+      <>
+        <path d="M5 7h14M10 11v6m4-6v6M9 7V5h6v2m-8 0 1 14h8l1-14" />
+      </>
+    ),
+    edit: (
+      <>
+        <path d="M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4Z" />
+        <path d="m13.5 6.5 4 4" />
       </>
     ),
     expense: (

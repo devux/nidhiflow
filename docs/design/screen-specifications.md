@@ -30,11 +30,12 @@
 
 ## Plan
 
-- Monthly, Budget, and Bills tabs
-- Previous/next period navigation
-- Monthly total, percentage used, spent, remaining, and Edit
+- Budget and Bills tabs
+- Budget tab includes Monthly, Yearly, and Custom period options
+- Budget total, percentage used, spent, and remaining recalculate from budget
+  categories and matching transactions
+- Add, edit, and delete budget categories
 - Category rows with spent/limit, percentage, and progress
-- View All Categories
 
 ## Goals
 

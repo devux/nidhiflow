@@ -1194,6 +1194,124 @@ p {
   background: var(--color-brand);
 }
 
+.progress-bar--compact {
+  height: 0.45rem;
+  margin-block: var(--space-3);
+}
+
+.budget-editor-card,
+.budget-category-form,
+.budget-category-list {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.budget-custom-period,
+.budget-category-form {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.budget-custom-period label,
+.budget-category-form label {
+  display: grid;
+  gap: var(--space-2);
+  font-weight: 850;
+}
+
+.budget-custom-period input,
+.budget-category-form input,
+.budget-category-form select {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+}
+
+.budget-category-list > section {
+  padding-block: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.budget-category-list > section:last-child {
+  border-bottom: 0;
+}
+
+.budget-category-list__header,
+.budget-category-list__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.budget-category-list__header span:first-child {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.budget-category-list__header small {
+  color: var(--color-text-secondary);
+}
+
+.budget-category-list__header > span:last-child {
+  color: var(--color-brand-strong);
+  font-weight: 900;
+}
+
+.budget-category-list__actions {
+  justify-content: flex-start;
+}
+
+.budget-summary-actions {
+  display: grid;
+  justify-items: end;
+  gap: var(--space-2);
+}
+
+.budget-period-trigger {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  color: var(--color-brand-strong);
+  background: var(--color-brand-faint);
+  font-size: 0.78rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.modal-backdrop {
+  position: fixed;
+  z-index: 50;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: rgb(15 23 42 / 35%);
+  pointer-events: auto;
+}
+
+.modal-card {
+  display: grid;
+  width: min(100%, 28rem);
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-modal);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.text-button--danger {
+  color: var(--color-danger);
+}
+
 .flow-hero {
   display: grid;
   justify-items: center;

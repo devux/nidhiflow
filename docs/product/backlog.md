@@ -18,3 +18,8 @@
 
 - Revisit Add Income form field width adjustment across mobile and desktop
   breakpoints.
+
+## Plan and Budget
+
+- Deeply revisit the Plan page monthly and yearly budget planning flows,
+  including period behavior, category limits, calculations, and editing UX.

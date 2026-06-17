@@ -663,6 +663,58 @@ describe("App", () => {
     expect(screen.queryByRole("region", { name: "Current balance" })).toBeNull();
   });
 
+  it("adds, edits, deletes budget categories and recalculates totals", async () => {
+    window.history.replaceState({}, "", "/plan");
+    const user = userEvent.setup();
+    render(
+      <App
+        repository={createRepository()}
+        transactionRepository={createTransactionRepository([
+          {
+            amountMinor: "8000",
+            category: "Food",
+            createdAt: "2026-06-17T00:00:01.000Z",
+            currency: "USD",
+            id: "transaction-1",
+            note: "Groceries",
+            transactionDate: "2026-06-17",
+            type: "expense",
+            updatedAt: "2026-06-17T00:00:01.000Z",
+          },
+        ])}
+      />,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Plan" })).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Monthly" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: /This month/ }));
+    expect(screen.getByRole("dialog", { name: "Budget period" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Monthly" })).toBeDefined();
+    await user.click(screen.getByRole("button", { name: "Close budget period options" }));
+    expect(screen.queryByText("No budget categories yet")).toBeDefined();
+
+    await user.type(screen.getByLabelText("Amount"), "250");
+    await user.click(screen.getByRole("button", { name: "Add budget category" }));
+
+    expect(screen.getByRole("heading", { name: "$250.00" })).toBeDefined();
+    expect(screen.getByText("$80.00 spent of $250.00")).toBeDefined();
+    expect(screen.getAllByText("32%")).toHaveLength(2);
+
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+    const amount = screen.getByLabelText("Amount");
+    await user.clear(amount);
+    await user.type(amount, "400");
+    await user.click(screen.getByRole("button", { name: "Save budget category" }));
+
+    expect(screen.getByRole("heading", { name: "$400.00" })).toBeDefined();
+    expect(screen.getByText("$80.00 spent of $400.00")).toBeDefined();
+    expect(screen.getAllByText("20%")).toHaveLength(2);
+
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+    expect(screen.getByRole("heading", { name: "$0.00" })).toBeDefined();
+    expect(screen.getByText("No budget categories yet")).toBeDefined();
+  });
+
   it("validates and saves the local guest display name", async () => {
     window.history.replaceState({}, "", "/you");
     const repository = createRepository();
