@@ -59,45 +59,7 @@ export function HomePage() {
         </Link>
       </section>
 
-      <Card aria-labelledby="current-balance-title" className="finance-overview">
-        <div className="section-heading">
-          <span>
-            <p className="eyebrow">All recorded activity</p>
-            <h2 id="current-balance-title">Current balance</h2>
-          </span>
-          <span className="local-badge">
-            <Icon name="shield" size={17} />
-            On device
-          </span>
-        </div>
-        <p
-          className={`balance-amount ${
-            BigInt(totals.balanceMinor) < 0n ? "balance-amount--negative" : ""
-          }`}
-        >
-          {money(totals.balanceMinor)}
-        </p>
-        <dl className="dashboard-totals">
-          <div>
-            <dt>
-              <Icon name="income" size={19} /> Income
-            </dt>
-            <dd>{money(totals.incomeMinor)}</dd>
-          </div>
-          <div>
-            <dt>
-              <Icon name="expense" size={19} /> Expense
-            </dt>
-            <dd>{money(totals.expenseMinor)}</dd>
-          </div>
-        </dl>
-      </Card>
-
-      <section aria-labelledby="budget-title">
-        <div className="section-heading">
-          <h2 id="budget-title">Budget plan</h2>
-          <Link to="/plan">View all</Link>
-        </div>
+      <section aria-label="Budget summaries">
         <div className="home-summary-grid">
           <Card className="home-summary-card">
             <div className="home-summary-card__header">
@@ -110,10 +72,9 @@ export function HomePage() {
                   <small>Shared planning appears when you join a family workspace.</small>
                 </span>
               </span>
-              <span className="local-badge">
-                <Icon name="shield" size={17} />
-                Preview
-              </span>
+              <Link className="home-summary-card__action" to="/plan">
+                View all
+              </Link>
             </div>
             <div className="budget-overview__content">
               <div
@@ -143,79 +104,74 @@ export function HomePage() {
             </div>
           </Card>
 
-          <Card className="home-summary-card">
+          <Card
+            aria-labelledby="quick-actions-title"
+            className="home-summary-card home-actions-card"
+          >
             <div className="home-summary-card__header">
-              <span className="home-summary-card__title">
-                <span className="icon-tile">
-                  <Icon name="goal" />
+              <h2 id="quick-actions-title">
+                <Icon name="plus" size={18} />
+                Quick actions
+              </h2>
+            </div>
+            <div className="quick-actions">
+              <Link className="quick-action" to="/transactions/new?type=expense">
+                <span className="quick-action__icon">
+                  <Icon name="expense" />
                 </span>
                 <span>
-                  <strong>Active goals</strong>
-                  <small>Short-term savings goals stay visible without pressure.</small>
+                  <strong>Add expense</strong>
+                  <small>Track spending</small>
                 </span>
-              </span>
-              <Link className="home-summary-card__action" to="/plan">
-                View all
+                <Icon name="chevron" />
+              </Link>
+              <Link className="quick-action" to="/transactions/new?type=income">
+                <span className="quick-action__icon">
+                  <Icon name="income" />
+                </span>
+                <span>
+                  <strong>Add income</strong>
+                  <small>Record earnings</small>
+                </span>
+                <Icon name="chevron" />
               </Link>
             </div>
-            <div className="budget-overview__content">
-              <div
-                aria-label={`Goal progress: ${goalProgressValue} percent`}
-                aria-valuemax={100}
-                aria-valuemin={0}
-                aria-valuenow={goalProgressValue}
-                className="progress-ring"
-                role="progressbar"
-              >
-                <span>{goalProgressValue}%</span>
+          </Card>
+
+          <Card className="home-summary-card goal-preview-card">
+            <div className="home-summary-card__header">
+              <h2>Goals</h2>
+              <Link className="home-summary-card__action" to="/plan">
+                View all
+                <Icon name="chevron" size={16} />
+              </Link>
+            </div>
+            <div className="goal-preview">
+              <span aria-hidden="true" className="goal-preview__art">
+                <span className="goal-preview__tree" />
+              </span>
+              <div className="goal-preview__body">
+                <strong>Savings goal</strong>
+                <p>
+                  {money(goalSavedMinor.toString())} / {money(goalTargetMinor.toString())}
+                </p>
+                <div
+                  aria-label={`Goal progress: ${goalProgressValue} percent`}
+                  aria-valuemax={100}
+                  aria-valuemin={0}
+                  aria-valuenow={goalProgressValue}
+                  className="goal-preview__progress"
+                  role="progressbar"
+                >
+                  <span style={{ width: `${goalProgressValue}%` }} />
+                </div>
               </div>
-              <dl className="summary-list">
-                <div>
-                  <dt>Saved</dt>
-                  <dd>{money(goalSavedMinor.toString())}</dd>
-                </div>
-                <div>
-                  <dt>Target</dt>
-                  <dd>{money(goalTargetMinor.toString())}</dd>
-                </div>
-                <div>
-                  <dt>Progress</dt>
-                  <dd>{goalProgressValue}%</dd>
-                </div>
-              </dl>
+              <span className="goal-preview__percent">{goalProgressValue}%</span>
+              <Link aria-label="View goals" className="goal-preview__button" to="/plan">
+                <Icon name="chevron" size={18} />
+              </Link>
             </div>
           </Card>
-        </div>
-      </section>
-
-      <section aria-labelledby="quick-actions-title">
-        <div className="section-heading">
-          <h2 id="quick-actions-title">
-            <Icon name="plus" size={18} />
-            Quick actions
-          </h2>
-        </div>
-        <div className="quick-actions">
-          <Link className="quick-action" to="/transactions/new?type=expense">
-            <span className="quick-action__icon quick-action__icon--expense">
-              <Icon name="expense" />
-            </span>
-            <span>
-              <strong>Add expense</strong>
-              <small>Track spending</small>
-            </span>
-            <Icon name="chevron" />
-          </Link>
-          <Link className="quick-action" to="/transactions/new?type=income">
-            <span className="quick-action__icon">
-              <Icon name="income" />
-            </span>
-            <span>
-              <strong>Add income</strong>
-              <small>Record earnings</small>
-            </span>
-            <Icon name="chevron" />
-          </Link>
         </div>
       </section>
 

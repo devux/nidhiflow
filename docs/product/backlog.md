@@ -8,3 +8,8 @@
 - Revisit the entire user login flow because logged-in user details are not retained
   consistently after refresh. Confirm session restore, workspace restore, refresh-token
   cookie behavior, and guest/authenticated mode transitions end to end.
+
+## Family Collaboration
+
+- Add a family budget sharing option so authenticated users can intentionally share
+  budget plans with family workspace members.

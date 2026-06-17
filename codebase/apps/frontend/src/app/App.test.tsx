@@ -317,9 +317,8 @@ describe("App", () => {
       expect(screen.getByText("Local finance data copied to your account.")).toBeDefined(),
     );
     await user.click(screen.getByRole("link", { name: "Home" }));
-    expect(
-      within(screen.getByRole("region", { name: "Current balance" })).getByText("-$25.00"),
-    ).toBeDefined();
+    expect(screen.queryByRole("region", { name: "Current balance" })).toBeNull();
+    expect(screen.getAllByText("-$25.00")).toHaveLength(2);
     const migrationCall = fetchMock.mock.calls.find(([input]) =>
       getRequestUrl(input).endsWith("/api/v1/users/me/guest-migrations"),
     );
@@ -651,14 +650,17 @@ describe("App", () => {
     );
 
     expect(await screen.findByRole("heading", { name: /Guest/ })).toBeDefined();
-    const budgetSection = screen.getByRole("region", { name: "Budget plan" });
-    const balanceCard = screen.getByRole("region", { name: "Current balance" });
+    const budgetSection = screen.getByRole("region", { name: "Budget summaries" });
 
-    expect(within(budgetSection).getAllByText("$250.00")).toHaveLength(2);
+    expect(within(budgetSection).getByText("Savings goal")).toBeDefined();
+    expect(within(budgetSection).getByText("$170.00 / $250.00")).toBeDefined();
+    expect(within(budgetSection).getByRole("progressbar", { name: "Goal progress: 68 percent" }))
+      .toBeDefined();
+    expect(within(budgetSection).getByText("68%")).toBeDefined();
+    expect(within(budgetSection).getByText("$250.00")).toBeDefined();
     expect(within(budgetSection).getByText("$80.00")).toBeDefined();
-    expect(within(budgetSection).getAllByText("$170.00")).toHaveLength(2);
-    expect(within(budgetSection).getAllByText("68%")).toHaveLength(2);
-    expect(within(balanceCard).getByText("$170.00")).toBeDefined();
+    expect(within(budgetSection).getByText("$170.00")).toBeDefined();
+    expect(screen.queryByRole("region", { name: "Current balance" })).toBeNull();
   });
 
   it("validates and saves the local guest display name", async () => {
@@ -713,9 +715,15 @@ describe("App", () => {
     expect(await screen.findByText("+$1,250.75")).toBeDefined();
 
     await user.click(screen.getByRole("link", { name: "Home" }));
+    expect(screen.queryByRole("region", { name: "Current balance" })).toBeNull();
     expect(
-      within(screen.getByRole("region", { name: "Current balance" })).getAllByText("$1,250.75"),
+      within(screen.getByRole("region", { name: "Budget summaries" })).getAllByText("$1,250.75"),
     ).toHaveLength(2);
+    expect(
+      within(screen.getByRole("region", { name: "Budget summaries" })).getByText(
+        "$1,250.75 / $1,250.75",
+      ),
+    ).toBeDefined();
 
     await user.click(screen.getByRole("link", { name: "Activity" }));
     await user.type(screen.getByLabelText("Search transactions"), "June");

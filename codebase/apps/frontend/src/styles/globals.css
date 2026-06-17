@@ -336,9 +336,142 @@ p {
 }
 
 .home-summary-card__action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   min-height: 2rem;
   padding-top: var(--space-1);
   font-weight: 800;
+  text-decoration: none;
+}
+
+.home-summary-card h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.home-actions-card .quick-actions {
+  margin-top: var(--space-4);
+}
+
+.goal-preview-card {
+  padding: var(--space-4);
+}
+
+.goal-preview {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+}
+
+.goal-preview__art {
+  position: relative;
+  display: block;
+  width: 4.5rem;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 74% 18%, #fde68a 0 0.45rem, transparent 0.5rem),
+    linear-gradient(165deg, #8dd7ff 0 45%, #fef3c7 46% 72%, #f9d56e 73% 100%);
+}
+
+.goal-preview__art::before {
+  position: absolute;
+  right: -0.5rem;
+  bottom: 1.1rem;
+  width: 3.9rem;
+  height: 1.45rem;
+  border-radius: 50%;
+  background: rgb(34 197 94 / 34%);
+  content: "";
+}
+
+.goal-preview__tree {
+  position: absolute;
+  left: 1.05rem;
+  bottom: 0.75rem;
+  width: 0.28rem;
+  height: 2.45rem;
+  border-radius: var(--radius-pill);
+  background: #8b5a2b;
+  transform: rotate(10deg);
+}
+
+.goal-preview__tree::before,
+.goal-preview__tree::after {
+  position: absolute;
+  top: -0.35rem;
+  left: -0.75rem;
+  width: 1.65rem;
+  height: 1.1rem;
+  border-radius: 100% 0;
+  background: #15803d;
+  content: "";
+  transform: rotate(-22deg);
+}
+
+.goal-preview__tree::after {
+  left: -0.2rem;
+  background: #22c55e;
+  transform: rotate(32deg);
+}
+
+.goal-preview__body {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-2);
+}
+
+.goal-preview__body strong {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.goal-preview__body p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.goal-preview__progress {
+  height: 0.42rem;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: #e5e7eb;
+}
+
+.goal-preview__progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-brand-strong);
+}
+
+.goal-preview__percent,
+.goal-preview__button {
+  display: inline-grid;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  color: var(--color-brand-strong);
+  background: var(--color-brand-faint);
+  font-weight: 900;
+}
+
+.goal-preview__button {
+  min-width: 2.5rem;
+  min-height: 2.5rem;
   text-decoration: none;
 }
 
@@ -449,58 +582,6 @@ p {
   background: linear-gradient(145deg, #4ade80, var(--color-brand-strong));
 }
 
-.quick-action__icon--expense {
-  background: linear-gradient(145deg, #fb7185, #be123c);
-}
-
-.finance-overview {
-  overflow: hidden;
-  background:
-    radial-gradient(circle at 90% 10%, rgb(74 222 128 / 18%), transparent 11rem),
-    var(--color-surface);
-}
-
-.balance-amount {
-  margin-block: var(--space-5);
-  color: var(--color-text-primary);
-  font-size: clamp(2.1rem, 10vw, 3.25rem);
-  font-weight: 900;
-  letter-spacing: -0.045em;
-}
-
-.balance-amount--negative {
-  color: var(--color-danger);
-}
-
-.dashboard-totals {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-3);
-  margin: 0;
-}
-
-.dashboard-totals > div {
-  min-width: 0;
-  padding: var(--space-4);
-  border-radius: var(--radius-control);
-  background: var(--color-surface-subtle);
-}
-
-.dashboard-totals dt {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--color-text-secondary);
-  font-size: 0.85rem;
-  font-weight: 800;
-}
-
-.dashboard-totals dd {
-  margin: var(--space-2) 0 0;
-  overflow-wrap: anywhere;
-  font-weight: 900;
-}
-
 .transaction-list {
   padding-block: 0;
 }
@@ -528,11 +609,6 @@ p {
   place-items: center;
   color: var(--color-success);
   background: var(--color-brand-soft);
-}
-
-.transaction-row__icon--expense {
-  color: var(--color-danger);
-  background: color-mix(in srgb, var(--color-danger) 11%, var(--color-surface));
 }
 
 .transaction-row__details {
