@@ -13,3 +13,8 @@
 
 - Add a family budget sharing option so authenticated users can intentionally share
   budget plans with family workspace members.
+
+## Transaction Entry
+
+- Revisit Add Income form field width adjustment across mobile and desktop
+  breakpoints.

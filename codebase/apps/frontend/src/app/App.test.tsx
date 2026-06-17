@@ -710,7 +710,7 @@ describe("App", () => {
     await user.type(await screen.findByLabelText("Amount"), "1250.75");
     await user.click(screen.getByRole("button", { name: "Salary" }));
     await user.type(screen.getByLabelText(/Note/), "June salary");
-    await user.click(screen.getByRole("button", { name: "Save income" }));
+    await user.click(screen.getByRole("button", { name: "Save Income" }));
 
     expect(await screen.findByText("+$1,250.75")).toBeDefined();
 
@@ -733,7 +733,7 @@ describe("App", () => {
     const amount = screen.getByLabelText("Amount");
     await user.clear(amount);
     await user.type(amount, "1300.25");
-    await user.click(screen.getByRole("button", { name: "Save income" }));
+    await user.click(screen.getByRole("button", { name: "Save Income" }));
     expect(await screen.findByText("+$1,300.25")).toBeDefined();
 
     await user.click(screen.getByRole("link", { name: "Edit Salary income" }));
@@ -750,16 +750,31 @@ describe("App", () => {
     );
 
     const amount = await screen.findByLabelText("Amount");
-    await user.type(amount, "10.999");
-    await user.type(screen.getByLabelText(/Note/), "Needs a category");
-    await user.click(screen.getByRole("button", { name: "Save expense" }));
+    const longNote = "x".repeat(101);
+    await user.type(amount, "abc10.999xyz");
+    await user.type(screen.getByLabelText(/Note/), longNote);
+    await user.click(screen.getByRole("button", { name: "Save Expense" }));
 
-    expect(
-      screen.getByText("Enter an amount greater than zero with up to 2 decimal places."),
-    ).toBeDefined();
-    expect(screen.getByText("Choose a category.")).toBeDefined();
-    expect((amount as HTMLInputElement).value).toBe("10.999");
-    expect(screen.getByLabelText<HTMLTextAreaElement>(/Note/).value).toBe("Needs a category");
+    expect(screen.getByText("Keep the note to 100 characters or fewer.")).toBeDefined();
+    expect(screen.getByRole("button", { name: "Food" }).getAttribute("aria-pressed")).toBe("true");
+    expect((amount as HTMLInputElement).value).toBe("10.99");
+    expect(screen.getByLabelText<HTMLTextAreaElement>(/Note/).value).toBe(longNote);
+  });
+
+  it("collapses extra expense categories behind a More option", async () => {
+    window.history.replaceState({}, "", "/transactions/new?type=expense");
+    const user = userEvent.setup();
+    render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    await screen.findByRole("heading", { name: "Add Expense" });
+
+    expect(screen.queryByRole("button", { name: "Travel" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Show more categories" }));
+
+    expect(screen.getByRole("button", { name: "Travel" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Home" })).toBeDefined();
   });
 
   it("has no automated accessibility violations on transaction entry", async () => {
@@ -768,7 +783,7 @@ describe("App", () => {
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    await screen.findByRole("heading", { name: "Add expense" });
+    await screen.findByRole("heading", { name: "Add Expense" });
     expect((await axe(container)).violations).toHaveLength(0);
   });
 

@@ -20,6 +20,8 @@ import {
   type TransactionFormValues,
 } from "../schemas/transactionFormSchema";
 
+const COLLAPSED_CATEGORY_COUNT = 7;
+
 function getLocalDate(): string {
   const now = new Date();
   const year = now.getFullYear();
@@ -33,6 +35,29 @@ function toAmountInput(transaction: GuestTransaction): string {
   const whole = minor / 100n;
   const fraction = (minor % 100n).toString().padStart(2, "0");
   return `${whole}.${fraction}`;
+}
+
+function getCurrencySymbol(currency: string, locale: string): string {
+  const currencyPart = new Intl.NumberFormat(locale, {
+    currency,
+    currencyDisplay: "narrowSymbol",
+    style: "currency",
+  })
+    .formatToParts(0)
+    .find((part) => part.type === "currency");
+
+  return currencyPart?.value ?? currency;
+}
+
+function normalizeAmountInput(value: string): string {
+  const numericValue = value.replace(/[^\d.]/g, "");
+  const [whole = "", ...fractionParts] = numericValue.split(".");
+
+  if (fractionParts.length === 0) {
+    return whole;
+  }
+
+  return `${whole}.${fractionParts.join("").slice(0, 2)}`;
 }
 
 export function TransactionFormPage() {
@@ -49,9 +74,12 @@ export function TransactionFormPage() {
   const requestedType = searchParams.get("type");
   const initialType: TransactionType =
     existing?.type ?? (requestedType === "income" ? "income" : "expense");
+  const initialCategories: readonly string[] =
+    initialType === "income" ? incomeCategories : expenseCategories;
+  const defaultCategory = initialType === "income" ? incomeCategories[0] : expenseCategories[0];
   const [values, setValues] = useState<TransactionFormValues>(() => ({
     amount: existing ? toAmountInput(existing) : "",
-    category: existing?.category ?? "",
+    category: existing?.category ?? defaultCategory,
     note: existing?.note ?? "",
     transactionDate: existing?.transactionDate ?? getLocalDate(),
     type: initialType,
@@ -60,6 +88,9 @@ export function TransactionFormPage() {
   const [saveError, setSaveError] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const [showAllCategories, setShowAllCategories] = useState(
+    existing ? initialCategories.indexOf(existing.category) >= COLLAPSED_CATEGORY_COUNT : false,
+  );
   const amountRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -80,8 +111,17 @@ export function TransactionFormPage() {
     );
   }
 
-  const categories = values.type === "income" ? incomeCategories : expenseCategories;
-  const title = existing ? `Edit ${values.type}` : `Add ${values.type}`;
+  const categories: readonly string[] =
+    values.type === "income" ? incomeCategories : expenseCategories;
+  const shouldCollapseCategories =
+    categories.length > COLLAPSED_CATEGORY_COUNT + 1 && !showAllCategories;
+  const visibleCategories = shouldCollapseCategories
+    ? categories.slice(0, COLLAPSED_CATEGORY_COUNT)
+    : categories;
+  const transactionLabel = values.type === "income" ? "Income" : "Expense";
+  const title = existing ? `Edit ${transactionLabel}` : `Add ${transactionLabel}`;
+  const amountLabel = `${transactionLabel} Amount`;
+  const currencySymbol = getCurrencySymbol(preferences.currency, preferences.locale);
 
   function updateValue<Field extends keyof TransactionFormValues>(
     field: Field,
@@ -135,15 +175,12 @@ export function TransactionFormPage() {
   }
 
   return (
-    <main className="page focused-page" id="main-content">
-      <header className="focused-header">
+    <main className="page focused-page transaction-entry-page" id="main-content">
+      <header className="focused-header transaction-entry-header">
         <Link aria-label="Cancel and return to Activity" className="icon-button" to="/activity">
           <Icon name="back" />
         </Link>
-        <span>
-          <p className="eyebrow">Stored on this device</p>
-          <h1>{title}</h1>
-        </span>
+        <h1>{title}</h1>
       </header>
 
       {saveError ? (
@@ -153,45 +190,26 @@ export function TransactionFormPage() {
       ) : null}
 
       <form className="transaction-form" noValidate onSubmit={(event) => void handleSubmit(event)}>
-        {!existing ? (
-          <fieldset>
-            <legend>Transaction type</legend>
-            <div className="type-choice">
-              {(["expense", "income"] as const).map((type) => (
-                <button
-                  aria-pressed={values.type === type}
-                  className={values.type === type ? "is-selected" : ""}
-                  key={type}
-                  onClick={() => {
-                    setValues((current) => ({ ...current, category: "", type }));
-                    setErrors({});
-                  }}
-                  type="button"
-                >
-                  <Icon name={type} />
-                  {type === "income" ? "Income" : "Expense"}
-                </button>
-              ))}
-            </div>
-          </fieldset>
-        ) : null}
-
         <Card className="amount-card">
-          <label htmlFor="transaction-amount">Amount</label>
           <div className="amount-input">
-            <span>{preferences.currency}</span>
+            <span aria-hidden="true">{currencySymbol}</span>
             <input
               aria-describedby={errors.amount ? "transaction-amount-error" : undefined}
               aria-invalid={Boolean(errors.amount)}
+              aria-label="Amount"
               autoComplete="off"
               id="transaction-amount"
               inputMode="decimal"
-              onChange={(event) => updateValue("amount", event.target.value)}
-              placeholder="0.00"
+              onChange={(event) => updateValue("amount", normalizeAmountInput(event.target.value))}
+              pattern="[0-9]*[.]?[0-9]{0,2}"
+              placeholder="0"
               ref={amountRef}
               value={values.amount}
             />
           </div>
+          <label className="amount-card__label" htmlFor="transaction-amount">
+            {amountLabel}
+          </label>
           {errors.amount ? (
             <p className="field-error" id="transaction-amount-error">
               {errors.amount}
@@ -199,10 +217,10 @@ export function TransactionFormPage() {
           ) : null}
         </Card>
 
-        <fieldset>
+        <fieldset className="transaction-category-section">
           <legend>Category</legend>
           <div className="category-grid" id="transaction-category">
-            {categories.map((category) => (
+            {visibleCategories.map((category) => (
               <button
                 aria-pressed={values.category === category}
                 className={values.category === category ? "is-selected" : ""}
@@ -210,15 +228,26 @@ export function TransactionFormPage() {
                 onClick={() => updateValue("category", category)}
                 type="button"
               >
-                <Icon name={values.type} size={20} />
-                {category}
+                <Icon name={values.type} size={18} />
+                <span>{category}</span>
               </button>
             ))}
+            {shouldCollapseCategories ? (
+              <button
+                aria-label="Show more categories"
+                className="category-grid__more"
+                onClick={() => setShowAllCategories(true)}
+                type="button"
+              >
+                <Icon name="plus" size={18} />
+                <span>More</span>
+              </button>
+            ) : null}
           </div>
           {errors.category ? <p className="field-error">{errors.category}</p> : null}
         </fieldset>
 
-        <Card className="form-fields">
+        <Card className="form-fields transaction-details-card">
           <label htmlFor="transaction-date">
             <span>Date</span>
             <input
@@ -236,16 +265,14 @@ export function TransactionFormPage() {
             </p>
           ) : null}
           <label htmlFor="transaction-note">
-            <span>
-              Note <small>Optional</small>
-            </span>
+            <span>Note</span>
             <textarea
               aria-describedby="transaction-note-help"
               aria-invalid={Boolean(errors.note)}
               id="transaction-note"
               maxLength={101}
               onChange={(event) => updateValue("note", event.target.value)}
-              placeholder="What was this for?"
+              placeholder="Add note (optional)"
               rows={3}
               value={values.note}
             />
@@ -255,8 +282,8 @@ export function TransactionFormPage() {
           </p>
         </Card>
 
-        <Button disabled={isSaving} fullWidth type="submit">
-          {isSaving ? "Saving..." : `Save ${values.type === "income" ? "income" : "expense"}`}
+        <Button className="transaction-submit" disabled={isSaving} fullWidth type="submit">
+          {isSaving ? "Saving..." : `Save ${transactionLabel}`}
         </Button>
 
         {existing ? (
