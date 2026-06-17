@@ -10,6 +10,7 @@ export interface GuestPreferences {
   currency: SupportedCurrency;
   displayName: string;
   locale: SupportedLocale;
+  migratedTransactionIds: string[];
   reminderEnabled: boolean;
   reminderRepeatEnabled: boolean;
   theme: ThemePreference;
@@ -52,6 +53,7 @@ export function createDefaultGuestPreferences(): GuestPreferences {
     currency: localeCurrency[locale],
     displayName: "Guest",
     locale,
+    migratedTransactionIds: [],
     reminderEnabled: true,
     reminderRepeatEnabled: false,
     theme: "system",

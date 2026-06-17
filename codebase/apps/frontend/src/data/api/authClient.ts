@@ -1,0 +1,142 @@
+import { environment } from "../../config/environment";
+
+export interface AuthUser {
+  displayName: string;
+  email: string;
+  id: string;
+  locale: string;
+  preferredCurrency: string;
+  theme: string;
+  timezone: string;
+}
+
+export interface WorkspaceSummary {
+  id: string;
+  name: string;
+  type: string;
+}
+
+interface ApiEnvelope<Data> {
+  data: Data;
+  message: string;
+  success: boolean;
+}
+
+export interface AuthSession {
+  accessToken: string;
+  user: AuthUser;
+  workspaces: WorkspaceSummary[];
+}
+
+export interface RegisterResult {
+  debugToken?: string;
+  message: string;
+}
+
+async function parseResponse<Data>(response: Response): Promise<ApiEnvelope<Data>> {
+  const body = (await response.json()) as ApiEnvelope<Data>;
+
+  if (!response.ok) {
+    throw new Error(body.message || "Request failed.");
+  }
+
+  return body;
+}
+
+async function apiRequest<Data>(
+  path: string,
+  options: RequestInit = {},
+): Promise<ApiEnvelope<Data>> {
+  const response = await fetch(`${environment.NIDHIFLOW_API_BASE_URL}/api/v1${path}`, {
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+    ...options,
+  });
+
+  return parseResponse<Data>(response);
+}
+
+export async function registerAccount(input: {
+  displayName: string;
+  email: string;
+  locale: string;
+  password: string;
+  preferredCurrency: string;
+  theme: string;
+  timezone: string;
+}): Promise<RegisterResult> {
+  const result = await apiRequest<{ debugToken?: string; status: string }>("/auth/register", {
+    body: JSON.stringify(input),
+    method: "POST",
+  });
+
+  return {
+    debugToken: result.data.debugToken,
+    message: result.message,
+  };
+}
+
+export async function verifyEmail(token: string): Promise<AuthSession> {
+  const result = await apiRequest<{
+    accessToken: string;
+    user: AuthUser;
+    workspace: WorkspaceSummary;
+  }>("/auth/verify-email", {
+    body: JSON.stringify({ token }),
+    method: "POST",
+  });
+
+  return {
+    accessToken: result.data.accessToken,
+    user: result.data.user,
+    workspaces: [result.data.workspace],
+  };
+}
+
+export async function login(input: { email: string; password: string }): Promise<AuthSession> {
+  const result = await apiRequest<AuthSession>("/auth/login", {
+    body: JSON.stringify(input),
+    method: "POST",
+  });
+
+  return result.data;
+}
+
+export async function refreshAccessToken(): Promise<string> {
+  const result = await apiRequest<{ accessToken: string }>("/auth/refresh", {
+    method: "POST",
+  });
+
+  return result.data.accessToken;
+}
+
+export async function getWorkspaces(accessToken: string): Promise<WorkspaceSummary[]> {
+  const result = await apiRequest<WorkspaceSummary[]>("/workspaces", {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    method: "GET",
+  });
+
+  return result.data;
+}
+
+export async function getCurrentUser(accessToken: string): Promise<AuthUser> {
+  const result = await apiRequest<AuthUser>("/users/me", {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    method: "GET",
+  });
+
+  return result.data;
+}
+
+export async function logout(): Promise<void> {
+  await apiRequest<{ status: string }>("/auth/logout", {
+    method: "POST",
+  });
+}

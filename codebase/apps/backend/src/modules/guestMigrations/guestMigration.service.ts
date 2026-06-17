@@ -360,6 +360,27 @@ export class GuestMigrationService {
       } = { transactions: [] };
 
       let importedTransactions = 0;
+      let migrationAccountId: string | null = null;
+      const hasImportableTransactions = preview.items.some((item) => item.status === "importable");
+
+      if (hasImportableTransactions) {
+        const existingMigrationAccount = await repository.findMigrationAccount(
+          workspace.id,
+          transaction,
+        );
+        migrationAccountId = existingMigrationAccount?.id ?? createId("acc");
+
+        if (!existingMigrationAccount) {
+          await repository.createMigrationAccount(
+            {
+              currency: input.workspace?.currency ?? input.guestProfile.currency,
+              id: migrationAccountId,
+              workspaceId: workspace.id,
+            },
+            transaction,
+          );
+        }
+      }
 
       for (const item of preview.items) {
         if (item.status === "skipped_deleted") {
@@ -378,7 +399,7 @@ export class GuestMigrationService {
         const original = input.transactions.find((transaction) => transaction.id === item.clientId);
         const categoryId = categoryKeyToId.get(`${item.type}:${item.category}`);
 
-        if (!original || !categoryId) {
+        if (!original || !categoryId || !migrationAccountId) {
           throw new AppError({
             code: "VALIDATION_ERROR",
             message: "The request could not be processed.",
@@ -390,6 +411,7 @@ export class GuestMigrationService {
 
         await repository.createTransaction(
           {
+            accountId: migrationAccountId,
             amount: minorToDecimalString(item.amountMinor),
             categoryId,
             clientId: item.clientId,

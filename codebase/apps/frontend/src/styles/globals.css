@@ -187,6 +187,12 @@ p {
   margin-bottom: 0;
 }
 
+.section-heading h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .page-header__eyebrow,
 .eyebrow {
   margin-bottom: var(--space-1);
@@ -236,6 +242,7 @@ p {
   background: var(--color-surface);
   box-shadow: var(--shadow-card);
   cursor: pointer;
+  text-decoration: none;
 }
 
 .greeting {
@@ -292,6 +299,49 @@ p {
   margin-block: var(--space-5);
 }
 
+.home-summary-grid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.home-summary-card {
+  overflow: hidden;
+}
+
+.home-summary-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.home-summary-card__title {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.home-summary-card__title span:last-child {
+  display: grid;
+}
+
+.home-summary-card__title strong {
+  margin-bottom: var(--space-1);
+  font-size: 1.05rem;
+}
+
+.home-summary-card__title small {
+  color: var(--color-text-secondary);
+}
+
+.home-summary-card__action {
+  min-height: 2rem;
+  padding-top: var(--space-1);
+  font-weight: 800;
+  text-decoration: none;
+}
+
 .progress-ring {
   display: grid;
   width: 7rem;
@@ -339,6 +389,15 @@ p {
 .monthly-card__totals dd {
   margin: 0;
   font-weight: 850;
+}
+
+.progress-ring {
+  position: relative;
+}
+
+.progress-ring span {
+  font-size: 1.2rem;
+  font-weight: 900;
 }
 
 .summary-list > div:last-child dd {
@@ -1022,6 +1081,24 @@ p {
   font-weight: 800;
 }
 
+.settings-form > * + * {
+  margin-top: var(--space-3);
+}
+
+.settings-form input,
+.settings-form textarea {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+}
+
+.settings-form textarea {
+  resize: vertical;
+}
+
 .field-row {
   align-items: stretch;
   gap: var(--space-3);
@@ -1040,6 +1117,40 @@ p {
 
 .field-row input[aria-invalid="true"] {
   border-color: var(--color-danger);
+}
+
+.account-actions {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.migration-consent {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--color-brand) 24%, var(--color-border));
+  border-radius: var(--radius-card);
+  background: var(--color-surface-subtle);
+}
+
+.migration-consent h3 {
+  margin: 0 0 var(--space-1);
+  font-size: 1rem;
+}
+
+.migration-consent p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.45;
+}
+
+.migration-consent__actions {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.auth-switch {
+  text-align: center;
 }
 
 .field-error {

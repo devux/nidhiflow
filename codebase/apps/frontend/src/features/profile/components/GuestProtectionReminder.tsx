@@ -7,17 +7,27 @@ import { Icon } from "../../../shared/components/Icon";
 
 const reminderDelayMs = 5 * 60 * 1000;
 
-export function GuestProtectionReminder() {
+interface GuestProtectionReminderProps {
+  isAuthenticated: boolean;
+}
+
+export function GuestProtectionReminder({ isAuthenticated }: GuestProtectionReminderProps) {
   const location = useLocation();
   const { preferences, savePreferences } = useGuestPreferences();
   const [isVisible, setIsVisible] = useState(false);
   const [cycle, setCycle] = useState(0);
-  const shouldPause = location.pathname.startsWith("/transactions/");
+  const shouldPause = isAuthenticated || location.pathname.startsWith("/transactions/");
 
   const canSchedule = useMemo(
-    () => preferences.reminderEnabled && !shouldPause && !isVisible,
-    [isVisible, preferences.reminderEnabled, shouldPause],
+    () => preferences.reminderEnabled && !isAuthenticated && !shouldPause && !isVisible,
+    [isAuthenticated, isVisible, preferences.reminderEnabled, shouldPause],
   );
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      setIsVisible(false);
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (!canSchedule) {
@@ -33,7 +43,7 @@ export function GuestProtectionReminder() {
     return () => window.clearTimeout(timeout);
   }, [canSchedule, cycle]);
 
-  if (!isVisible || shouldPause || !preferences.reminderEnabled) {
+  if (isAuthenticated || !isVisible || shouldPause || !preferences.reminderEnabled) {
     return null;
   }
 
@@ -75,9 +85,13 @@ export function GuestProtectionReminder() {
           Your local records remain usable, but they may be lost if this browser data is cleared.
         </p>
         <div className="guest-reminder__actions">
-          <Link className="button button--primary" to="/you">
+          <Link className="button button--primary" to="/signup">
             <Icon name="cloud" size={18} />
             Create account
+          </Link>
+          <Link className="button button--secondary" to="/login">
+            <Icon name="user" size={18} />
+            Log in
           </Link>
           <Button onClick={continueAsGuest} variant="secondary">
             Continue as guest

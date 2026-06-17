@@ -12,6 +12,7 @@ describe("IndexedDbGuestPreferencesRepository", () => {
       currency: "GBP",
       displayName: "Sam",
       locale: "en-GB",
+      migratedTransactionIds: [],
       reminderEnabled: false,
       reminderRepeatEnabled: false,
       theme: "dark",

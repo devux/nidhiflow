@@ -1,7 +1,12 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 
+import { useAuth } from "../../../app/providers/AuthProvider";
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
+import { useGuestTransactions } from "../../../app/providers/GuestTransactionsProvider";
 import { environment } from "../../../config/environment";
+import { commitGuestMigration } from "../../../data/api/guestMigrationClient";
+import { createGuestMigrationPayload } from "../../../data/migrations/createGuestMigrationPayload";
 import {
   supportedCurrencies,
   supportedLocales,
@@ -36,7 +41,9 @@ const currencyLabels: Record<SupportedCurrency, string> = {
 };
 
 export function YouPage() {
+  const { accessToken, isAuthenticated, logout, user } = useAuth();
   const { preferences, savePreferences } = useGuestPreferences();
+  const { transactions } = useGuestTransactions();
   const [displayName, setDisplayName] = useState(preferences.displayName);
   const [feedbackCategory, setFeedbackCategory] = useState<"general" | "issue" | "suggestion">(
     "suggestion",
@@ -44,6 +51,10 @@ export function YouPage() {
   const [feedbackDescription, setFeedbackDescription] = useState("");
   const [feedbackState, setFeedbackState] = useState<"error" | "idle" | "sent" | "sending">("idle");
   const [fieldError, setFieldError] = useState("");
+  const [logoutState, setLogoutState] = useState<"error" | "idle" | "saving">("idle");
+  const [migrationState, setMigrationState] = useState<
+    "declined" | "error" | "idle" | "migrated" | "saving"
+  >("idle");
   const [saveState, setSaveState] = useState<"error" | "idle" | "saved">("idle");
 
   useEffect(() => {
@@ -99,31 +110,156 @@ export function YouPage() {
     }
   }
 
+  async function handleLogout() {
+    setLogoutState("saving");
+
+    try {
+      await logout();
+      setLogoutState("idle");
+    } catch {
+      setLogoutState("error");
+    }
+  }
+
+  async function handleGuestMigration() {
+    const pendingTransactions = transactions.filter(
+      (transaction) => !preferences.migratedTransactionIds.includes(transaction.id),
+    );
+
+    if (!accessToken || pendingTransactions.length === 0) return;
+
+    setMigrationState("saving");
+
+    try {
+      const clientMigrationId =
+        typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : `migration_${Date.now().toString(36)}`;
+      const payload = createGuestMigrationPayload({
+        clientMigrationId,
+        preferences,
+        transactions: pendingTransactions,
+      });
+
+      await commitGuestMigration({
+        accessToken,
+        idempotencyKey: clientMigrationId,
+        payload,
+      });
+      await savePreferences({
+        ...preferences,
+        migratedTransactionIds: [
+          ...new Set([
+            ...preferences.migratedTransactionIds,
+            ...pendingTransactions.map((transaction) => transaction.id),
+          ]),
+        ],
+      });
+      setMigrationState("migrated");
+    } catch {
+      setMigrationState("error");
+    }
+  }
+
+  const profileName = user?.displayName ?? preferences.displayName;
+  const profileInitial = profileName.slice(0, 1).toUpperCase();
+  const pendingMigrationTransactions = transactions.filter(
+    (transaction) => !preferences.migratedTransactionIds.includes(transaction.id),
+  );
+  const shouldOfferMigration =
+    isAuthenticated &&
+    (migrationState === "idle" || migrationState === "saving") &&
+    pendingMigrationTransactions.length > 0;
+
   return (
     <main className="page" id="main-content">
-      <PageHeader eyebrow="Guest profile and preferences" title="You" />
+      <PageHeader
+        eyebrow={
+          isAuthenticated ? "Account profile and preferences" : "Guest profile and preferences"
+        }
+        title="You"
+      />
 
       <Card className="profile-card">
         <div className="profile-card__identity">
           <span className="profile-avatar" aria-hidden="true">
-            {preferences.displayName.slice(0, 1).toUpperCase()}
+            {profileInitial}
           </span>
           <span>
-            <h2>{preferences.displayName}</h2>
+            <h2>{profileName}</h2>
             <span className="local-badge">
               <Icon name="user" size={17} />
-              Guest user
+              {isAuthenticated ? "Signed in" : "Guest user"}
             </span>
           </span>
         </div>
-        <InlineAlert title="Saved only on this device">
-          Clearing browser data, uninstalling, or losing this device may remove guest history
-          permanently.
-        </InlineAlert>
-        <Button fullWidth variant="secondary">
-          <Icon name="cloud" size={20} />
-          Create an account for backup
-        </Button>
+        {isAuthenticated && user ? (
+          <>
+            <InlineAlert title="Account active">
+              {user.email} is signed in. You can now back up finance data to your account.
+            </InlineAlert>
+            {shouldOfferMigration ? (
+              <div className="migration-consent" role="region" aria-label="Move local data">
+                <span className="icon-tile">
+                  <Icon name="cloud" size={22} />
+                </span>
+                <span>
+                  <h3>Move local data to this account?</h3>
+                  <p>
+                    We found {pendingMigrationTransactions.length} local transaction
+                    {pendingMigrationTransactions.length === 1 ? "" : "s"}. With your consent,
+                    NidhiFlow will copy them to your signed-in workspace while keeping this local
+                    view intact on this device.
+                  </p>
+                </span>
+                <div className="migration-consent__actions">
+                  <Button
+                    disabled={migrationState === "saving"}
+                    fullWidth
+                    onClick={() => void handleGuestMigration()}
+                  >
+                    <Icon name="check" size={20} />
+                    {migrationState === "saving" ? "Moving data" : "Move my data"}
+                  </Button>
+                  <Button
+                    disabled={migrationState === "saving"}
+                    fullWidth
+                    onClick={() => setMigrationState("declined")}
+                    variant="secondary"
+                  >
+                    Keep local only
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+            <Button
+              disabled={logoutState === "saving"}
+              fullWidth
+              onClick={() => void handleLogout()}
+              variant="secondary"
+            >
+              <Icon name="user" size={20} />
+              {logoutState === "saving" ? "Logging out" : "Log out"}
+            </Button>
+          </>
+        ) : (
+          <>
+            <InlineAlert title="Saved only on this device">
+              Clearing browser data, uninstalling, or losing this device may remove guest history
+              permanently.
+            </InlineAlert>
+            <div className="account-actions">
+              <Link className="button button--primary button--full" to="/signup">
+                <Icon name="cloud" size={20} />
+                Create an account for backup
+              </Link>
+              <Link className="button button--secondary button--full" to="/login">
+                <Icon name="user" size={20} />
+                Log in
+              </Link>
+            </div>
+          </>
+        )}
       </Card>
 
       {saveState === "saved" ? (
@@ -146,6 +282,28 @@ export function YouPage() {
       {feedbackState === "error" ? (
         <div className="error-message" role="alert">
           Feedback could not be sent. Your local finance data was not uploaded.
+        </div>
+      ) : null}
+      {logoutState === "error" ? (
+        <div className="error-message" role="alert">
+          Logout could not complete. Please try again.
+        </div>
+      ) : null}
+      {migrationState === "migrated" ? (
+        <div className="success-message" role="status">
+          <Icon name="check" size={20} />
+          Local finance data copied to your account.
+        </div>
+      ) : null}
+      {migrationState === "declined" ? (
+        <InlineAlert title="Local data kept on this device">
+          You can keep using it locally. NidhiFlow will not upload guest finance data without your
+          consent.
+        </InlineAlert>
+      ) : null}
+      {migrationState === "error" ? (
+        <div className="error-message" role="alert">
+          Local data could not be moved. Nothing was removed from this device.
         </div>
       ) : null}
 

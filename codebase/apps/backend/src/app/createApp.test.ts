@@ -26,7 +26,7 @@ const environment: Environment = {
   REFRESH_SESSION_TTL_DAYS: 30,
   EMAIL_VERIFICATION_TTL_HOURS: 24,
   PASSWORD_RESET_TTL_HOURS: 2,
-  CORS_ORIGINS: ["http://localhost:5173"],
+  CORS_ORIGINS: ["http://localhost:5173", "http://127.0.0.1:5173"],
 };
 
 function createQueryResult<Row extends QueryResultRow>(rows: Row[]): QueryResult<Row> {
@@ -117,6 +117,26 @@ describe("health endpoints", () => {
 });
 
 describe("API foundation", () => {
+  it("allows local frontend origins for auth preflight requests", async () => {
+    const app = createApp({
+      database: createTestDatabase(vi.fn().mockResolvedValue(true)).database,
+      environment,
+      logger: pino({ enabled: false }),
+    });
+
+    for (const origin of ["http://localhost:5173", "http://127.0.0.1:5173"]) {
+      const response = await request(app)
+        .options("/api/v1/auth/register")
+        .set("Origin", origin)
+        .set("Access-Control-Request-Method", "POST")
+        .set("Access-Control-Request-Headers", "content-type");
+
+      expect(response.status).toBe(204);
+      expect(response.headers["access-control-allow-origin"]).toBe(origin);
+      expect(response.headers["access-control-allow-credentials"]).toBe("true");
+    }
+  });
+
   it("returns the standard 404 envelope with a request id", async () => {
     const app = createApp({
       database: createTestDatabase(vi.fn().mockResolvedValue(true)).database,

@@ -8,6 +8,7 @@ describe("createGuestMigrationPayload", () => {
       currency: "INR",
       displayName: "Asha",
       locale: "en-IN",
+      migratedTransactionIds: [],
       reminderEnabled: true,
       reminderRepeatEnabled: false,
       theme: "dark",

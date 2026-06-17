@@ -24,14 +24,25 @@ export function HomePage() {
   const recentTransactions = transactions.slice(0, 4);
   const money = (amountMinor: string) =>
     formatMoney({ amountMinor, currency: preferences.currency }, preferences.locale);
+  const incomeMinor = BigInt(totals.incomeMinor);
+  const expenseMinor = BigInt(totals.expenseMinor);
+  const budgetTotalMinor = incomeMinor;
+  const budgetRemainingMinor = incomeMinor - expenseMinor;
+  const budgetProgress = incomeMinor === 0n ? 0 : Number((expenseMinor * 100n) / incomeMinor);
+  const budgetProgressValue = Math.min(100, budgetProgress);
+  const goalSavedMinor = budgetRemainingMinor > 0n ? budgetRemainingMinor : 0n;
+  const goalTargetMinor = budgetRemainingMinor > 0n ? incomeMinor : expenseMinor;
+  const goalProgress =
+    goalTargetMinor === 0n ? 0 : Number((goalSavedMinor * 100n) / goalTargetMinor);
+  const goalProgressValue = Math.min(100, goalProgress);
 
   return (
     <main className="page page--home" id="main-content">
       <header className="home-header">
         <Brand />
-        <button aria-label="Notifications" className="icon-button" type="button">
+        <Link aria-label="Notification preferences" className="icon-button" to="/you#preferences">
           <Icon name="bell" />
-        </button>
+        </Link>
       </header>
 
       <section className="greeting">
@@ -48,11 +59,11 @@ export function HomePage() {
         </Link>
       </section>
 
-      <Card className="finance-overview">
+      <Card aria-labelledby="current-balance-title" className="finance-overview">
         <div className="section-heading">
           <span>
             <p className="eyebrow">All recorded activity</p>
-            <h2>Current balance</h2>
+            <h2 id="current-balance-title">Current balance</h2>
           </span>
           <span className="local-badge">
             <Icon name="shield" size={17} />
@@ -82,9 +93,107 @@ export function HomePage() {
         </dl>
       </Card>
 
+      <section aria-labelledby="budget-title">
+        <div className="section-heading">
+          <h2 id="budget-title">Budget plan</h2>
+          <Link to="/plan">View all</Link>
+        </div>
+        <div className="home-summary-grid">
+          <Card className="home-summary-card">
+            <div className="home-summary-card__header">
+              <span className="home-summary-card__title">
+                <span className="icon-tile">
+                  <Icon name="plan" />
+                </span>
+                <span>
+                  <strong>Family budget</strong>
+                  <small>Shared planning appears when you join a family workspace.</small>
+                </span>
+              </span>
+              <span className="local-badge">
+                <Icon name="shield" size={17} />
+                Preview
+              </span>
+            </div>
+            <div className="budget-overview__content">
+              <div
+                aria-label={`Budget usage: ${budgetProgressValue} percent`}
+                aria-valuemax={100}
+                aria-valuemin={0}
+                aria-valuenow={budgetProgressValue}
+                className="progress-ring"
+                role="progressbar"
+              >
+                <span>{budgetProgressValue}%</span>
+              </div>
+              <dl className="summary-list">
+                <div>
+                  <dt>Total</dt>
+                  <dd>{money(budgetTotalMinor.toString())}</dd>
+                </div>
+                <div>
+                  <dt>Spent</dt>
+                  <dd>{money(expenseMinor.toString())}</dd>
+                </div>
+                <div>
+                  <dt>Remaining</dt>
+                  <dd>{money(budgetRemainingMinor.toString())}</dd>
+                </div>
+              </dl>
+            </div>
+          </Card>
+
+          <Card className="home-summary-card">
+            <div className="home-summary-card__header">
+              <span className="home-summary-card__title">
+                <span className="icon-tile">
+                  <Icon name="goal" />
+                </span>
+                <span>
+                  <strong>Active goals</strong>
+                  <small>Short-term savings goals stay visible without pressure.</small>
+                </span>
+              </span>
+              <Link className="home-summary-card__action" to="/plan">
+                View all
+              </Link>
+            </div>
+            <div className="budget-overview__content">
+              <div
+                aria-label={`Goal progress: ${goalProgressValue} percent`}
+                aria-valuemax={100}
+                aria-valuemin={0}
+                aria-valuenow={goalProgressValue}
+                className="progress-ring"
+                role="progressbar"
+              >
+                <span>{goalProgressValue}%</span>
+              </div>
+              <dl className="summary-list">
+                <div>
+                  <dt>Saved</dt>
+                  <dd>{money(goalSavedMinor.toString())}</dd>
+                </div>
+                <div>
+                  <dt>Target</dt>
+                  <dd>{money(goalTargetMinor.toString())}</dd>
+                </div>
+                <div>
+                  <dt>Progress</dt>
+                  <dd>{goalProgressValue}%</dd>
+                </div>
+              </dl>
+            </div>
+          </Card>
+        </div>
+      </section>
+
       <section aria-labelledby="quick-actions-title">
         <div className="section-heading">
-          <h2 id="quick-actions-title">Quick actions</h2>
+          <h2 id="quick-actions-title">
+            <Icon name="plus" size={18} />
+            Quick actions
+          </h2>
         </div>
         <div className="quick-actions">
           <Link className="quick-action" to="/transactions/new?type=expense">
@@ -112,7 +221,10 @@ export function HomePage() {
 
       <Card aria-labelledby="recent-activity-title">
         <div className="section-heading">
-          <h2 id="recent-activity-title">Recent activity</h2>
+          <h2 id="recent-activity-title">
+            <Icon name="activity" size={18} />
+            Recent activity
+          </h2>
           <Link to="/activity">View all</Link>
         </div>
         {recentTransactions.length > 0 ? (

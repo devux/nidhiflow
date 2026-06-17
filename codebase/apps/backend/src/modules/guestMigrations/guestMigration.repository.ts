@@ -34,6 +34,10 @@ export interface SystemCategoryRecord {
   transactionType: "income" | "expense";
 }
 
+export interface MigrationAccountRecord {
+  id: string;
+}
+
 export interface GuestMigrationPreviewItem {
   amountMinor: string;
   category: string;
@@ -114,6 +118,7 @@ export class GuestMigrationRepository {
 
   async createTransaction(
     input: {
+      accountId: string;
       amount: string;
       categoryId: string;
       clientId: string;
@@ -136,6 +141,7 @@ export class GuestMigrationRepository {
          type,
          amount,
          currency,
+         account_id,
          category_id,
          transaction_date,
          occurred_at,
@@ -143,13 +149,14 @@ export class GuestMigrationRepository {
          created_by_user_id,
          updated_by_user_id,
          client_id
-       ) VALUES ($1, $2, $3, $4::numeric(19,4), $5, $6, $7, $8, $9, $10, $11, $12)`,
+       ) VALUES ($1, $2, $3, $4::numeric(19,4), $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
       [
         input.id,
         input.workspaceId,
         input.type,
         input.amount,
         input.currency,
+        input.accountId,
         input.categoryId,
         input.transactionDate,
         input.occurredAt,
@@ -158,6 +165,43 @@ export class GuestMigrationRepository {
         input.updatedByUserId,
         input.clientId,
       ],
+    );
+  }
+
+  async findMigrationAccount(workspaceId: string, queryable: Queryable = this.database) {
+    const result = await queryable.query<MigrationAccountRecord>(
+      `SELECT id
+         FROM accounts
+        WHERE workspace_id = $1
+          AND name = 'Migrated guest cash'
+          AND type = 'cash'
+          AND deleted_at IS NULL
+        ORDER BY created_at ASC
+        LIMIT 1`,
+      [workspaceId],
+    );
+
+    return result.rows[0] ?? null;
+  }
+
+  async createMigrationAccount(
+    input: {
+      currency: string;
+      id: string;
+      workspaceId: string;
+    },
+    queryable: Queryable = this.database,
+  ) {
+    await queryable.query(
+      `INSERT INTO accounts (
+         id,
+         workspace_id,
+         name,
+         type,
+         opening_balance,
+         currency
+       ) VALUES ($1, $2, 'Migrated guest cash', 'cash', 0::numeric(19,4), $3)`,
+      [input.id, input.workspaceId, input.currency],
     );
   }
 

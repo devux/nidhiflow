@@ -22,6 +22,7 @@ interface MigrationResponseBody {
       skippedDeletedTransactions: number;
       totalTransactions: number;
     };
+    workspaceId: string;
   };
 }
 
@@ -260,10 +261,28 @@ describe("guest migrations integration", () => {
     const storedTransactions = await database.query<{ count: string }>(
       `SELECT COUNT(*)::text AS count
          FROM transactions
-        WHERE client_id IN ('guest_txn_1', 'guest_txn_2')`,
+        WHERE client_id IN ('guest_txn_1', 'guest_txn_2')
+          AND account_id IS NOT NULL`,
     );
 
     expect(storedTransactions.rows[0]?.count).toBe("2");
+
+    const accountSummaryResponse = await request(app)
+      .get(`/api/v1/workspaces/${commitBody.data.workspaceId}/accounts/summary`)
+      .set("Authorization", `Bearer ${accessToken}`);
+    const accountSummaryBody = accountSummaryResponse.body as {
+      data: { accounts: Array<{ currentBalance: string; name: string }> };
+    };
+
+    expect(accountSummaryResponse.status).toBe(200);
+    expect(accountSummaryBody.data.accounts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          currentBalance: "1100.0000",
+          name: "Migrated guest cash",
+        }),
+      ]),
+    );
   });
 
   it("rolls back a failed guest migration commit", async () => {
