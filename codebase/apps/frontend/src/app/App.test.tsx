@@ -199,4 +199,24 @@ describe("App", () => {
     await screen.findByRole("heading", { name: "Add expense" });
     expect((await axe(container)).violations).toHaveLength(0);
   });
+
+  it("has no automated accessibility violations on the Flow preview screen", async () => {
+    window.history.replaceState({}, "", "/flow");
+    const { container } = render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    await screen.findByRole("heading", { name: "Flow" });
+    expect((await axe(container)).violations).toHaveLength(0);
+  });
+
+  it("has no automated accessibility violations on the You page", async () => {
+    window.history.replaceState({}, "", "/you");
+    const { container } = render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    await screen.findByRole("heading", { name: "You" });
+    expect((await axe(container)).violations).toHaveLength(0);
+  });
 });

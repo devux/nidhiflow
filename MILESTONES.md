@@ -267,6 +267,8 @@ Financial calculations must use fixed-precision money handling.
 
 ## Milestone 12: Production Readiness
 
+**Status:** Complete as of June 17, 2026.
+
 ### Scope
 
 - Accessibility review

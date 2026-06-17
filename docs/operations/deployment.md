@@ -68,6 +68,5 @@ notifications, imports, or other risky capabilities independently.
 
 ## Launch Checklist
 
-Security review, privacy policy/consent review, accessibility testing, backup
-restore test, incident contacts, monitoring alerts, support process, domain and
-TLS validation, rate-limit verification, and critical end-to-end smoke tests.
+Follow the [Production Readiness](production-readiness.md) checklist before
+shipping a release.
