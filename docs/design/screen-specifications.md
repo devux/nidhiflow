@@ -27,14 +27,21 @@
 - Full-width Save Income/Save Expense action
 - Validate amount, category, and date while preserving invalid form input
 
-## Plan
+## Budget
 
-- Budget and Bills tabs
-- Budget tab includes Monthly, Yearly, and Custom period options
-- Budget total, percentage used, spent, and remaining recalculate from budget
-  categories and matching transactions
-- Active-goal preview: saved, target, percentage, progress
-- Add, edit, and delete budget categories
+- Monthly and Yearly tabs; Monthly is the default tab
+- Monthly tab manages one monthly budget plan at a time
+- Monthly budget plans are required for authenticated users before proceeding
+  with planning
+- Users can create, view, update, and delete monthly budget categories
+- Quick-fill copies the previous month's budget into the selected month
+- Monthly budget total, percentage used, spent, and remaining recalculate from
+  budget categories and matching transactions
+- Yearly tab is read-only and derives all totals from the last 12 monthly
+  budget plans
+- Yearly tab includes yearly budget summary, budget vs actual spending,
+  month-wise breakdown, category analysis, yearly trends, savings projection,
+  and yearly insights
 - Category rows with spent/limit, percentage, and progress
 
 ## Goals

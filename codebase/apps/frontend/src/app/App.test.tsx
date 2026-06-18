@@ -9,10 +9,11 @@ import type { GuestPreferences } from "../domain/preferences/guestPreferences";
 import type { GuestTransaction, GuestTransactionInput } from "../domain/transactions/transaction";
 import { App } from "./App";
 
-function createJsonResponse(body: unknown, ok = true): Response {
+function createJsonResponse(body: unknown, ok = true, status = ok ? 200 : 500): Response {
   return {
     json: jest.fn(() => Promise.resolve(body)),
     ok,
+    status,
   } as unknown as Response;
 }
 
@@ -26,6 +27,10 @@ function getRequestUrl(input: Parameters<typeof fetch>[0]): string {
   }
 
   return input.url;
+}
+
+function toApiDateTimestamp(dateOnly: string): string {
+  return new Date(`${dateOnly}T00:00:00+05:30`).toISOString();
 }
 
 const defaultPreferences: GuestPreferences = {
@@ -93,11 +98,13 @@ function mockAuthenticatedFinanceSession(
   fetchMock: jest.MockedFunction<typeof fetch>,
   options: {
     budgets?: Array<Record<string, unknown>>;
+    failFirstBudgetCreateAsUnauthenticated?: boolean;
     reportingCurrency?: string;
     transactions?: unknown[];
   } = {},
 ) {
   let budgets = [...(options.budgets ?? [])];
+  let hasRejectedBudgetCreate = false;
   const reportingCurrency = options.reportingCurrency ?? "USD";
 
   fetchMock.mockImplementation((input, init) => {
@@ -212,6 +219,21 @@ function mockAuthenticatedFinanceSession(
     }
 
     if (url.endsWith("/api/v1/workspaces/wsp_finance/budgets") && method === "POST") {
+      if (options.failFirstBudgetCreateAsUnauthenticated && !hasRejectedBudgetCreate) {
+        hasRejectedBudgetCreate = true;
+        return Promise.resolve(
+          createJsonResponse(
+            {
+              error: { code: "UNAUTHENTICATED" },
+              message: "Authentication is required for this resource.",
+              success: false,
+            },
+            false,
+            401,
+          ),
+        );
+      }
+
       const body = JSON.parse(String(init?.body ?? "{}")) as {
         categoryId: string;
         limitAmount: { amount: string; currency: string };
@@ -224,8 +246,8 @@ function mockAuthenticatedFinanceSession(
         deletedAt: null,
         id: `bgt_${budgets.length + 1}`,
         limitAmount: body.limitAmount.amount,
-        periodEnd: `${body.periodEnd}T00:00:00.000Z`,
-        periodStart: `${body.periodStart}T00:00:00.000Z`,
+        periodEnd: toApiDateTimestamp(body.periodEnd),
+        periodStart: toApiDateTimestamp(body.periodStart),
         progressPercent: "0",
         remainingAmount: body.limitAmount.amount,
         spentAmount: "0",
@@ -259,8 +281,8 @@ function mockAuthenticatedFinanceSession(
         deletedAt: null,
         id: budgetId,
         limitAmount: body.limitAmount.amount,
-        periodEnd: `${body.periodEnd}T00:00:00.000Z`,
-        periodStart: `${body.periodStart}T00:00:00.000Z`,
+        periodEnd: toApiDateTimestamp(body.periodEnd),
+        periodStart: toApiDateTimestamp(body.periodStart),
         progressPercent: "0",
         remainingAmount: body.limitAmount.amount,
         spentAmount: "0",
@@ -323,7 +345,7 @@ describe("App", () => {
       link.textContent?.trim(),
     );
 
-    expect(links).toEqual(["Home", "Activity", "Flow", "Plan", "You"]);
+    expect(links).toEqual(["Home", "Activity", "Flow", "Budget", "You"]);
 
     await user.click(screen.getByRole("link", { name: "Activity" }));
     expect(await screen.findByRole("heading", { name: "Activity" })).toBeDefined();
@@ -331,8 +353,8 @@ describe("App", () => {
     await user.click(screen.getByRole("link", { name: "Flow" }));
     expect(await screen.findByRole("heading", { name: "Flow" })).toBeDefined();
 
-    await user.click(screen.getByRole("link", { name: "Plan" }));
-    expect(await screen.findByRole("heading", { name: "Plan" })).toBeDefined();
+    await user.click(screen.getByRole("link", { name: "Budget" }));
+    expect(await screen.findByRole("heading", { name: "Budget" })).toBeDefined();
 
     await user.click(screen.getByRole("link", { name: "You" }));
     expect(await screen.findByRole("heading", { name: "You" })).toBeDefined();
@@ -1037,19 +1059,20 @@ describe("App", () => {
         },
       ],
     });
-    window.history.replaceState({}, "", "/plan");
+    window.history.replaceState({}, "", "/budget");
     const user = userEvent.setup();
     render(
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    expect(await screen.findByRole("heading", { name: "Plan" })).toBeDefined();
-    expect(screen.queryByRole("button", { name: "Monthly" })).toBeNull();
-    await user.click(screen.getByRole("button", { name: /This month/ }));
-    expect(screen.getByRole("dialog", { name: "Budget period" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Monthly" })).toBeDefined();
-    await user.click(screen.getByRole("button", { name: "Close budget period options" }));
-    expect(screen.queryByText("No budget categories yet")).toBeDefined();
+    expect(await screen.findByRole("heading", { name: "Budget" })).toBeDefined();
+    expect(screen.queryByRole("dialog", { name: "Budget period" })).toBeNull();
+    expect(screen.getByText("Monthly budget required")).toBeDefined();
+    expect(screen.queryByText("No monthly budget yet")).toBeDefined();
+    expect(screen.getByRole("button", { name: "Monthly" }).getAttribute("aria-pressed")).toBe(
+      "true",
+    );
+    expect(screen.queryByRole("button", { name: "Bills" })).toBeNull();
 
     await user.click(screen.getByRole("button", { name: "Add budget category" }));
     let budgetDialog = screen.getByRole("dialog", { name: "Add budget category" });
@@ -1068,16 +1091,24 @@ describe("App", () => {
         limitAmount: { amount: "250.00", currency: "INR" },
       }),
     );
-    expect(screen.getByRole("heading", { name: "₹250.00" })).toBeDefined();
+    expect(screen.getAllByRole("heading", { name: "₹250.00" })).toHaveLength(1);
     expect(screen.getByText("₹80.00 spent of ₹250.00")).toBeDefined();
     expect(screen.getAllByText("32%")).toHaveLength(2);
-    expect(screen.getByRole("heading", { name: "Active goals" })).toBeDefined();
-    expect(screen.getByText("₹170.00 / ₹250.00")).toBeDefined();
-    expect(screen.getByRole("progressbar", { name: "Goal progress: 68 percent" })).toBeDefined();
-    expect(screen.getByText("68%")).toBeDefined();
+    expect(screen.queryByRole("heading", { name: "Active goals" })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Yearly" }));
+    expect(screen.getByRole("heading", { name: "Last 12 months" })).toBeDefined();
+    expect(screen.getByText("Yearly budget summary")).toBeDefined();
+    expect(screen.getByText("Budget vs actual")).toBeDefined();
+    expect(screen.getByRole("heading", { name: "Month-wise breakdown" })).toBeDefined();
+    expect(screen.getByRole("heading", { name: "Category analysis" })).toBeDefined();
+    expect(screen.getByRole("heading", { name: "Yearly trends and insights" })).toBeDefined();
+    expect(screen.getByText("Projected yearly savings")).toBeDefined();
+    expect(screen.getByText("1 of 12 monthly plans entered")).toBeDefined();
+    await user.click(screen.getByRole("button", { name: "Monthly" }));
 
     await user.click(screen.getByRole("link", { name: "Home" }));
-    await user.click(screen.getByRole("link", { name: "Plan" }));
+    await user.click(screen.getByRole("link", { name: "Budget" }));
     expect(await screen.findByText("₹80.00 spent of ₹250.00")).toBeDefined();
 
     await user.click(screen.getByRole("button", { name: "Edit Food budget" }));
@@ -1087,23 +1118,143 @@ describe("App", () => {
     await user.type(amount, "400");
     await user.click(within(budgetDialog).getByRole("button", { name: "Save budget category" }));
 
-    expect(screen.getByRole("heading", { name: "₹400.00" })).toBeDefined();
+    expect(screen.getAllByRole("heading", { name: "₹400.00" })).toHaveLength(1);
     expect(screen.getByText("₹80.00 spent of ₹400.00")).toBeDefined();
     expect(screen.getAllByText("20%")).toHaveLength(2);
 
     await user.click(screen.getByRole("button", { name: "Delete Food budget" }));
-    expect(screen.getByRole("heading", { name: "₹0.00" })).toBeDefined();
-    expect(screen.getByText("No budget categories yet")).toBeDefined();
+    expect(screen.getAllByRole("heading", { name: "₹0.00" })).toHaveLength(1);
+    expect(screen.getByText("No monthly budget yet")).toBeDefined();
   });
 
-  it("blocks guest budget category CRUD and prompts for authentication", async () => {
-    window.history.replaceState({}, "", "/plan");
+  it("quick-fills the current monthly budget from the previous month", async () => {
+    const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
+
+    mockAuthenticatedFinanceSession(fetchMock, {
+      budgets: [
+        {
+          categoryId: "cat_food",
+          currency: "INR",
+          deletedAt: null,
+          id: "bgt_june_food",
+          limitAmount: "10000.00",
+          periodEnd: "2026-06-30T00:00:00.000Z",
+          periodStart: "2026-06-01T00:00:00.000Z",
+          progressPercent: "0",
+          remainingAmount: "10000.00",
+          spentAmount: "0",
+          updatedAt: "2026-06-01T00:00:00.000Z",
+          workspaceId: "wsp_finance",
+        },
+        {
+          categoryId: "cat_food",
+          currency: "INR",
+          deletedAt: null,
+          id: "bgt_june_food_duplicate",
+          limitAmount: "10000.00",
+          periodEnd: "2026-06-30T00:00:00.000Z",
+          periodStart: "2026-06-01T00:00:00.000Z",
+          progressPercent: "0",
+          remainingAmount: "10000.00",
+          spentAmount: "0",
+          updatedAt: "2026-06-01T00:00:01.000Z",
+          workspaceId: "wsp_finance",
+        },
+      ],
+      reportingCurrency: "INR",
+    });
+    window.history.replaceState({}, "", "/budget");
     const user = userEvent.setup();
     render(
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    expect(await screen.findByRole("heading", { name: "Plan" })).toBeDefined();
+    expect(await screen.findByText("₹0.00 spent of ₹10,000.00")).toBeDefined();
+    expect(screen.getAllByText("₹0.00 spent of ₹10,000.00")).toHaveLength(1);
+    await user.click(screen.getByRole("button", { name: "Next month" }));
+    expect(await screen.findByText("No monthly budget yet")).toBeDefined();
+    await user.click(await screen.findByRole("button", { name: "Copy previous month" }));
+
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.find(
+          ([input, init]) =>
+            getRequestUrl(input).endsWith("/api/v1/workspaces/wsp_finance/budgets") &&
+            init?.method === "POST",
+        ),
+      ).toBeDefined(),
+    );
+    const createBudgetCall = fetchMock.mock.calls.find(
+      ([input, init]) =>
+        getRequestUrl(input).endsWith("/api/v1/workspaces/wsp_finance/budgets") &&
+        init?.method === "POST",
+    );
+    const createBudgetCalls = fetchMock.mock.calls.filter(
+      ([input, init]) =>
+        getRequestUrl(input).endsWith("/api/v1/workspaces/wsp_finance/budgets") &&
+        init?.method === "POST",
+    );
+
+    expect(createBudgetCalls).toHaveLength(1);
+    expect(JSON.parse(String(createBudgetCall?.[1]?.body))).toEqual(
+      expect.objectContaining({
+        categoryId: "cat_food",
+        limitAmount: { amount: "10000.00", currency: "INR" },
+        periodEnd: "2026-07-31",
+        periodStart: "2026-07-01",
+      }),
+    );
+    expect(await screen.findByText("₹0.00 spent of ₹10,000.00")).toBeDefined();
+    expect(screen.getAllByText("₹0.00 spent of ₹10,000.00")).toHaveLength(1);
+    expect(screen.queryByText("Monthly budget required")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Previous month" }));
+    expect(await screen.findByText("June 2026 categories")).toBeDefined();
+    expect(screen.getAllByText("₹0.00 spent of ₹10,000.00")).toHaveLength(1);
+  });
+
+  it("refreshes authentication and retries budget creation after a 401", async () => {
+    const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
+
+    mockAuthenticatedFinanceSession(fetchMock, {
+      failFirstBudgetCreateAsUnauthenticated: true,
+      reportingCurrency: "INR",
+    });
+    window.history.replaceState({}, "", "/budget");
+    const user = userEvent.setup();
+    render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    expect(await screen.findByText("No monthly budget yet")).toBeDefined();
+    await user.click(screen.getByRole("button", { name: "Add budget category" }));
+    const budgetDialog = screen.getByRole("dialog", { name: "Add budget category" });
+    await user.type(within(budgetDialog).getByLabelText("Amount"), "250");
+    await user.click(within(budgetDialog).getByRole("button", { name: "Add budget category" }));
+
+    await waitFor(() => expect(screen.getByText("₹0.00 spent of ₹250.00")).toBeDefined());
+    const createBudgetCalls = fetchMock.mock.calls.filter(
+      ([input, init]) =>
+        getRequestUrl(input).endsWith("/api/v1/workspaces/wsp_finance/budgets") &&
+        init?.method === "POST",
+    );
+    const refreshCalls = fetchMock.mock.calls.filter(
+      ([input, init]) =>
+        getRequestUrl(input).endsWith("/api/v1/auth/refresh") && init?.method === "POST",
+    );
+
+    expect(createBudgetCalls).toHaveLength(2);
+    expect(refreshCalls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("blocks guest budget category CRUD and prompts for authentication", async () => {
+    window.history.replaceState({}, "", "/budget");
+    const user = userEvent.setup();
+    render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Budget" })).toBeDefined();
     await user.click(screen.getByRole("button", { name: "Add budget category" }));
 
     expect(

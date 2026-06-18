@@ -11,7 +11,7 @@ Use a persistent five-item bottom navigation:
 1. Home
 2. Activity
 3. Flow
-4. Plan
+4. Budget
 5. You
 
 Flow occupies a raised center position with the approved orb treatment. Every
@@ -26,7 +26,7 @@ forms, primary actions, or the software keyboard.
 - **Home:** financial overview and quick actions
 - **Activity:** searchable transaction history
 - **Flow:** Phase 1 preview; Phase 2 assistant
-- **Plan:** monthly budgets, category budgets, and bills
+- **Budget:** monthly budgets, category budgets, yearly budget insights, and goals
 - **You:** profile state, tools, preferences, privacy, and account conversion
 
 Goals and Reports are secondary destinations opened from Home or You. Add

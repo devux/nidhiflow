@@ -15,6 +15,14 @@ function notFound() {
   });
 }
 
+function duplicateBudget() {
+  return new AppError({
+    code: "CONFLICT",
+    message: "A budget already exists for this category and period.",
+    status: 409,
+  });
+}
+
 export class BudgetService {
   private readonly workspaceRepository: WorkspaceRepository;
   private readonly repository: BudgetRepository;
@@ -96,6 +104,20 @@ export class BudgetService {
         if (!category) {
           throw notFound();
         }
+      }
+
+      const existingBudget = await repository.findActiveByCategoryPeriod(
+        {
+          categoryId: input.categoryId ?? null,
+          periodEnd: input.periodEnd,
+          periodStart: input.periodStart,
+          workspaceId,
+        },
+        transaction,
+      );
+
+      if (existingBudget) {
+        throw duplicateBudget();
       }
 
       const budget = await repository.create(
@@ -187,6 +209,32 @@ export class BudgetService {
 
       if (input.periodStart !== undefined) {
         updates.periodStart = input.periodStart;
+      }
+
+      const currentBudget = await repository.findById(workspaceId, budgetId, transaction);
+
+      if (!currentBudget) {
+        throw notFound();
+      }
+
+      const nextCategoryId =
+        input.categoryId !== undefined ? input.categoryId : currentBudget.categoryId;
+      const nextPeriodStart =
+        input.periodStart !== undefined ? input.periodStart : currentBudget.periodStart.slice(0, 10);
+      const nextPeriodEnd =
+        input.periodEnd !== undefined ? input.periodEnd : currentBudget.periodEnd.slice(0, 10);
+      const duplicate = await repository.findActiveByCategoryPeriod(
+        {
+          categoryId: nextCategoryId,
+          periodEnd: nextPeriodEnd,
+          periodStart: nextPeriodStart,
+          workspaceId,
+        },
+        transaction,
+      );
+
+      if (duplicate && duplicate.id !== budgetId) {
+        throw duplicateBudget();
       }
 
       const budget = await repository.update(workspaceId, budgetId, updates, transaction);

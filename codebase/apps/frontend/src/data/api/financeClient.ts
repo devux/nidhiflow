@@ -1,4 +1,5 @@
 import { environment } from "../../config/environment";
+import { refreshAccessToken } from "./authClient";
 import type { SupportedCurrency } from "../../domain/preferences/guestPreferences";
 import type {
   GuestTransaction,
@@ -17,6 +18,9 @@ interface ApiMoney {
   amount: string;
   currency: SupportedCurrency;
 }
+
+const sessionAccessTokenKey = "nidhiflow.accessToken";
+const sessionAuthSnapshotKey = "nidhiflow.authSession";
 
 export interface AccountResource {
   currency: SupportedCurrency;
@@ -61,20 +65,46 @@ interface TransactionResource {
   updatedAt: string;
 }
 
+class FinanceApiRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = "FinanceApiRequestError";
+  }
+}
+
 async function parseResponse<Data>(response: Response): Promise<ApiEnvelope<Data>> {
   const body = (await response.json()) as ApiEnvelope<Data>;
 
   if (!response.ok) {
-    throw new Error(body.message || "Request failed.");
+    throw new FinanceApiRequestError(body.message || "Request failed.", response.status);
   }
 
   return body;
 }
 
-async function apiRequest<Data>(
+function storeRefreshedAccessToken(accessToken: string) {
+  try {
+    window.sessionStorage.setItem(sessionAccessTokenKey, accessToken);
+    const snapshot = window.sessionStorage.getItem(sessionAuthSnapshotKey);
+
+    if (snapshot) {
+      window.sessionStorage.setItem(
+        sessionAuthSnapshotKey,
+        JSON.stringify({ ...JSON.parse(snapshot), accessToken }),
+      );
+    }
+  } catch {
+    // The refresh cookie still carries the server session.
+  }
+}
+
+async function sendApiRequest<Data>(
   path: string,
   accessToken: string,
-  options: RequestInit = {},
+  options: RequestInit,
 ): Promise<ApiEnvelope<Data>> {
   const response = await fetch(`${environment.NIDHIFLOW_API_BASE_URL}/api/v1${path}`, {
     credentials: "include",
@@ -87,6 +117,25 @@ async function apiRequest<Data>(
   });
 
   return parseResponse<Data>(response);
+}
+
+async function apiRequest<Data>(
+  path: string,
+  accessToken: string,
+  options: RequestInit = {},
+): Promise<ApiEnvelope<Data>> {
+  try {
+    return await sendApiRequest<Data>(path, accessToken, options);
+  } catch (error) {
+    if (!(error instanceof FinanceApiRequestError) || error.status !== 401) {
+      throw error;
+    }
+
+    const refreshedAccessToken = await refreshAccessToken();
+    storeRefreshedAccessToken(refreshedAccessToken);
+
+    return sendApiRequest<Data>(path, refreshedAccessToken, options);
+  }
 }
 
 function decimalToMinor(amount: string): string {

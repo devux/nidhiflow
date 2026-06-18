@@ -19,7 +19,6 @@ src/
 │   ├── auth/
 │   ├── accounts/
 │   ├── activity/
-│   ├── bills/
 │   ├── budgets/
 │   ├── categories/
 │   ├── dashboard/

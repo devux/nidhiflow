@@ -30,7 +30,7 @@ interfaces so guest and authenticated implementations share domain behavior.
 ## Routing
 
 Use route-based code splitting. Public/guest routes include Home, Activity,
-Plan, Goals, Reports, You, transaction forms, education, feedback, and Flow
+Budget, Goals, Reports, You, transaction forms, education, feedback, and Flow
 preview. Protected capabilities use an intent-preserving authentication guard,
 not a global login wall.
 

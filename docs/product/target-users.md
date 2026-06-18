@@ -25,7 +25,7 @@ tax, lending, brokerage, or investment-management software.
 
 - Start immediately without registration
 - Understand what data is local and what requires an account
-- Record transactions, budgets, bills, and goals
+- Record transactions, budgets, and goals
 - See useful summaries and reports
 - Export local data
 

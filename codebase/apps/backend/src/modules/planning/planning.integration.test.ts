@@ -180,6 +180,22 @@ describe("planning integration", () => {
         periodStart: "2026-06-01",
       });
     expect(budgetResponse.status).toBe(201);
+    expect(budgetResponse.body.data).toMatchObject({
+      periodEnd: "2026-06-30",
+      periodStart: "2026-06-01",
+    });
+
+    const duplicateBudgetResponse = await request(app)
+      .post(`/api/v1/workspaces/${workspaceId}/budgets`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        currency: "INR",
+        limitAmount: { amount: "500.0000", currency: "INR" },
+        periodEnd: "2026-06-30",
+        periodStart: "2026-06-01",
+      });
+    expect(duplicateBudgetResponse.status).toBe(409);
+    expect(duplicateBudgetResponse.body.error.code).toBe("CONFLICT");
 
     const spendingResponse = await request(app)
       .post(`/api/v1/workspaces/${workspaceId}/transactions`)
@@ -200,9 +216,22 @@ describe("planning integration", () => {
     expect(budgetSummaryResponse.status).toBe(200);
     expect(budgetSummaryBody.data.budgets).toHaveLength(1);
     expect(budgetSummaryBody.data.budgets[0]).toMatchObject({
+      periodEnd: "2026-06-30",
+      periodStart: "2026-06-01",
       spentAmount: "120.0000",
       remainingAmount: "380.0000",
     });
+
+    const archiveBudgetResponse = await request(app)
+      .delete(`/api/v1/workspaces/${workspaceId}/budgets/${budgetResponse.body.data.id}`)
+      .set("Authorization", `Bearer ${accessToken}`);
+    expect(archiveBudgetResponse.status).toBe(200);
+    expect(archiveBudgetResponse.body.data.deletedAt).toEqual(expect.any(String));
+
+    const archivedBudgetResponse = await request(app)
+      .get(`/api/v1/workspaces/${workspaceId}/budgets/${budgetResponse.body.data.id}`)
+      .set("Authorization", `Bearer ${accessToken}`);
+    expect(archivedBudgetResponse.status).toBe(404);
 
     const goalResponse = await request(app)
       .post(`/api/v1/workspaces/${workspaceId}/goals`)

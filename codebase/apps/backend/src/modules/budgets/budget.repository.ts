@@ -22,8 +22,8 @@ export class BudgetRepository {
       SELECT b.id,
              b.workspace_id AS "workspaceId",
              b.category_id AS "categoryId",
-             b.period_start AS "periodStart",
-             b.period_end AS "periodEnd",
+             to_char(b.period_start, 'YYYY-MM-DD') AS "periodStart",
+             to_char(b.period_end, 'YYYY-MM-DD') AS "periodEnd",
              b.limit_amount::text AS "limitAmount",
              b.currency,
              b.updated_at AS "updatedAt",
@@ -69,6 +69,30 @@ export class BudgetRepository {
     return result.rows[0] ?? null;
   }
 
+  async findActiveByCategoryPeriod(
+    input: {
+      categoryId: string | null;
+      periodEnd: string;
+      periodStart: string;
+      workspaceId: string;
+    },
+    queryable: Queryable = this.database,
+  ) {
+    const result = await queryable.query<Pick<BudgetRecord, "id">>(
+      `SELECT id
+         FROM budgets
+        WHERE workspace_id = $1
+          AND COALESCE(category_id, '') = COALESCE($2, '')
+          AND period_start = $3
+          AND period_end = $4
+          AND deleted_at IS NULL
+        LIMIT 1`,
+      [input.workspaceId, input.categoryId, input.periodStart, input.periodEnd],
+    );
+
+    return result.rows[0] ?? null;
+  }
+
   async create(
     input: {
       categoryId: string | null;
@@ -94,8 +118,8 @@ export class BudgetRepository {
        RETURNING id,
                  workspace_id AS "workspaceId",
                  category_id AS "categoryId",
-                 period_start AS "periodStart",
-                 period_end AS "periodEnd",
+                 to_char(period_start, 'YYYY-MM-DD') AS "periodStart",
+                 to_char(period_end, 'YYYY-MM-DD') AS "periodEnd",
                  limit_amount::text AS "limitAmount",
                  currency,
                  updated_at AS "updatedAt",
@@ -175,17 +199,29 @@ export class BudgetRepository {
   }
 
   async archive(workspaceId: string, budgetId: string, queryable: Queryable = this.database) {
-    await queryable.query(
+    const result = await queryable.query<BudgetRecord>(
       `UPDATE budgets
           SET deleted_at = COALESCE(deleted_at, CURRENT_TIMESTAMP),
               updated_at = CURRENT_TIMESTAMP
         WHERE workspace_id = $1
           AND id = $2
-          AND deleted_at IS NULL`,
+          AND deleted_at IS NULL
+       RETURNING id,
+                 workspace_id AS "workspaceId",
+                 category_id AS "categoryId",
+                 to_char(period_start, 'YYYY-MM-DD') AS "periodStart",
+                 to_char(period_end, 'YYYY-MM-DD') AS "periodEnd",
+                 limit_amount::text AS "limitAmount",
+                 currency,
+                 updated_at AS "updatedAt",
+                 deleted_at AS "deletedAt",
+                 '0'::text AS "spentAmount",
+                 limit_amount::text AS "remainingAmount",
+                 '0'::text AS "progressPercent"`,
       [workspaceId, budgetId],
     );
 
-    return this.findById(workspaceId, budgetId, queryable);
+    return result.rows[0] ?? null;
   }
 
   async summary(workspaceId: string, queryable: Queryable = this.database) {

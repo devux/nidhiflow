@@ -11,6 +11,10 @@
   expense.
 - Reports must use explicit date boundaries and consistent transaction status
   rules.
+- Authenticated budget planning is monthly. A monthly budget plan is required
+  for each active planning month.
+- Yearly budget totals and reports must be calculated from the last 12 monthly
+  budget plans and must not be entered or stored as a separate yearly plan.
 
 ## Guest Rules
 
@@ -26,7 +30,7 @@
   or the device is lost.
 - Do not create hidden server-side guest profiles.
 - Guests may not locally manage transactions, accounts, categories, budgets,
-  bills, goals, reports, preferences that affect server data, education
+  goals, reports, preferences that affect server data, education
   progress, achievements, or export.
 - Anonymous feedback may use a narrowly scoped public endpoint.
 - Authentication is required for every CRUD operation, server persistence,

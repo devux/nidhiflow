@@ -39,7 +39,7 @@ and optional ethical gamification.
 
 ## Scope
 
-NidhiFlow includes transaction tracking, manual accounts, budgets, bills,
+NidhiFlow includes transaction tracking, manual accounts, budgets,
 savings and debt goals, reports, notifications, feedback, education,
 achievements, and simple family collaboration.
 

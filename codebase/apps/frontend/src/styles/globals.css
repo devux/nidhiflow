@@ -357,124 +357,6 @@ p {
   margin-top: var(--space-4);
 }
 
-.goal-preview-card {
-  padding: var(--space-4);
-}
-
-.goal-preview {
-  display: grid;
-  grid-template-columns: 4.5rem minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: var(--space-4);
-  margin-top: var(--space-5);
-}
-
-.goal-preview__art {
-  position: relative;
-  display: block;
-  width: 4.5rem;
-  aspect-ratio: 1;
-  overflow: hidden;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 74% 18%, #fde68a 0 0.45rem, transparent 0.5rem),
-    linear-gradient(165deg, #8dd7ff 0 45%, #fef3c7 46% 72%, #f9d56e 73% 100%);
-}
-
-.goal-preview__art::before {
-  position: absolute;
-  right: -0.5rem;
-  bottom: 1.1rem;
-  width: 3.9rem;
-  height: 1.45rem;
-  border-radius: 50%;
-  background: rgb(34 197 94 / 34%);
-  content: "";
-}
-
-.goal-preview__tree {
-  position: absolute;
-  left: 1.05rem;
-  bottom: 0.75rem;
-  width: 0.28rem;
-  height: 2.45rem;
-  border-radius: var(--radius-pill);
-  background: #8b5a2b;
-  transform: rotate(10deg);
-}
-
-.goal-preview__tree::before,
-.goal-preview__tree::after {
-  position: absolute;
-  top: -0.35rem;
-  left: -0.75rem;
-  width: 1.65rem;
-  height: 1.1rem;
-  border-radius: 100% 0;
-  background: #15803d;
-  content: "";
-  transform: rotate(-22deg);
-}
-
-.goal-preview__tree::after {
-  left: -0.2rem;
-  background: #22c55e;
-  transform: rotate(32deg);
-}
-
-.goal-preview__body {
-  display: grid;
-  min-width: 0;
-  gap: var(--space-2);
-}
-
-.goal-preview__body strong {
-  overflow: hidden;
-  color: var(--color-text-primary);
-  font-size: 1rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.goal-preview__body p {
-  margin: 0;
-  color: var(--color-text-secondary);
-  font-size: 0.9rem;
-  font-weight: 800;
-}
-
-.goal-preview__progress {
-  height: 0.42rem;
-  overflow: hidden;
-  border-radius: var(--radius-pill);
-  background: #e5e7eb;
-}
-
-.goal-preview__progress span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--color-brand-strong);
-}
-
-.goal-preview__percent,
-.goal-preview__button {
-  display: inline-grid;
-  min-width: 2.75rem;
-  min-height: 2.75rem;
-  place-items: center;
-  border-radius: var(--radius-pill);
-  color: var(--color-brand-strong);
-  background: var(--color-brand-faint);
-  font-weight: 900;
-}
-
-.goal-preview__button {
-  min-width: 2.5rem;
-  min-height: 2.5rem;
-  text-decoration: none;
-}
-
 .progress-ring {
   display: grid;
   width: 7rem;
@@ -1135,6 +1017,11 @@ p {
   line-height: 1.45;
 }
 
+.inline-alert__content {
+  display: grid;
+  gap: var(--space-2);
+}
+
 .success-message {
   color: var(--color-success);
   background: var(--color-brand-soft);
@@ -1276,6 +1163,31 @@ p {
   justify-content: flex-start;
 }
 
+.budget-category-toolbar,
+.month-navigator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.month-navigator {
+  flex-wrap: wrap;
+}
+
+.month-navigator__previous svg {
+  transform: rotate(180deg);
+}
+
+.month-navigator__label {
+  min-width: 7.5rem;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-align: center;
+  white-space: nowrap;
+}
+
 .budget-summary-actions {
   display: grid;
   justify-items: end;
@@ -1294,6 +1206,52 @@ p {
   font-size: 0.78rem;
   font-weight: 900;
   cursor: pointer;
+}
+
+.yearly-insight-grid {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.yearly-insight-grid > div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-subtle);
+}
+
+.yearly-insight-grid strong {
+  font-size: 1.25rem;
+}
+
+.yearly-insight-grid small {
+  grid-column: 2;
+  color: var(--color-text-secondary);
+}
+
+.yearly-breakdown-list {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.yearly-breakdown-list > section {
+  min-width: 0;
+}
+
+.insight-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+}
+
+.insight-row + .insight-row {
+  border-top: 1px solid var(--color-border);
 }
 
 .modal-backdrop {

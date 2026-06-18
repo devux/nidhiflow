@@ -10,7 +10,7 @@ const destinations: Array<{
   { icon: "home", label: "Home", path: "/" },
   { icon: "activity", label: "Activity", path: "/activity" },
   { icon: "flow", label: "Flow", path: "/flow" },
-  { icon: "plan", label: "Plan", path: "/plan" },
+  { icon: "plan", label: "Budget", path: "/budget" },
   { icon: "user", label: "You", path: "/you" },
 ];
 

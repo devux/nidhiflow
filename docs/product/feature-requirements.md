@@ -39,11 +39,17 @@
 - Asset, liability, and net-worth summaries
 - Archive accounts without breaking history
 
-## Budgets, Bills, and Goals
+## Budgets and Goals
 
-- Monthly total and category budgets
+- Monthly total and category budgets are mandatory for authenticated users before
+  continuing monthly planning
+- Create, view, update, and delete monthly budget plans
+- Quick-fill current month budgets from the previous month, then allow edits
+- Yearly budget totals and reports are derived from the last 12 monthly budget
+  plans and are not entered separately
+- Yearly budget view includes summary, budget vs actual spending, month-wise
+  breakdown, category analysis, yearly trends, savings projection, and insights
 - Used, spent, remaining, overspending alerts, and progress
-- Bills with due date, status, recurrence, and reminders
 - Savings and debt-repayment goals with target, target date, contributions, and
   progress
 - Active and completed goal views
@@ -88,7 +94,7 @@
 
 ## Notifications
 
-- In-app and email reminders for bills, budgets, goals, and recurring entries
+- In-app and email reminders for budgets, goals, and recurring entries
 - Notification preferences
 - Guest login/data-protection reminder preference stored locally
 - Flow launch notification

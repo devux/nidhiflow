@@ -22,7 +22,11 @@
   for the authenticated user so the data is stored in the database instead of
   remaining local-only.
 
-## Plan and Budget
+## Budget
 
-- Deeply revisit the Plan page monthly and yearly budget planning flows,
-  including period behavior, category limits, calculations, and editing UX.
+- Continue refining monthly budget planning UX, including month navigation,
+  quick-fill review, category limit editing, and derived yearly reporting.
+- Revisit Active Goals placement outside the Budget page with a dedicated
+  Goals experience or a clearer dashboard entry point.
+- Reintroduce Bills as a future feature outside the current Budget module,
+  including due dates, status, recurrence, reminders, and related notifications.

@@ -19,7 +19,7 @@ const previewItems: Array<{ description: string; icon: IconName; title: string }
     title: "Savings recommendations",
   },
   {
-    description: "Helpful notices for bills, budgets, and unusual activity.",
+    description: "Helpful notices for budgets, goals, and unusual activity.",
     icon: "bell",
     title: "Smart alerts",
   },

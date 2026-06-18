@@ -25,7 +25,7 @@ must not delay or weaken the core finance foundation.
 - Balances, assets, liabilities, and net-worth summaries
 - Monthly and category budgets
 - Savings and debt-repayment goals
-- Bills, recurring transactions, reminders, and attachments
+- Recurring transactions, reminders, and attachments
 - Search, filtering, sorting, pagination, CSV import/export
 
 ### Insights and Engagement
@@ -49,7 +49,7 @@ must not delay or weaken the core finance foundation.
 
 1. Read-only guest access, account security, and authenticated transaction management
 2. Accounts, budgets, goals, dashboard, and basic reports
-3. Family workspace, bills, recurring transactions, and notifications
+3. Family workspace, recurring transactions, and notifications
 4. Import/export, attachments, education, achievements, and feedback
 5. Accessibility, localization, operational hardening, and complete testing
 
