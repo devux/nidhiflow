@@ -10,16 +10,16 @@ must not delay or weaken the core finance foundation.
 
 ### Foundation
 
-- Guest mode with secure local structured storage
+- Read-only guest mode with no guest CRUD writes
 - Optional signup, login, logout, email verification, and password recovery
 - Optional five-minute guest data-protection reminder with local preferences
-- Guest-to-account migration with preview, duplicate handling, confirmation,
-  and rollback on failure
+- Legacy guest-to-account migration with preview, duplicate handling,
+  confirmation, and rollback on failure
 - Profiles, locale, timezone, currency, theme, and notification preferences
 
 ### Finance Workflows
 
-- Income, expense, and transfer CRUD
+- Authenticated income, expense, and transfer CRUD through backend APIs
 - Default/custom categories and subcategories
 - Manual cash, bank, credit card, loan, wallet, and other accounts
 - Balances, assets, liabilities, and net-worth summaries
@@ -47,7 +47,7 @@ must not delay or weaken the core finance foundation.
 
 ## Phase 1 Delivery Order
 
-1. Guest storage, account security, and transaction management
+1. Read-only guest access, account security, and authenticated transaction management
 2. Accounts, budgets, goals, dashboard, and basic reports
 3. Family workspace, bills, recurring transactions, and notifications
 4. Import/export, attachments, education, achievements, and feedback

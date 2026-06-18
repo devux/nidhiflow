@@ -7,15 +7,16 @@ money management feel intimidating, tedious, or inaccessible.
 
 ## Product Promise
 
-Users can begin immediately without an account, record and understand their
-money with minimal effort, and choose an account only when they need cloud
-history, synchronization, collaboration, communication, or personalized AI.
+Users can begin immediately without an account, read available finance views,
+and choose an account when they need to create, update, delete, persist,
+recover, synchronize, collaborate on, or personalize financial data.
 
 ## Core Principles
 
 - **Mobile first:** optimize mobile implementation, testing, and performance
   first; desktop second; tablet third.
-- **Guest first:** useful core workflows work locally without mandatory login.
+- **Guest first:** useful read-only discovery works without mandatory login;
+  financial changes require authentication.
 - **Security first:** protect financial data through least privilege, secure
   defaults, validation, and auditable operations.
 - **Accessibility first:** support diverse abilities, devices, languages, and
@@ -48,7 +49,8 @@ recommendations.
 
 ## Success Outcomes
 
-- A guest can record a first transaction without creating an account.
+- A guest can inspect the product and read available finance views without
+  creating an account.
 - A user can understand current spending, remaining budget, and goal progress
   within seconds.
 - Families can collaborate without learning a complex permission model.

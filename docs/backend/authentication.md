@@ -2,7 +2,7 @@
 
 ## Modes
 
-- **Guest:** local-only core finance use; no server identity
+- **Guest:** read-only product access; no server identity and no finance CRUD
 - **Authenticated:** cloud storage, synchronization, collaboration, protected
   communication, account lifecycle, and persistent AI
 
@@ -61,8 +61,10 @@ transport and CSRF design must be decided before implementation.
 
 ## Login Prompt Rules
 
-Do not require login for local guest features. Protected-action prompts explain
-the benefit, preserve intent, allow cancellation, and resume after success.
+Do not require login for read-only guest access. Any action that creates,
+updates, deletes, migrates, uploads, exports, or otherwise modifies data is a
+protected action. Protected-action prompts explain the benefit, preserve intent,
+allow cancellation, and resume after success where practical.
 
 ## Logout
 

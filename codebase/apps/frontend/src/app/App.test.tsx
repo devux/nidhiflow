@@ -89,9 +89,216 @@ function createTransactionRepository(
   };
 }
 
+function mockAuthenticatedFinanceSession(
+  fetchMock: jest.MockedFunction<typeof fetch>,
+  options: {
+    budgets?: Array<Record<string, unknown>>;
+    reportingCurrency?: string;
+    transactions?: unknown[];
+  } = {},
+) {
+  let budgets = [...(options.budgets ?? [])];
+  const reportingCurrency = options.reportingCurrency ?? "USD";
+
+  fetchMock.mockImplementation((input, init) => {
+    const url = getRequestUrl(input);
+    const method = init?.method ?? "GET";
+
+    if (url.endsWith("/api/v1/auth/refresh") && method === "POST") {
+      return Promise.resolve(
+        createJsonResponse({
+          data: { accessToken: "access-token-finance" },
+          message: "Session refreshed successfully.",
+          success: true,
+        }),
+      );
+    }
+
+    if (url.endsWith("/api/v1/users/me") && method === "GET") {
+      return Promise.resolve(
+        createJsonResponse({
+          data: {
+            displayName: "Nila",
+            email: "nila@example.com",
+            id: "usr_finance",
+            locale: "en-US",
+            preferredCurrency: "USD",
+            theme: "system",
+            timezone: "UTC",
+          },
+          message: "Current user retrieved successfully.",
+          success: true,
+        }),
+      );
+    }
+
+    if (url.endsWith("/api/v1/workspaces") && method === "GET") {
+      return Promise.resolve(
+        createJsonResponse({
+          data: [
+            {
+              id: "wsp_finance",
+              name: "Nila",
+              reportingCurrency,
+              type: "personal",
+            },
+          ],
+          message: "Workspaces retrieved successfully.",
+          success: true,
+        }),
+      );
+    }
+
+    if (url.endsWith("/api/v1/workspaces/wsp_finance/categories") && method === "GET") {
+      return Promise.resolve(
+        createJsonResponse({
+          data: [
+            { id: "cat_salary", isArchived: false, name: "Salary", transactionType: "income" },
+            { id: "cat_freelance", isArchived: false, name: "Freelance", transactionType: "income" },
+            { id: "cat_business", isArchived: false, name: "Business", transactionType: "income" },
+            { id: "cat_interest", isArchived: false, name: "Interest", transactionType: "income" },
+            { id: "cat_food", isArchived: false, name: "Food", transactionType: "expense" },
+            { id: "cat_shopping", isArchived: false, name: "Shopping", transactionType: "expense" },
+            { id: "cat_transport", isArchived: false, name: "Transport", transactionType: "expense" },
+            { id: "cat_bills", isArchived: false, name: "Bills", transactionType: "expense" },
+            { id: "cat_entertainment", isArchived: false, name: "Entertainment", transactionType: "expense" },
+            { id: "cat_health", isArchived: false, name: "Health", transactionType: "expense" },
+            { id: "cat_education", isArchived: false, name: "Education", transactionType: "expense" },
+            { id: "cat_travel", isArchived: false, name: "Travel", transactionType: "expense" },
+            { id: "cat_home", isArchived: false, name: "Home", transactionType: "expense" },
+          ],
+          message: "Categories retrieved successfully.",
+          success: true,
+        }),
+      );
+    }
+
+    if (url.endsWith("/api/v1/workspaces/wsp_finance/accounts") && method === "GET") {
+      return Promise.resolve(
+        createJsonResponse({
+          data: [
+            {
+              currency: "USD",
+              id: "acc_cash",
+              isArchived: false,
+              name: "Cash",
+              type: "cash",
+            },
+          ],
+          message: "Accounts retrieved successfully.",
+          success: true,
+        }),
+      );
+    }
+
+    if (url.endsWith("/api/v1/workspaces/wsp_finance/transactions") && method === "GET") {
+      return Promise.resolve(
+        createJsonResponse({
+          data: options.transactions ?? [],
+          message: "Transactions retrieved successfully.",
+          success: true,
+        }),
+      );
+    }
+
+    if (url.endsWith("/api/v1/workspaces/wsp_finance/budgets") && method === "GET") {
+      return Promise.resolve(
+        createJsonResponse({
+          data: budgets,
+          message: "Budgets retrieved successfully.",
+          success: true,
+        }),
+      );
+    }
+
+    if (url.endsWith("/api/v1/workspaces/wsp_finance/budgets") && method === "POST") {
+      const body = JSON.parse(String(init?.body ?? "{}")) as {
+        categoryId: string;
+        limitAmount: { amount: string; currency: string };
+        periodEnd: string;
+        periodStart: string;
+      };
+      const budget = {
+        categoryId: body.categoryId,
+        currency: body.limitAmount.currency,
+        deletedAt: null,
+        id: `bgt_${budgets.length + 1}`,
+        limitAmount: body.limitAmount.amount,
+        periodEnd: `${body.periodEnd}T00:00:00.000Z`,
+        periodStart: `${body.periodStart}T00:00:00.000Z`,
+        progressPercent: "0",
+        remainingAmount: body.limitAmount.amount,
+        spentAmount: "0",
+        updatedAt: "2026-06-18T00:00:00.000Z",
+        workspaceId: "wsp_finance",
+      };
+      budgets = [...budgets, budget];
+
+      return Promise.resolve(
+        createJsonResponse({
+          data: budget,
+          message: "Budget created successfully.",
+          success: true,
+        }),
+      );
+    }
+
+    const budgetMatch = /\/api\/v1\/workspaces\/wsp_finance\/budgets\/([^/]+)$/.exec(url);
+
+    if (budgetMatch && method === "PATCH") {
+      const body = JSON.parse(String(init?.body ?? "{}")) as {
+        categoryId: string;
+        limitAmount: { amount: string; currency: string };
+        periodEnd: string;
+        periodStart: string;
+      };
+      const budgetId = budgetMatch[1];
+      const updatedBudget = {
+        categoryId: body.categoryId,
+        currency: body.limitAmount.currency,
+        deletedAt: null,
+        id: budgetId,
+        limitAmount: body.limitAmount.amount,
+        periodEnd: `${body.periodEnd}T00:00:00.000Z`,
+        periodStart: `${body.periodStart}T00:00:00.000Z`,
+        progressPercent: "0",
+        remainingAmount: body.limitAmount.amount,
+        spentAmount: "0",
+        updatedAt: "2026-06-18T00:00:00.000Z",
+        workspaceId: "wsp_finance",
+      };
+      budgets = budgets.map((budget) => (budget.id === budgetId ? updatedBudget : budget));
+
+      return Promise.resolve(
+        createJsonResponse({
+          data: updatedBudget,
+          message: "Budget updated successfully.",
+          success: true,
+        }),
+      );
+    }
+
+    if (budgetMatch && method === "DELETE") {
+      const budgetId = budgetMatch[1];
+      budgets = budgets.filter((budget) => budget.id !== budgetId);
+
+      return Promise.resolve(
+        createJsonResponse({
+          data: { id: budgetId },
+          message: "Budget archived successfully.",
+          success: true,
+        }),
+      );
+    }
+
+    return Promise.reject(new Error(`Unexpected request: ${url}`));
+  });
+}
+
 describe("App", () => {
   beforeEach(() => {
     jest.restoreAllMocks();
+    window.sessionStorage.clear();
     Object.defineProperty(globalThis, "fetch", {
       configurable: true,
       value: jest.fn(() => Promise.reject(new Error("No active test session."))),
@@ -129,6 +336,32 @@ describe("App", () => {
 
     await user.click(screen.getByRole("link", { name: "You" }));
     expect(await screen.findByRole("heading", { name: "You" })).toBeDefined();
+  });
+
+  it("shows authenticated activity when API transactions include ISO timestamps", async () => {
+    mockAuthenticatedFinanceSession(globalThis.fetch as jest.MockedFunction<typeof fetch>, {
+      transactions: [
+        {
+          amount: "42.00",
+          categoryId: "cat_food",
+          createdAt: "2026-04-15T08:30:00.000Z",
+          currency: "USD",
+          id: "txn_iso_date",
+          note: "Groceries",
+          transactionDate: "2026-04-15T00:00:00.000Z",
+          type: "expense",
+          updatedAt: "2026-04-15T08:30:00.000Z",
+        },
+      ],
+    });
+    window.history.replaceState({}, "", "/activity");
+    render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Activity" })).toBeDefined();
+    expect(await screen.findByRole("heading", { name: "April 15, 2026" })).toBeDefined();
+    expect(screen.getByText("Groceries")).toBeDefined();
   });
 
   it("links the Home notification entry to the guest preferences page", async () => {
@@ -213,7 +446,7 @@ describe("App", () => {
     );
   });
 
-  it("offers immediate guest data migration after signup with consent", async () => {
+  it("does not prompt guests to migrate locally written data after signup", async () => {
     const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
 
     fetchMock.mockImplementation((input, init) => {
@@ -256,26 +489,6 @@ describe("App", () => {
         );
       }
 
-      if (url.endsWith("/api/v1/users/me/guest-migrations") && method === "POST") {
-        return Promise.resolve(
-          createJsonResponse(
-            {
-              data: {
-                clientMigrationId: "migration-test",
-                summary: {
-                  importedTransactions: 1,
-                  totalTransactions: 1,
-                },
-                workspaceId: "wsp_789",
-              },
-              message: "Guest data migrated successfully.",
-              success: true,
-            },
-            true,
-          ),
-        );
-      }
-
       return Promise.reject(new Error(`Unexpected request: ${url}`));
     });
 
@@ -287,19 +500,7 @@ describe("App", () => {
           ...defaultPreferences,
           displayName: "Maya",
         })}
-        transactionRepository={createTransactionRepository([
-          {
-            amountMinor: "2500",
-            category: "Food",
-            createdAt: "2026-06-17T00:00:00.000Z",
-            currency: "USD",
-            id: "guest_txn_1",
-            note: "Groceries",
-            transactionDate: "2026-06-17",
-            type: "expense",
-            updatedAt: "2026-06-17T00:00:00.000Z",
-          },
-        ])}
+        transactionRepository={createTransactionRepository()}
       />,
     );
 
@@ -308,45 +509,13 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Create account" }));
     await user.click(await screen.findByRole("button", { name: "Verify and continue" }));
 
-    expect(await screen.findByRole("region", { name: "Move local data" })).toBeDefined();
-    expect(screen.getByText(/We found 1 local transaction/)).toBeDefined();
-
-    await user.click(screen.getByRole("button", { name: "Move my data" }));
-
-    await waitFor(() =>
-      expect(screen.getByText("Local finance data copied to your account.")).toBeDefined(),
-    );
-    await user.click(screen.getByRole("link", { name: "Home" }));
-    expect(screen.queryByRole("region", { name: "Current balance" })).toBeNull();
-    expect(screen.getAllByText("-$25.00")).toHaveLength(2);
+    expect(await screen.findByText("Signed in")).toBeDefined();
+    expect(screen.queryByRole("region", { name: "Move local data" })).toBeNull();
     const migrationCall = fetchMock.mock.calls.find(([input]) =>
       getRequestUrl(input).endsWith("/api/v1/users/me/guest-migrations"),
     );
 
-    expect(migrationCall).toBeDefined();
-    expect(migrationCall?.[1]).toEqual(
-      expect.objectContaining({
-        headers: expect.objectContaining({
-          Authorization: "Bearer access-token-789",
-          "Idempotency-Key": expect.any(String),
-        }),
-        method: "POST",
-      }),
-    );
-    const migrationBody = migrationCall?.[1]?.body;
-
-    expect(typeof migrationBody).toBe("string");
-    expect(JSON.parse(migrationBody as string)).toEqual(
-      expect.objectContaining({
-        confirm: true,
-        transactions: [
-          expect.objectContaining({
-            amountMinor: "2500",
-            id: "guest_txn_1",
-          }),
-        ],
-      }),
-    );
+    expect(migrationCall).toBeUndefined();
   });
 
   it("lets an existing account log in", async () => {
@@ -397,6 +566,67 @@ describe("App", () => {
 
     expect(await screen.findByText("Signed in")).toBeDefined();
     expect(screen.getByText(/nila@example.com/)).toBeDefined();
+  });
+
+  it("keeps the signed-in details after a browser refresh in the same session", async () => {
+    const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = getRequestUrl(input);
+      const method = init?.method ?? "GET";
+
+      if (url.endsWith("/api/v1/auth/refresh")) {
+        return Promise.reject(new Error("No refresh cookie."));
+      }
+
+      if (url.endsWith("/api/v1/auth/login") && method === "POST") {
+        return Promise.resolve(
+          createJsonResponse({
+            data: {
+              accessToken: "access-token-refresh-session",
+              user: {
+                displayName: "Nila",
+                email: "nila@example.com",
+                id: "usr_refresh_session",
+                locale: "en-US",
+                preferredCurrency: "USD",
+                theme: "system",
+                timezone: "UTC",
+              },
+              workspaces: [{ id: "wsp_refresh_session", name: "Nila", type: "personal" }],
+            },
+            message: "Login successful.",
+            success: true,
+          }),
+        );
+      }
+
+      return Promise.reject(new Error(`Unexpected request: ${url}`));
+    });
+
+    window.history.replaceState({}, "", "/login");
+    const user = userEvent.setup();
+    const firstRender = render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    await user.type(await screen.findByLabelText("Email"), "nila@example.com");
+    await user.type(screen.getByLabelText("Password"), "StrongPassword123");
+    await user.click(screen.getByRole("button", { name: "Log in" }));
+
+    expect(await screen.findByText("Signed in")).toBeDefined();
+    firstRender.unmount();
+
+    fetchMock.mockImplementation(() => Promise.reject(new Error("Network unavailable.")));
+    window.history.replaceState({}, "", "/you");
+    render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    expect(await screen.findByText("Signed in")).toBeDefined();
+    expect(screen.getByText(/nila@example.com/)).toBeDefined();
+    expect(screen.queryByText("Guest user")).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "Continue in guest mode?" })).toBeNull();
   });
 
   it("restores the signed-in profile after a page refresh", async () => {
@@ -455,6 +685,132 @@ describe("App", () => {
     expect(await screen.findByText("Signed in")).toBeDefined();
     expect(screen.getByText(/nila@example.com/)).toBeDefined();
     expect(screen.queryByText("Guest user")).toBeNull();
+  });
+
+  it("keeps the signed-in profile when the access token is restored from session storage", async () => {
+    window.sessionStorage.setItem("nidhiflow.accessToken", "access-token-stored");
+    const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = getRequestUrl(input);
+      const method = init?.method ?? "GET";
+
+      if (url.endsWith("/api/v1/users/me") && method === "GET") {
+        return Promise.resolve(
+          createJsonResponse({
+            data: {
+              displayName: "Nila",
+              email: "nila@example.com",
+              id: "usr_stored",
+              locale: "en-US",
+              preferredCurrency: "USD",
+              theme: "system",
+              timezone: "UTC",
+            },
+            message: "Current user retrieved successfully.",
+            success: true,
+          }),
+        );
+      }
+
+      if (url.endsWith("/api/v1/workspaces") && method === "GET") {
+        return Promise.resolve(
+          createJsonResponse({
+            data: [{ id: "wsp_stored", name: "Nila", type: "personal" }],
+            message: "Workspaces retrieved successfully.",
+            success: true,
+          }),
+        );
+      }
+
+      if (url.endsWith("/api/v1/auth/refresh")) {
+        return Promise.reject(new Error("Refresh cookie unavailable."));
+      }
+
+      return Promise.reject(new Error(`Unexpected request: ${url}`));
+    });
+
+    window.history.replaceState({}, "", "/you");
+    render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    expect(await screen.findByText("Signed in")).toBeDefined();
+    expect(screen.getByText(/nila@example.com/)).toBeDefined();
+    expect(screen.queryByText("Guest user")).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      expect.stringContaining("/api/v1/auth/refresh"),
+      expect.anything(),
+    );
+  });
+
+  it("shows the authenticated display name on Home instead of the guest name", async () => {
+    window.sessionStorage.setItem("nidhiflow.accessToken", "access-token-home");
+    const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = getRequestUrl(input);
+      const method = init?.method ?? "GET";
+
+      if (url.endsWith("/api/v1/users/me") && method === "GET") {
+        return Promise.resolve(
+          createJsonResponse({
+            data: {
+              displayName: "Nila",
+              email: "nila@example.com",
+              id: "usr_home",
+              locale: "en-US",
+              preferredCurrency: "USD",
+              theme: "system",
+              timezone: "UTC",
+            },
+            message: "Current user retrieved successfully.",
+            success: true,
+          }),
+        );
+      }
+
+      if (url.endsWith("/api/v1/workspaces") && method === "GET") {
+        return Promise.resolve(
+          createJsonResponse({
+            data: [{ id: "wsp_home", name: "Nila Workspace", type: "personal" }],
+            message: "Workspaces retrieved successfully.",
+            success: true,
+          }),
+        );
+      }
+
+      if (url.endsWith("/api/v1/workspaces/wsp_home/categories") && method === "GET") {
+        return Promise.resolve(
+          createJsonResponse({
+            data: [],
+            message: "Categories retrieved successfully.",
+            success: true,
+          }),
+        );
+      }
+
+      if (url.endsWith("/api/v1/workspaces/wsp_home/transactions") && method === "GET") {
+        return Promise.resolve(
+          createJsonResponse({
+            data: [],
+            message: "Transactions retrieved successfully.",
+            success: true,
+          }),
+        );
+      }
+
+      return Promise.reject(new Error(`Unexpected request: ${url}`));
+    });
+
+    window.history.replaceState({}, "", "/");
+    render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    expect(await screen.findByRole("heading", { name: /Nila/ })).toBeDefined();
+    expect(screen.getByText("Nila Workspace")).toBeDefined();
+    expect(screen.queryByRole("heading", { name: /Guest/ })).toBeNull();
   });
 
   it("asks unauthenticated users after refresh whether to continue as guest or log in", async () => {
@@ -652,11 +1008,10 @@ describe("App", () => {
     expect(await screen.findByRole("heading", { name: /Guest/ })).toBeDefined();
     const budgetSection = screen.getByRole("region", { name: "Budget summaries" });
 
-    expect(within(budgetSection).getByText("Savings goal")).toBeDefined();
-    expect(within(budgetSection).getByText("$170.00 / $250.00")).toBeDefined();
-    expect(within(budgetSection).getByRole("progressbar", { name: "Goal progress: 68 percent" }))
-      .toBeDefined();
-    expect(within(budgetSection).getByText("68%")).toBeDefined();
+    expect(within(budgetSection).queryByText("Savings goal")).toBeNull();
+    expect(
+      within(budgetSection).queryByRole("progressbar", { name: "Goal progress: 68 percent" }),
+    ).toBeNull();
     expect(within(budgetSection).getByText("$250.00")).toBeDefined();
     expect(within(budgetSection).getByText("$80.00")).toBeDefined();
     expect(within(budgetSection).getByText("$170.00")).toBeDefined();
@@ -664,25 +1019,28 @@ describe("App", () => {
   });
 
   it("adds, edits, deletes budget categories and recalculates totals", async () => {
+    const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
+
+    mockAuthenticatedFinanceSession(fetchMock, {
+      reportingCurrency: "INR",
+      transactions: [
+        {
+          amount: "80.00",
+          categoryId: "cat_food",
+          createdAt: "2026-06-17T00:00:01.000Z",
+          currency: "INR",
+          id: "transaction-1",
+          note: "Groceries",
+          transactionDate: "2026-06-17",
+          type: "expense",
+          updatedAt: "2026-06-17T00:00:01.000Z",
+        },
+      ],
+    });
     window.history.replaceState({}, "", "/plan");
     const user = userEvent.setup();
     render(
-      <App
-        repository={createRepository()}
-        transactionRepository={createTransactionRepository([
-          {
-            amountMinor: "8000",
-            category: "Food",
-            createdAt: "2026-06-17T00:00:01.000Z",
-            currency: "USD",
-            id: "transaction-1",
-            note: "Groceries",
-            transactionDate: "2026-06-17",
-            type: "expense",
-            updatedAt: "2026-06-17T00:00:01.000Z",
-          },
-        ])}
-      />,
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
     expect(await screen.findByRole("heading", { name: "Plan" })).toBeDefined();
@@ -693,26 +1051,67 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Close budget period options" }));
     expect(screen.queryByText("No budget categories yet")).toBeDefined();
 
-    await user.type(screen.getByLabelText("Amount"), "250");
     await user.click(screen.getByRole("button", { name: "Add budget category" }));
+    let budgetDialog = screen.getByRole("dialog", { name: "Add budget category" });
+    await user.type(within(budgetDialog).getByLabelText("Amount"), "250");
+    await user.click(within(budgetDialog).getByRole("button", { name: "Add budget category" }));
 
-    expect(screen.getByRole("heading", { name: "$250.00" })).toBeDefined();
-    expect(screen.getByText("$80.00 spent of $250.00")).toBeDefined();
+    const createBudgetCall = fetchMock.mock.calls.find(
+      ([input, init]) =>
+        getRequestUrl(input).endsWith("/api/v1/workspaces/wsp_finance/budgets") &&
+        init?.method === "POST",
+    );
+
+    expect(JSON.parse(String(createBudgetCall?.[1]?.body))).toEqual(
+      expect.objectContaining({
+        currency: "INR",
+        limitAmount: { amount: "250.00", currency: "INR" },
+      }),
+    );
+    expect(screen.getByRole("heading", { name: "₹250.00" })).toBeDefined();
+    expect(screen.getByText("₹80.00 spent of ₹250.00")).toBeDefined();
     expect(screen.getAllByText("32%")).toHaveLength(2);
+    expect(screen.getByRole("heading", { name: "Active goals" })).toBeDefined();
+    expect(screen.getByText("₹170.00 / ₹250.00")).toBeDefined();
+    expect(screen.getByRole("progressbar", { name: "Goal progress: 68 percent" })).toBeDefined();
+    expect(screen.getByText("68%")).toBeDefined();
 
-    await user.click(screen.getByRole("button", { name: "Edit" }));
-    const amount = screen.getByLabelText("Amount");
+    await user.click(screen.getByRole("link", { name: "Home" }));
+    await user.click(screen.getByRole("link", { name: "Plan" }));
+    expect(await screen.findByText("₹80.00 spent of ₹250.00")).toBeDefined();
+
+    await user.click(screen.getByRole("button", { name: "Edit Food budget" }));
+    budgetDialog = screen.getByRole("dialog", { name: "Edit budget category" });
+    const amount = within(budgetDialog).getByLabelText("Amount");
     await user.clear(amount);
     await user.type(amount, "400");
-    await user.click(screen.getByRole("button", { name: "Save budget category" }));
+    await user.click(within(budgetDialog).getByRole("button", { name: "Save budget category" }));
 
-    expect(screen.getByRole("heading", { name: "$400.00" })).toBeDefined();
-    expect(screen.getByText("$80.00 spent of $400.00")).toBeDefined();
+    expect(screen.getByRole("heading", { name: "₹400.00" })).toBeDefined();
+    expect(screen.getByText("₹80.00 spent of ₹400.00")).toBeDefined();
     expect(screen.getAllByText("20%")).toHaveLength(2);
 
-    await user.click(screen.getByRole("button", { name: "Delete" }));
-    expect(screen.getByRole("heading", { name: "$0.00" })).toBeDefined();
+    await user.click(screen.getByRole("button", { name: "Delete Food budget" }));
+    expect(screen.getByRole("heading", { name: "₹0.00" })).toBeDefined();
     expect(screen.getByText("No budget categories yet")).toBeDefined();
+  });
+
+  it("blocks guest budget category CRUD and prompts for authentication", async () => {
+    window.history.replaceState({}, "", "/plan");
+    const user = userEvent.setup();
+    render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Plan" })).toBeDefined();
+    await user.click(screen.getByRole("button", { name: "Add budget category" }));
+
+    expect(
+      await screen.findByRole("dialog", { name: "Sign in to save budget changes" }),
+    ).toBeDefined();
+    expect(screen.queryByRole("dialog", { name: "Add budget category" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Log in" })).toBeDefined();
+    expect(screen.getByRole("link", { name: "Sign up" })).toBeDefined();
   });
 
   it("validates and saves the local guest display name", async () => {
@@ -751,7 +1150,7 @@ describe("App", () => {
     expect((await axe(container)).violations).toHaveLength(0);
   });
 
-  it("lets a guest add, edit, search, and remove a transaction with accurate totals", async () => {
+  it("blocks guest transaction writes and prompts for authentication", async () => {
     window.history.replaceState({}, "", "/");
     const user = userEvent.setup();
     render(
@@ -759,42 +1158,31 @@ describe("App", () => {
     );
 
     await user.click(await screen.findByRole("link", { name: /Add income/ }));
-    await user.type(await screen.findByLabelText("Amount"), "1250.75");
-    await user.click(screen.getByRole("button", { name: "Salary" }));
-    await user.type(screen.getByLabelText(/Note/), "June salary");
-    await user.click(screen.getByRole("button", { name: "Save Income" }));
 
-    expect(await screen.findByText("+$1,250.75")).toBeDefined();
+    expect(await screen.findByRole("heading", { name: "Sign in to save changes" })).toBeDefined();
+    expect(screen.queryByLabelText("Amount")).toBeNull();
+    expect(screen.getByRole("link", { name: "Log in" })).toBeDefined();
+    expect(screen.getByRole("link", { name: "Sign up" })).toBeDefined();
+  });
 
-    await user.click(screen.getByRole("link", { name: "Home" }));
-    expect(screen.queryByRole("region", { name: "Current balance" })).toBeNull();
-    expect(
-      within(screen.getByRole("region", { name: "Budget summaries" })).getAllByText("$1,250.75"),
-    ).toHaveLength(2);
-    expect(
-      within(screen.getByRole("region", { name: "Budget summaries" })).getByText(
-        "$1,250.75 / $1,250.75",
-      ),
-    ).toBeDefined();
+  it("opens the income form from Activity when the income filter is selected", async () => {
+    mockAuthenticatedFinanceSession(globalThis.fetch as jest.MockedFunction<typeof fetch>);
+    window.history.replaceState({}, "", "/activity");
+    const user = userEvent.setup();
+    render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
 
-    await user.click(screen.getByRole("link", { name: "Activity" }));
-    await user.type(screen.getByLabelText("Search transactions"), "June");
-    expect(screen.getByText("June salary")).toBeDefined();
+    await user.click(await screen.findByRole("button", { name: "Income" }));
+    await user.click(screen.getByRole("link", { name: "Add transaction" }));
 
-    await user.click(screen.getByRole("link", { name: "Edit Salary income" }));
-    const amount = screen.getByLabelText("Amount");
-    await user.clear(amount);
-    await user.type(amount, "1300.25");
-    await user.click(screen.getByRole("button", { name: "Save Income" }));
-    expect(await screen.findByText("+$1,300.25")).toBeDefined();
-
-    await user.click(screen.getByRole("link", { name: "Edit Salary income" }));
-    await user.click(screen.getByRole("button", { name: "Remove transaction" }));
-    await user.click(screen.getByRole("button", { name: "Yes, remove" }));
-    expect(await screen.findByText("No activity yet")).toBeDefined();
+    expect(await screen.findByRole("heading", { name: "Add Income" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Salary" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Save Income" })).toBeDefined();
   });
 
   it("preserves entered transaction values after validation errors", async () => {
+    mockAuthenticatedFinanceSession(globalThis.fetch as jest.MockedFunction<typeof fetch>);
     window.history.replaceState({}, "", "/transactions/new?type=expense");
     const user = userEvent.setup();
     render(
@@ -811,9 +1199,10 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Food" }).getAttribute("aria-pressed")).toBe("true");
     expect((amount as HTMLInputElement).value).toBe("10.99");
     expect(screen.getByLabelText<HTMLTextAreaElement>(/Note/).value).toBe(longNote);
-  });
+  }, 10000);
 
   it("collapses extra expense categories behind a More option", async () => {
+    mockAuthenticatedFinanceSession(globalThis.fetch as jest.MockedFunction<typeof fetch>);
     window.history.replaceState({}, "", "/transactions/new?type=expense");
     const user = userEvent.setup();
     render(
@@ -830,6 +1219,7 @@ describe("App", () => {
   });
 
   it("has no automated accessibility violations on transaction entry", async () => {
+    mockAuthenticatedFinanceSession(globalThis.fetch as jest.MockedFunction<typeof fetch>);
     window.history.replaceState({}, "", "/transactions/new?type=expense");
     const { container } = render(
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,

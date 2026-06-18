@@ -178,4 +178,103 @@ export class TransactionRepository {
 
     return result.rows[0] ?? null;
   }
+
+  async update(
+    workspaceId: string,
+    transactionId: string,
+    input: {
+      accountId: string;
+      amount: string;
+      categoryId: string | null;
+      currency: string;
+      destinationAccountId: string | null;
+      note: string | null;
+      transactionDate: string;
+      type: TransactionRecord["type"];
+      updatedByUserId: string;
+    },
+    queryable: Queryable = this.database,
+  ) {
+    const result = await queryable.query<TransactionRecord>(
+      `UPDATE transactions
+          SET type = $3,
+              amount = $4::numeric(19,4),
+              currency = $5,
+              account_id = $6,
+              destination_account_id = $7,
+              category_id = $8,
+              transaction_date = $9,
+              note = $10,
+              updated_by_user_id = $11,
+              updated_at = CURRENT_TIMESTAMP
+        WHERE workspace_id = $1
+          AND id = $2
+          AND deleted_at IS NULL
+       RETURNING id,
+                 workspace_id AS "workspaceId",
+                 type,
+                 amount::text AS amount,
+                 currency,
+                 account_id AS "accountId",
+                 destination_account_id AS "destinationAccountId",
+                 category_id AS "categoryId",
+                 transaction_date AS "transactionDate",
+                 note,
+                 created_by_user_id AS "createdByUserId",
+                 updated_by_user_id AS "updatedByUserId",
+                 created_at AS "createdAt",
+                 updated_at AS "updatedAt",
+                 deleted_at AS "deletedAt"`,
+      [
+        workspaceId,
+        transactionId,
+        input.type,
+        input.amount,
+        input.currency,
+        input.accountId,
+        input.destinationAccountId,
+        input.categoryId,
+        input.transactionDate,
+        input.note,
+        input.updatedByUserId,
+      ],
+    );
+
+    return result.rows[0] ?? null;
+  }
+
+  async softDelete(
+    workspaceId: string,
+    transactionId: string,
+    updatedByUserId: string,
+    queryable: Queryable = this.database,
+  ) {
+    const result = await queryable.query<TransactionRecord>(
+      `UPDATE transactions
+          SET deleted_at = CURRENT_TIMESTAMP,
+              updated_by_user_id = $3,
+              updated_at = CURRENT_TIMESTAMP
+        WHERE workspace_id = $1
+          AND id = $2
+          AND deleted_at IS NULL
+       RETURNING id,
+                 workspace_id AS "workspaceId",
+                 type,
+                 amount::text AS amount,
+                 currency,
+                 account_id AS "accountId",
+                 destination_account_id AS "destinationAccountId",
+                 category_id AS "categoryId",
+                 transaction_date AS "transactionDate",
+                 note,
+                 created_by_user_id AS "createdByUserId",
+                 updated_by_user_id AS "updatedByUserId",
+                 created_at AS "createdAt",
+                 updated_at AS "updatedAt",
+                 deleted_at AS "deletedAt"`,
+      [workspaceId, transactionId, updatedByUserId],
+    );
+
+    return result.rows[0] ?? null;
+  }
 }

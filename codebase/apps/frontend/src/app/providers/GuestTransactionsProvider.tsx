@@ -12,6 +12,16 @@ import {
   IndexedDbGuestTransactionRepository,
   type GuestTransactionRepository,
 } from "../../data/guest/guestTransactionRepository";
+import { useAuth } from "./AuthProvider";
+import {
+  createAccount,
+  createTransaction as createApiTransaction,
+  deleteTransaction as deleteApiTransaction,
+  listAccounts,
+  listCategories,
+  listTransactions,
+  updateTransaction as updateApiTransaction,
+} from "../../data/api/financeClient";
 import type {
   GuestTransaction,
   GuestTransactionInput,
@@ -20,8 +30,10 @@ import { ErrorState } from "../../shared/components/ErrorState";
 import { LoadingScreen } from "../../shared/components/LoadingScreen";
 
 interface GuestTransactionsContextValue {
+  canWrite: boolean;
   createTransaction: (input: GuestTransactionInput) => Promise<GuestTransaction>;
   removeTransaction: (id: string) => Promise<void>;
+  requiresAuthentication: boolean;
   transactions: GuestTransaction[];
   updateTransaction: (id: string, input: GuestTransactionInput) => Promise<GuestTransaction>;
 }
@@ -38,67 +50,141 @@ export function GuestTransactionsProvider({
   children,
   repository = defaultRepository,
 }: GuestTransactionsProviderProps) {
+  const { accessToken, isAuthenticated, isCheckingSession, workspaces } = useAuth();
   const [transactions, setTransactions] = useState<GuestTransaction[]>();
   const [loadError, setLoadError] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const workspaceId = workspaces[0]?.id ?? null;
 
   useEffect(() => {
     let isActive = true;
     setLoadError(false);
 
-    repository
-      .list()
+    if (isCheckingSession) {
+      return () => {
+        isActive = false;
+      };
+    }
+
+    const load = isAuthenticated && accessToken && workspaceId
+      ? listTransactions({ accessToken, workspaceId })
+      : repository.list();
+
+    load
       .then((records) => {
         if (isActive) setTransactions(records);
       })
       .catch(() => {
-        if (isActive) setLoadError(true);
+        if (!isActive) return;
+        if (isAuthenticated) {
+          setTransactions([]);
+          return;
+        }
+        setLoadError(true);
       });
 
     return () => {
       isActive = false;
     };
-  }, [loadAttempt, repository]);
+  }, [accessToken, isAuthenticated, isCheckingSession, loadAttempt, repository, workspaceId]);
 
   const createTransaction = useCallback(
     async (input: GuestTransactionInput) => {
-      const created = await repository.create(input);
+      if (!isAuthenticated || !accessToken || !workspaceId) {
+        throw new Error("AUTHENTICATION_REQUIRED");
+      }
+
+      const [accounts, categories] = await Promise.all([
+        listAccounts({ accessToken, workspaceId }),
+        listCategories({ accessToken, workspaceId }),
+      ]);
+      const activeAccount =
+        accounts.find((account) => !account.isArchived && account.currency === input.currency) ??
+        (await createAccount({ accessToken, currency: input.currency, workspaceId }));
+      const category = categories.find(
+        (item) => item.name === input.category && item.transactionType === input.type,
+      );
+
+      if (!category) {
+        throw new Error("The selected category is not available for this workspace.");
+      }
+
+      const created = await createApiTransaction({
+        accessToken,
+        accountId: activeAccount.id,
+        categoryId: category.id,
+        transaction: input,
+        workspaceId,
+      });
+
       setTransactions((current) => [created, ...(current ?? [])]);
       return created;
     },
-    [repository],
+    [accessToken, isAuthenticated, workspaceId],
   );
 
   const updateTransaction = useCallback(
     async (id: string, input: GuestTransactionInput) => {
-      const updated = await repository.update(id, input);
+      if (!isAuthenticated || !accessToken || !workspaceId) {
+        throw new Error("AUTHENTICATION_REQUIRED");
+      }
+
+      const [accounts, categories] = await Promise.all([
+        listAccounts({ accessToken, workspaceId }),
+        listCategories({ accessToken, workspaceId }),
+      ]);
+      const activeAccount =
+        accounts.find((account) => !account.isArchived && account.currency === input.currency) ??
+        (await createAccount({ accessToken, currency: input.currency, workspaceId }));
+      const category = categories.find(
+        (item) => item.name === input.category && item.transactionType === input.type,
+      );
+
+      if (!category) {
+        throw new Error("The selected category is not available for this workspace.");
+      }
+
+      const updated = await updateApiTransaction({
+        accessToken,
+        accountId: activeAccount.id,
+        categoryId: category.id,
+        transaction: input,
+        transactionId: id,
+        workspaceId,
+      });
       setTransactions((current) =>
         (current ?? []).map((transaction) => (transaction.id === id ? updated : transaction)),
       );
       return updated;
     },
-    [repository],
+    [accessToken, isAuthenticated, workspaceId],
   );
 
   const removeTransaction = useCallback(
     async (id: string) => {
-      await repository.remove(id);
+      if (!isAuthenticated || !accessToken || !workspaceId) {
+        throw new Error("AUTHENTICATION_REQUIRED");
+      }
+
+      await deleteApiTransaction({ accessToken, transactionId: id, workspaceId });
       setTransactions((current) => (current ?? []).filter((transaction) => transaction.id !== id));
     },
-    [repository],
+    [accessToken, isAuthenticated, workspaceId],
   );
 
   const contextValue = useMemo(
     () =>
       transactions
         ? {
+            canWrite: isAuthenticated,
             createTransaction,
             removeTransaction,
+            requiresAuthentication: !isAuthenticated,
             transactions,
             updateTransaction,
           }
         : null,
-    [createTransaction, removeTransaction, transactions, updateTransaction],
+    [createTransaction, isAuthenticated, removeTransaction, transactions, updateTransaction],
   );
 
   if (loadError) {

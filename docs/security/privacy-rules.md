@@ -11,9 +11,11 @@
 
 ## Guest Data
 
-Guest finance data remains on the device. Explain risks of data loss and shared
-devices. Do not create hidden server profiles, silently upload, or include
-guest finance data in analytics.
+Guest mode is read-only. Legacy guest finance data remains on the device and
+may be displayed or explicitly migrated after authentication, but guest users
+must not create, update, delete, or upload finance data. Explain risks of data
+loss and shared devices. Do not create hidden server profiles, silently upload,
+or include guest finance data in analytics.
 
 Guest-to-account migration requires:
 

@@ -14,25 +14,34 @@
 
 ## Guest Rules
 
-- Login is optional for local core features.
-- Guest data remains on the device and is not silently uploaded.
-- Explain that clearing app/browser data, uninstalling, or losing the device
-  may permanently remove guest history.
+- Login is optional for read-only product access.
+- Guest users may view/read available data and product screens, but they must
+  not create, update, delete, migrate, upload, or otherwise modify finance
+  records.
+- Guest write attempts must be blocked and replaced with a login/signup prompt
+  that preserves the user's intent where practical.
+- Legacy guest data remains on the device and is not silently uploaded.
+- Explain that legacy guest data cannot be changed in guest mode and may be
+  permanently lost if browser/app storage is cleared, the app is uninstalled,
+  or the device is lost.
 - Do not create hidden server-side guest profiles.
-- A guest may locally manage transactions, accounts, categories, budgets,
-  bills, goals, reports, preferences, education, achievements, and export.
+- Guests may not locally manage transactions, accounts, categories, budgets,
+  bills, goals, reports, preferences that affect server data, education
+  progress, achievements, or export.
 - Anonymous feedback may use a narrowly scoped public endpoint.
-- Authentication is required for cloud backup/recovery, multi-device sync,
-  shared workspaces, saved contact preferences, cloud attachments, persistent
-  support history, account export/deletion, and persistent personalized AI.
+- Authentication is required for every CRUD operation, server persistence,
+  cloud backup/recovery, multi-device sync, shared workspaces, saved contact
+  preferences, cloud attachments, persistent support history, account
+  export/deletion, and persistent personalized AI.
 - Preserve the current task when prompting for authentication.
 - Account conversion must preview migration, detect duplicates, require
   confirmation, and never lose the local source on failed migration.
 - After five minutes of active foreground guest use, the app may show a
   non-blocking data-protection reminder explaining that creating an account
   enables backup, recovery, and synchronization.
-- The reminder must say that guest data remains usable but may be lost if local
-  app/browser data is cleared, the app is uninstalled, or the device is lost.
+- The reminder must say that guest mode is read-only and any legacy local data
+  may be lost if local app/browser data is cleared, the app is uninstalled, or
+  the device is lost.
 - The first reminder may appear automatically. Repeating it every five minutes
   requires the guest to explicitly enable `Remind me every 5 minutes`.
 - A guest can dismiss the reminder, select `Don't remind me again`, or disable
@@ -61,6 +70,8 @@ this responsibility are listed as future decisions.
 - Prompt for login only at the moment a requested capability needs identity,
   server persistence, synchronization, or communication.
 - Explain the benefit and allow cancellation back to guest mode.
+- All CRUD actions need identity and server persistence, so they must always be
+  gated for guest users.
 - The optional five-minute guest data-protection reminder is an exception to
   contextual feature gating, but it must remain informational and non-blocking.
 - Flow preview is public/guest-compatible.

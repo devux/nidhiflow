@@ -1,4 +1,5 @@
 import { environment } from "../../config/environment";
+import type { SupportedCurrency } from "../../domain/preferences/guestPreferences";
 
 export interface AuthUser {
   displayName: string;
@@ -13,6 +14,7 @@ export interface AuthUser {
 export interface WorkspaceSummary {
   id: string;
   name: string;
+  reportingCurrency?: SupportedCurrency;
   type: string;
 }
 
@@ -20,6 +22,16 @@ interface ApiEnvelope<Data> {
   data: Data;
   message: string;
   success: boolean;
+}
+
+export class ApiRequestError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiRequestError";
+    this.status = status;
+  }
 }
 
 export interface AuthSession {
@@ -37,7 +49,7 @@ async function parseResponse<Data>(response: Response): Promise<ApiEnvelope<Data
   const body = (await response.json()) as ApiEnvelope<Data>;
 
   if (!response.ok) {
-    throw new Error(body.message || "Request failed.");
+    throw new ApiRequestError(body.message || "Request failed.", response.status);
   }
 
   return body;

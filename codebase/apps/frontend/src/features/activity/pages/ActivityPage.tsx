@@ -11,7 +11,15 @@ import { PageHeader } from "../../../shared/components/PageHeader";
 import { SegmentedControl } from "../../../shared/components/SegmentedControl";
 import { TransactionRow } from "../../transactions/components/TransactionRow";
 
+function toDateKey(date: string): string {
+  return /^\d{4}-\d{2}-\d{2}/.test(date) ? date.slice(0, 10) : "unknown";
+}
+
 function formatDateHeading(date: string, locale: string, timezone: string): string {
+  const dateKey = toDateKey(date);
+
+  if (dateKey === "unknown") return "Unknown date";
+
   const today = new Date();
   const todayKey = [
     today.getFullYear(),
@@ -26,15 +34,19 @@ function formatDateHeading(date: string, locale: string, timezone: string): stri
     String(yesterday.getDate()).padStart(2, "0"),
   ].join("-");
 
-  if (date === todayKey) return "Today";
-  if (date === yesterdayKey) return "Yesterday";
+  if (dateKey === todayKey) return "Today";
+  if (dateKey === yesterdayKey) return "Yesterday";
+
+  const parsed = new Date(`${dateKey}T12:00:00Z`);
+
+  if (Number.isNaN(parsed.getTime())) return "Unknown date";
 
   return new Intl.DateTimeFormat(locale, {
     day: "numeric",
     month: "long",
     timeZone: timezone,
     year: "numeric",
-  }).format(new Date(`${date}T12:00:00Z`));
+  }).format(parsed);
 }
 
 export function ActivityPage() {
@@ -70,9 +82,10 @@ export function ActivityPage() {
   const groups = useMemo(() => {
     const grouped = new Map<string, typeof filteredTransactions>();
     for (const transaction of filteredTransactions) {
-      const group = grouped.get(transaction.transactionDate) ?? [];
+      const dateKey = toDateKey(transaction.transactionDate);
+      const group = grouped.get(dateKey) ?? [];
       group.push(transaction);
-      grouped.set(transaction.transactionDate, group);
+      grouped.set(dateKey, group);
     }
     return Array.from(grouped.entries());
   }, [filteredTransactions]);
@@ -93,6 +106,7 @@ export function ActivityPage() {
   }
 
   const filtersActive = Boolean(query || category || dateFrom || dateTo);
+  const newTransactionType = selectedType === "income" ? "income" : "expense";
 
   return (
     <main className="page" id="main-content">
@@ -101,7 +115,7 @@ export function ActivityPage() {
           <Link
             aria-label="Add transaction"
             className="icon-button"
-            to="/transactions/new?type=expense"
+            to={`/transactions/new?type=${newTransactionType}`}
           >
             <Icon name="plus" />
           </Link>
@@ -211,7 +225,10 @@ export function ActivityPage() {
                   Show all activity
                 </button>
               ) : (
-                <Link className="button button--secondary" to="/transactions/new?type=expense">
+                <Link
+                  className="button button--secondary"
+                  to={`/transactions/new?type=${newTransactionType}`}
+                >
                   Add a transaction
                 </Link>
               )

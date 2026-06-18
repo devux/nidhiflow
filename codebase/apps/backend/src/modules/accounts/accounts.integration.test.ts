@@ -224,6 +224,53 @@ describe("finance workflow integration", () => {
 
     expect(expenseResponse.status).toBe(201);
 
+    const incomeResponse = await request(app)
+      .post(`/api/v1/workspaces/${workspaceId}/transactions`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        accountId: cashBody.data.id,
+        categoryId: "cat_salary",
+        money: { amount: "1.0000", currency: "INR" },
+        transactionDate: "2026-06-16",
+        type: "income",
+      });
+    const incomeBody = incomeResponse.body as { data: { id: string } };
+
+    expect(incomeResponse.status).toBe(201);
+
+    const unauthenticatedUpdateResponse = await request(app)
+      .patch(`/api/v1/workspaces/${workspaceId}/transactions/${incomeBody.data.id}`)
+      .send({
+        accountId: cashBody.data.id,
+        categoryId: "cat_salary",
+        money: { amount: "2.0000", currency: "INR" },
+        transactionDate: "2026-06-16",
+        type: "income",
+      });
+
+    expect(unauthenticatedUpdateResponse.status).toBe(401);
+
+    const updateResponse = await request(app)
+      .patch(`/api/v1/workspaces/${workspaceId}/transactions/${incomeBody.data.id}`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        accountId: cashBody.data.id,
+        categoryId: "cat_salary",
+        money: { amount: "2.0000", currency: "INR" },
+        note: "Corrected income",
+        transactionDate: "2026-06-16",
+        type: "income",
+      });
+
+    expect(updateResponse.status).toBe(200);
+    expect(updateResponse.body.data.amount).toBe("2.0000");
+
+    const deleteResponse = await request(app)
+      .delete(`/api/v1/workspaces/${workspaceId}/transactions/${incomeBody.data.id}`)
+      .set("Authorization", `Bearer ${accessToken}`);
+
+    expect(deleteResponse.status).toBe(200);
+
     const accountsResponse = await request(app)
       .get(`/api/v1/workspaces/${workspaceId}/accounts`)
       .set("Authorization", `Bearer ${accessToken}`);

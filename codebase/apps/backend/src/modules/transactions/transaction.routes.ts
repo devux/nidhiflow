@@ -8,7 +8,9 @@ import { TransactionController } from "./transaction.controller.js";
 import { TransactionService } from "./transaction.service.js";
 import {
   createTransactionBodySchema,
+  transactionIdSchema,
   transactionListQuerySchema,
+  updateTransactionBodySchema,
   workspaceIdSchema,
 } from "./transaction.schemas.js";
 
@@ -32,6 +34,19 @@ export function createTransactionsRouter({
     "/",
     validate({ params: workspaceIdSchema, body: createTransactionBodySchema }),
     controller.createTransaction,
+  );
+  router.patch(
+    "/:transactionId",
+    validate({
+      params: workspaceIdSchema.merge(transactionIdSchema),
+      body: updateTransactionBodySchema,
+    }),
+    controller.updateTransaction,
+  );
+  router.delete(
+    "/:transactionId",
+    validate({ params: workspaceIdSchema.merge(transactionIdSchema) }),
+    controller.deleteTransaction,
   );
 
   return router;

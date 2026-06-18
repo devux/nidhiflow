@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 
+import { useAuth } from "../../../app/providers/AuthProvider";
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
 import { useGuestTransactions } from "../../../app/providers/GuestTransactionsProvider";
 import { formatMoney } from "../../../domain/money/money";
@@ -18,6 +19,7 @@ function getGreeting(): string {
 }
 
 export function HomePage() {
+  const { isAuthenticated, user, workspaces } = useAuth();
   const { preferences } = useGuestPreferences();
   const { transactions } = useGuestTransactions();
   const totals = calculateTransactionTotals(transactions);
@@ -30,11 +32,13 @@ export function HomePage() {
   const budgetRemainingMinor = incomeMinor - expenseMinor;
   const budgetProgress = incomeMinor === 0n ? 0 : Number((expenseMinor * 100n) / incomeMinor);
   const budgetProgressValue = Math.min(100, budgetProgress);
-  const goalSavedMinor = budgetRemainingMinor > 0n ? budgetRemainingMinor : 0n;
-  const goalTargetMinor = budgetRemainingMinor > 0n ? incomeMinor : expenseMinor;
-  const goalProgress =
-    goalTargetMinor === 0n ? 0 : Number((goalSavedMinor * 100n) / goalTargetMinor);
-  const goalProgressValue = Math.min(100, goalProgress);
+  const displayName = user?.displayName ?? preferences.displayName;
+  const workspaceLabel = isAuthenticated
+    ? (workspaces[0]?.name ?? "Personal workspace")
+    : "Guest read-only workspace";
+  const workspaceDescription = isAuthenticated
+    ? "Your saved data is loaded from your account."
+    : "Guest mode is read-only. Log in to save finance changes.";
 
   return (
     <main className="page page--home" id="main-content">
@@ -47,11 +51,11 @@ export function HomePage() {
 
       <section className="greeting">
         <span>
-          <p className="eyebrow">Local guest workspace</p>
+          <p className="eyebrow">{workspaceLabel}</p>
           <h1>
-            {getGreeting()}, {preferences.displayName}
+            {getGreeting()}, {displayName}
           </h1>
-          <p>Your transaction history stays on this device.</p>
+          <p>{workspaceDescription}</p>
         </span>
         <Link className="insights-link" to="/flow">
           <Icon name="sparkles" size={20} />
@@ -68,13 +72,10 @@ export function HomePage() {
                   <Icon name="plan" />
                 </span>
                 <span>
-                  <strong>Family budget</strong>
+                  <strong>Family Transactions</strong>
                   <small>Shared planning appears when you join a family workspace.</small>
                 </span>
               </span>
-              <Link className="home-summary-card__action" to="/plan">
-                View all
-              </Link>
             </div>
             <div className="budget-overview__content">
               <div
@@ -138,40 +139,6 @@ export function HomePage() {
             </div>
           </Card>
 
-          <Card className="home-summary-card goal-preview-card">
-            <div className="home-summary-card__header">
-              <h2>Goals</h2>
-              <Link className="home-summary-card__action" to="/plan">
-                View all
-                <Icon name="chevron" size={16} />
-              </Link>
-            </div>
-            <div className="goal-preview">
-              <span aria-hidden="true" className="goal-preview__art">
-                <span className="goal-preview__tree" />
-              </span>
-              <div className="goal-preview__body">
-                <strong>Savings goal</strong>
-                <p>
-                  {money(goalSavedMinor.toString())} / {money(goalTargetMinor.toString())}
-                </p>
-                <div
-                  aria-label={`Goal progress: ${goalProgressValue} percent`}
-                  aria-valuemax={100}
-                  aria-valuemin={0}
-                  aria-valuenow={goalProgressValue}
-                  className="goal-preview__progress"
-                  role="progressbar"
-                >
-                  <span style={{ width: `${goalProgressValue}%` }} />
-                </div>
-              </div>
-              <span className="goal-preview__percent">{goalProgressValue}%</span>
-              <Link aria-label="View goals" className="goal-preview__button" to="/plan">
-                <Icon name="chevron" size={18} />
-              </Link>
-            </div>
-          </Card>
         </div>
       </section>
 

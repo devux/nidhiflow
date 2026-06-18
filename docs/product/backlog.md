@@ -18,6 +18,9 @@
 
 - Revisit Add Income form field width adjustment across mobile and desktop
   breakpoints.
+- Persist all home actions, including add expense and add income, through the API
+  for the authenticated user so the data is stored in the database instead of
+  remaining local-only.
 
 ## Plan and Budget
 

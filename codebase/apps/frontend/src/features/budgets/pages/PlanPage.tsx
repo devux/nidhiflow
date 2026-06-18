@@ -1,7 +1,18 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 
+import { useAuth } from "../../../app/providers/AuthProvider";
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
 import { useGuestTransactions } from "../../../app/providers/GuestTransactionsProvider";
+import {
+  createBudget,
+  deleteBudget as deleteApiBudget,
+  listBudgets,
+  listCategories,
+  updateBudget,
+  type BudgetResource,
+  type CategoryResource,
+} from "../../../data/api/financeClient";
 import { formatMoney, parseMoneyInput } from "../../../domain/money/money";
 import { expenseCategories, type ExpenseCategory } from "../../../domain/transactions/transaction";
 import { Button } from "../../../shared/components/Button";
@@ -17,7 +28,10 @@ type BudgetPeriod = "monthly" | "yearly" | "custom";
 interface BudgetCategory {
   amountMinor: string;
   category: string;
+  categoryId: string;
   id: string;
+  periodEnd: string;
+  periodStart: string;
 }
 
 const lessons = [
@@ -49,7 +63,40 @@ function toAmountInput(amountMinor: string): string {
   return `${whole}.${fraction}`;
 }
 
+function toDateOnly(value: string): string {
+  return value.slice(0, 10);
+}
+
+function decimalToMinor(amount: string): string {
+  const [whole = "0", fraction = ""] = amount.split(".");
+
+  return `${BigInt(whole) * 100n + BigInt(`${fraction}00`.slice(0, 2))}`;
+}
+
+function toBudgetCategory(
+  budget: BudgetResource,
+  categories: CategoryResource[],
+): BudgetCategory | null {
+  const category = categories.find(
+    (item) => item.id === budget.categoryId && item.transactionType === "expense",
+  );
+
+  if (!category || !budget.categoryId) {
+    return null;
+  }
+
+  return {
+    amountMinor: decimalToMinor(budget.limitAmount),
+    category: category.name,
+    categoryId: budget.categoryId,
+    id: budget.id,
+    periodEnd: toDateOnly(budget.periodEnd),
+    periodStart: toDateOnly(budget.periodStart),
+  };
+}
+
 export function PlanPage() {
+  const { accessToken, isAuthenticated, workspaces } = useAuth();
   const { preferences } = useGuestPreferences();
   const { transactions } = useGuestTransactions();
   const [section, setSection] = useState("budget");
@@ -61,13 +108,18 @@ export function PlanPage() {
   const [category, setCategory] = useState<ExpenseCategory>(expenseCategories[0]);
   const [amount, setAmount] = useState("");
   const [formError, setFormError] = useState("");
+  const [availableCategories, setAvailableCategories] = useState<CategoryResource[]>([]);
+  const [isAuthPromptOpen, setIsAuthPromptOpen] = useState(false);
   const [isPeriodDialogOpen, setIsPeriodDialogOpen] = useState(false);
   const [isBudgetDialogOpen, setIsBudgetDialogOpen] = useState(false);
+  const [isBudgetSaving, setIsBudgetSaving] = useState(false);
+  const workspaceCurrency = workspaces[0]?.reportingCurrency ?? preferences.currency;
+  const workspaceId = workspaces[0]?.id ?? null;
   const periodDialogCloseRef = useRef<HTMLButtonElement>(null);
   const budgetDialogCloseRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (!isPeriodDialogOpen && !isBudgetDialogOpen) return;
+    if (!isPeriodDialogOpen && !isBudgetDialogOpen && !isAuthPromptOpen) return;
 
     if (isPeriodDialogOpen) {
       periodDialogCloseRef.current?.focus();
@@ -80,7 +132,7 @@ export function PlanPage() {
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [isBudgetDialogOpen, isPeriodDialogOpen]);
+  }, [isAuthPromptOpen, isBudgetDialogOpen, isPeriodDialogOpen]);
 
   const periodRange = useMemo(() => {
     if (period === "yearly") {
@@ -94,8 +146,56 @@ export function PlanPage() {
     return { from: getMonthStart(), label: "This month", to: getLocalDate() };
   }, [customFrom, customTo, period]);
 
+  useEffect(() => {
+    let isActive = true;
+
+    if (!isAuthenticated || !accessToken || !workspaceId) {
+      setBudgets([]);
+      setAvailableCategories([]);
+      return () => {
+        isActive = false;
+      };
+    }
+
+    Promise.all([
+      listBudgets({ accessToken, workspaceId }),
+      listCategories({ accessToken, workspaceId }),
+    ])
+      .then(([budgetRecords, categoryRecords]) => {
+        if (!isActive) return;
+        setAvailableCategories(categoryRecords);
+        setBudgets(
+          budgetRecords
+            .map((budget) => toBudgetCategory(budget, categoryRecords))
+            .filter((budget): budget is BudgetCategory => Boolean(budget)),
+        );
+      })
+      .catch(() => {
+        if (!isActive) return;
+        setBudgets([]);
+        setAvailableCategories([]);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [accessToken, isAuthenticated, workspaceId]);
+
+  const visibleBudgets = useMemo(
+    () =>
+      budgets.filter(
+        (budget) =>
+          budget.periodStart <= periodRange.to &&
+          budget.periodEnd >= periodRange.from,
+      ),
+    [budgets, periodRange.from, periodRange.to],
+  );
+
   const budgetTotals = useMemo(() => {
-    const totalMinor = budgets.reduce((total, budget) => total + BigInt(budget.amountMinor), 0n);
+    const totalMinor = visibleBudgets.reduce(
+      (total, budget) => total + BigInt(budget.amountMinor),
+      0n,
+    );
     const spentMinor = transactions
       .filter(
         (transaction) =>
@@ -103,7 +203,7 @@ export function PlanPage() {
           !transaction.deletedAt &&
           transaction.transactionDate >= periodRange.from &&
           transaction.transactionDate <= periodRange.to &&
-          budgets.some((budget) => budget.category === transaction.category),
+          visibleBudgets.some((budget) => budget.category === transaction.category),
       )
       .reduce((total, transaction) => total + BigInt(transaction.amountMinor), 0n);
     const remainingMinor = totalMinor - spentMinor;
@@ -115,9 +215,9 @@ export function PlanPage() {
       spentMinor,
       totalMinor,
     };
-  }, [budgets, periodRange.from, periodRange.to, transactions]);
+  }, [periodRange.from, periodRange.to, transactions, visibleBudgets]);
 
-  const categoryRows = budgets.map((budget) => {
+  const categoryRows = visibleBudgets.map((budget) => {
     const spentMinor = transactions
       .filter(
         (transaction) =>
@@ -140,7 +240,16 @@ export function PlanPage() {
   });
 
   const money = (amountMinor: bigint) =>
-    formatMoney({ amountMinor: amountMinor.toString(), currency: preferences.currency }, preferences.locale);
+    formatMoney(
+      { amountMinor: amountMinor.toString(), currency: workspaceCurrency },
+      preferences.locale,
+    );
+  const goalSavedMinor = budgetTotals.remainingMinor > 0n ? budgetTotals.remainingMinor : 0n;
+  const goalTargetMinor =
+    budgetTotals.totalMinor > 0n ? budgetTotals.totalMinor : budgetTotals.spentMinor;
+  const goalProgress =
+    goalTargetMinor === 0n ? 0 : Number((goalSavedMinor * 100n) / goalTargetMinor);
+  const goalProgressValue = Math.min(100, goalProgress);
 
   function resetForm() {
     setEditingId(undefined);
@@ -150,6 +259,11 @@ export function PlanPage() {
   }
 
   function openAddBudgetDialog() {
+    if (!isAuthenticated) {
+      setIsAuthPromptOpen(true);
+      return;
+    }
+
     resetForm();
     setIsBudgetDialogOpen(true);
   }
@@ -159,45 +273,87 @@ export function PlanPage() {
     resetForm();
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const parsed = parseMoneyInput(amount, preferences.currency);
+
+    if (!isAuthenticated) {
+      setIsBudgetDialogOpen(false);
+      setIsAuthPromptOpen(true);
+      return;
+    }
+
+    if (!accessToken || !workspaceId) {
+      setFormError("Your account workspace is still loading. Try again.");
+      return;
+    }
+
+    const parsed = parseMoneyInput(amount, workspaceCurrency);
 
     if (!parsed) {
       setFormError("Enter a budget amount greater than zero.");
       return;
     }
 
-    setBudgets((current) => {
-      if (editingId) {
-        return current.map((budget) =>
-          budget.id === editingId
-            ? { ...budget, amountMinor: parsed.amountMinor, category }
-            : budget,
-        );
+    const selectedCategory = availableCategories.find(
+      (item) => item.name === category && item.transactionType === "expense" && !item.isArchived,
+    );
+
+    if (!selectedCategory) {
+      setFormError("This budget category is not available for your workspace.");
+      return;
+    }
+
+    const existing = visibleBudgets.find((budget) => budget.category === category);
+    const budgetId = editingId ?? existing?.id;
+
+    setIsBudgetSaving(true);
+    setFormError("");
+
+    try {
+      const savedBudget = budgetId
+        ? await updateBudget({
+            accessToken,
+            budgetId,
+            categoryId: selectedCategory.id,
+            currency: workspaceCurrency,
+            limitAmountMinor: parsed.amountMinor,
+            periodEnd: periodRange.to,
+            periodStart: periodRange.from,
+            workspaceId,
+          })
+        : await createBudget({
+            accessToken,
+            categoryId: selectedCategory.id,
+            currency: workspaceCurrency,
+            limitAmountMinor: parsed.amountMinor,
+            periodEnd: periodRange.to,
+            periodStart: periodRange.from,
+            workspaceId,
+          });
+      const mappedBudget = toBudgetCategory(savedBudget, availableCategories);
+
+      if (mappedBudget) {
+        setBudgets((current) => {
+          const withoutSaved = current.filter((budget) => budget.id !== mappedBudget.id);
+          return [...withoutSaved, mappedBudget];
+        });
       }
 
-      const existing = current.find((budget) => budget.category === category);
-      if (existing) {
-        return current.map((budget) =>
-          budget.id === existing.id ? { ...budget, amountMinor: parsed.amountMinor } : budget,
-        );
-      }
-
-      return [
-        ...current,
-        {
-          amountMinor: parsed.amountMinor,
-          category,
-          id: globalThis.crypto?.randomUUID?.() ?? `budget-${Date.now()}`,
-        },
-      ];
-    });
-    resetForm();
-    setIsBudgetDialogOpen(false);
+      resetForm();
+      setIsBudgetDialogOpen(false);
+    } catch {
+      setFormError("Budget category was not saved. Try again.");
+    } finally {
+      setIsBudgetSaving(false);
+    }
   }
 
   function editBudget(budget: BudgetCategory) {
+    if (!isAuthenticated) {
+      setIsAuthPromptOpen(true);
+      return;
+    }
+
     setEditingId(budget.id);
     setCategory(budget.category as ExpenseCategory);
     setAmount(toAmountInput(budget.amountMinor));
@@ -205,10 +361,24 @@ export function PlanPage() {
     setIsBudgetDialogOpen(true);
   }
 
-  function deleteBudget(budgetId: string) {
-    setBudgets((current) => current.filter((budget) => budget.id !== budgetId));
-    if (editingId === budgetId) {
-      resetForm();
+  async function deleteBudget(budgetId: string) {
+    if (!isAuthenticated) {
+      setIsAuthPromptOpen(true);
+      return;
+    }
+
+    if (!accessToken || !workspaceId) {
+      return;
+    }
+
+    try {
+      await deleteApiBudget({ accessToken, budgetId, workspaceId });
+      setBudgets((current) => current.filter((budget) => budget.id !== budgetId));
+      if (editingId === budgetId) {
+        resetForm();
+      }
+    } catch {
+      setFormError("Budget category was not deleted. Try again.");
     }
   }
 
@@ -410,6 +580,74 @@ export function PlanPage() {
             )}
           </Card>
 
+          <Card
+            aria-labelledby="active-goals-title"
+            className="goal-preview-card"
+            id="active-goals"
+          >
+            <div className="home-summary-card__header">
+              <h2 id="active-goals-title">Active goals</h2>
+            </div>
+            <div className="goal-preview">
+              <span aria-hidden="true" className="goal-preview__art">
+                <span className="goal-preview__tree" />
+              </span>
+              <div className="goal-preview__body">
+                <strong>Savings goal</strong>
+                <p>
+                  {money(goalSavedMinor)} / {money(goalTargetMinor)}
+                </p>
+                <div
+                  aria-label={`Goal progress: ${goalProgressValue} percent`}
+                  aria-valuemax={100}
+                  aria-valuemin={0}
+                  aria-valuenow={goalProgressValue}
+                  className="goal-preview__progress"
+                  role="progressbar"
+                >
+                  <span style={{ width: `${goalProgressValue}%` }} />
+                </div>
+              </div>
+              <span className="goal-preview__percent">{goalProgressValue}%</span>
+              <span aria-hidden="true" className="goal-preview__button">
+                <Icon name="chevron" size={18} />
+              </span>
+            </div>
+          </Card>
+
+          {isAuthPromptOpen ? (
+            <div className="modal-backdrop" role="presentation">
+              <section
+                aria-labelledby="budget-auth-required-title"
+                aria-modal="true"
+                className="modal-card auth-required-card"
+                role="dialog"
+              >
+                <Icon name="lock" size={28} />
+                <h2 id="budget-auth-required-title">Sign in to save budget changes</h2>
+                <p>
+                  Guest mode is read-only. Log in or create an account to add, edit, or delete
+                  budget categories.
+                </p>
+                <div className="confirmation-actions">
+                  <Link className="button button--primary" to="/login">
+                    Log in
+                  </Link>
+                  <Link className="button button--secondary" to="/signup">
+                    Sign up
+                  </Link>
+                </div>
+                <button
+                  className="text-button"
+                  onClick={() => setIsAuthPromptOpen(false)}
+                  type="button"
+                >
+                  Continue reading as guest
+                </button>
+              </section>
+            </div>
+          ) : null}
+
           {isBudgetDialogOpen ? (
             <div className="modal-backdrop" role="presentation">
               <section
@@ -437,7 +675,7 @@ export function PlanPage() {
                     Close
                   </button>
                 </div>
-                <form className="budget-category-form" onSubmit={handleSubmit}>
+                <form className="budget-category-form" onSubmit={(event) => void handleSubmit(event)}>
                   <label>
                     <span>Category</span>
                     <select
@@ -463,8 +701,12 @@ export function PlanPage() {
                   {formError ? (
                     <InlineAlert title={formError}>Use numbers like 500 or 500.00.</InlineAlert>
                   ) : null}
-                  <Button fullWidth type="submit">
-                    {editingId ? "Save budget category" : "Add budget category"}
+                  <Button disabled={isBudgetSaving} fullWidth type="submit">
+                    {isBudgetSaving
+                      ? "Saving budget category"
+                      : editingId
+                        ? "Save budget category"
+                        : "Add budget category"}
                   </Button>
                 </form>
               </section>

@@ -5,7 +5,7 @@
 - Optional email signup/login/logout and email verification
 - Forgot/reset password
 - Secure account sessions
-- Guest-to-account migration
+- Legacy guest-to-account migration
 - Optional guest data-protection reminder after five minutes of active use
 - Reminder actions: Create Account, Log In, Continue as Guest, Remind Me Every
   5 Minutes, and Don't Remind Me Again
@@ -16,7 +16,10 @@
 
 ## Transactions
 
-- Create, view, edit, and delete/reverse income, expense, and transfer entries
+- Authenticated users can create, view, edit, and delete/reverse income,
+  expense, and transfer entries through backend APIs
+- Guest users can view/read available transaction data but cannot create, edit,
+  delete, or otherwise modify transactions
 - Amount, currency, type, account, category, date, payment method, note, tags,
   and optional attachment
 - Phase 1 note maximum: 100 characters
@@ -49,6 +52,8 @@
 
 - Personal/family budget summary
 - Add Income and Add Expense quick actions
+- Guest quick actions that would change data must show a login/signup prompt
+  instead of opening an editable form
 - Goal preview and recent activity
 - Income/expense activity tabs, date grouping, search, and filters
 - Monthly cash flow and income-versus-expense trends
@@ -102,6 +107,8 @@ user-approved actions. See [Flow Assistant](../ai/flow-assistant.md).
 
 - Mobile-first responsive behavior
 - Guest and authenticated paths
+- Guest paths are read-only; authenticated paths perform CRUD through APIs and
+  persist data to the database
 - Loading, empty, success, validation, offline, and error states
 - Accessibility and localization
 - Auditability for sensitive/shared changes

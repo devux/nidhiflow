@@ -65,7 +65,14 @@ export function TransactionFormPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { preferences } = useGuestPreferences();
-  const { createTransaction, removeTransaction, transactions, updateTransaction } =
+  const {
+    canWrite,
+    createTransaction,
+    removeTransaction,
+    requiresAuthentication,
+    transactions,
+    updateTransaction,
+  } =
     useGuestTransactions();
   const existing = useMemo(
     () => transactions.find((transaction) => transaction.id === id),
@@ -97,6 +104,27 @@ export function TransactionFormPage() {
     amountRef.current?.focus();
   }, []);
 
+  useEffect(() => {
+    if (existing) return;
+
+    const nextType: TransactionType = requestedType === "income" ? "income" : "expense";
+    const nextCategory = nextType === "income" ? incomeCategories[0] : expenseCategories[0];
+
+    setValues((current) =>
+      current.type === nextType
+        ? current
+        : {
+            amount: "",
+            category: nextCategory,
+            note: "",
+            transactionDate: getLocalDate(),
+            type: nextType,
+          },
+    );
+    setErrors({});
+    setShowAllCategories(false);
+  }, [existing, requestedType]);
+
   if (id && !existing) {
     return (
       <main className="page focused-page" id="main-content">
@@ -105,6 +133,32 @@ export function TransactionFormPage() {
           <p>It may have already been removed from this device.</p>
           <Link className="button button--secondary" to="/activity">
             Return to Activity
+          </Link>
+        </Card>
+      </main>
+    );
+  }
+
+  if (requiresAuthentication || !canWrite) {
+    return (
+      <main className="page focused-page" id="main-content">
+        <Card className="auth-required-card">
+          <Icon name="lock" size={28} />
+          <h1>Sign in to save changes</h1>
+          <p>
+            Guest mode is read-only. Log in or create an account to add income, add expenses,
+            edit transactions, or save finance changes to the database.
+          </p>
+          <div className="confirmation-actions">
+            <Link className="button button--primary" to="/login">
+              Log in
+            </Link>
+            <Link className="button button--secondary" to="/signup">
+              Sign up
+            </Link>
+          </div>
+          <Link className="text-button" to="/activity">
+            Continue reading as guest
           </Link>
         </Card>
       </main>

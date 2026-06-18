@@ -76,10 +76,12 @@ Error:
 ## Access Classes
 
 - **Public:** no account, narrowly scoped and rate-limited
-- **Guest-compatible:** feature works locally; API is not required
+- **Guest-compatible:** read-only feature works without authentication; writes
+  are blocked client-side and protected server-side
 - **Protected:** valid authenticated session and workspace membership
 
-Core guest finance data has no CRUD API until explicit authenticated migration.
+Finance CRUD APIs are protected. Guest requests without a valid authenticated
+session receive `401` and must not create, update, delete, or modify data.
 
 ## Endpoint Catalog
 
@@ -200,6 +202,10 @@ Create example:
 
 List filters include `type`, `accountId`, `categoryId`, `from`, `to`, `query`,
 `page`, `pageSize`, and allowlisted `sort`.
+
+`PATCH /workspaces/:workspaceId/transactions/:transactionId` replaces the
+transaction payload using the same validation rules as create. `DELETE` soft
+deletes the transaction and records an audit event.
 
 ### Recurring Transactions
 

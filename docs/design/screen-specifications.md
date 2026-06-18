@@ -6,7 +6,6 @@
 - Notification entry and Insights entry point
 - Personal/family budget card: total, spent, remaining, progress
 - Prominent Add Expense and Add Income actions
-- Active-goal preview: saved, target, percentage, View All
 - Recent transactions: source/merchant, category, signed amount, date
 
 ## Activity
@@ -34,6 +33,7 @@
 - Budget tab includes Monthly, Yearly, and Custom period options
 - Budget total, percentage used, spent, and remaining recalculate from budget
   categories and matching transactions
+- Active-goal preview: saved, target, percentage, progress
 - Add, edit, and delete budget categories
 - Category rows with spent/limit, percentage, and progress
 

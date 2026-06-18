@@ -93,6 +93,10 @@ Role must not restrict ordinary Phase 1 finance collaboration.
 - timestamps, `deleted_at`
 
 Checks enforce positive amount, transfer account rules, and category rules.
+Authenticated CRUD stores transactions in this table and links each record to
+its workspace and actor. Guest users do not create or update transaction rows.
+Deletes are represented with `deleted_at` so auditability and historical
+references remain intact.
 
 ### transaction_tags
 

@@ -19,6 +19,7 @@ See [Authentication](../backend/authentication.md).
 ## Authorization
 
 - Deny by default.
+- Guest users are read-only and must never be authorized for finance CRUD.
 - Enforce workspace membership and action policy in the service layer.
 - Never trust client-supplied ownership fields.
 - Use safe `404` responses where resource enumeration is possible.

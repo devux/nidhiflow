@@ -64,6 +64,8 @@ export const createTransactionBodySchema = z
     }
   });
 
+export const updateTransactionBodySchema = createTransactionBodySchema;
+
 export const transactionListQuerySchema = z.object({
   accountId: z.string().trim().min(1).optional(),
   categoryId: z.string().trim().min(1).optional(),
@@ -79,4 +81,5 @@ export const transactionListQuerySchema = z.object({
 });
 
 export type CreateTransactionBody = z.infer<typeof createTransactionBodySchema>;
+export type UpdateTransactionBody = z.infer<typeof updateTransactionBodySchema>;
 export type TransactionListQuery = z.infer<typeof transactionListQuerySchema>;
