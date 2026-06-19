@@ -40,8 +40,7 @@
 - Yearly tab is read-only and derives all totals from the last 12 monthly
   budget plans
 - Yearly tab includes yearly budget summary, budget vs actual spending,
-  month-wise breakdown, category analysis, yearly trends, savings projection,
-  and yearly insights
+  month-wise breakdown, category analysis, and savings projection
 - Category rows with spent/limit, percentage, and progress
 
 ## Goals
@@ -56,18 +55,16 @@
 - This Month, Last Month, This Year, Custom
 - Total income, total expense, net savings
 - Expense category chart plus textual category, percentage, and amount legend
-- Recent transactions and View All
 - Charts remain understandable without color
 
 ## You
 
 - Guest/authenticated state
 - Guest local-data explanation and non-blocking Create Account action
-- Local preference to enable or disable the five-minute guest data-protection
-  reminder
 - No invented guest email or cloud identity
-- Goals, Reports, Learn, Achievements, and Feedback shortcuts
-- Appearance, Language, Currency, Notifications, and Privacy preferences
+- Activity and Reports shortcuts
+- Feedback form
+- Appearance, Language, Currency, and Privacy preferences
 - Optional avatar with safe default
 
 ## Flow Preview

@@ -28,7 +28,10 @@
   question-and-answer experience to create the first/current month budget plan.
 - Continue refining monthly budget planning UX, including month navigation,
   quick-fill review, category limit editing, and derived yearly reporting.
-- Revisit Active Goals placement outside the Budget page with a dedicated
-  Goals experience or a clearer dashboard entry point.
+- Revisit yearly budget trends and insights as a future enhancement, including
+  trend signals, practical lessons, and healthy-progress guidance.
+- Park the Goals feature for future implementation, including the dedicated
+  goals experience, navigation entry point, milestones, contributions, and
+  progress tracking.
 - Reintroduce Bills as a future feature outside the current Budget module,
   including due dates, status, recurrence, reminders, and related notifications.

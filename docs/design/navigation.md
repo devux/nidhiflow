@@ -29,10 +29,9 @@ forms, primary actions, or the software keyboard.
 - **Budget:** monthly budgets, category budgets, yearly budget insights, and goals
 - **You:** profile state, tools, preferences, privacy, and account conversion
 
-Activity remains a live secondary destination opened from Home, Reports,
-transaction flows, and relevant links. Goals are secondary destinations opened
-from Home or You. Add Income and Add Expense are task flows opened from Home and
-relevant activity actions.
+Activity remains a live secondary destination opened from You, transaction
+flows, and relevant links. Add Income and Add Expense are task flows opened from
+Home and relevant activity actions.
 
 ## Focused Flows
 
