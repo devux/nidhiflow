@@ -20,7 +20,9 @@ import {
   listAccounts,
   listCategories,
   listTransactions,
+  restoreAccount,
   updateTransaction as updateApiTransaction,
+  type AccountResource,
 } from "../../data/api/financeClient";
 import type {
   GuestTransaction,
@@ -45,6 +47,39 @@ interface GuestTransactionsProviderProps {
 
 const GuestTransactionsContext = createContext<GuestTransactionsContextValue | null>(null);
 const defaultRepository = new IndexedDbGuestTransactionRepository();
+
+async function findOrCreateWritableAccount(input: {
+  accessToken: string;
+  accounts: AccountResource[];
+  currency: GuestTransactionInput["currency"];
+  workspaceId: string;
+}) {
+  const activeAccount = input.accounts.find(
+    (account) => !account.isArchived && account.currency === input.currency,
+  );
+
+  if (activeAccount) {
+    return activeAccount;
+  }
+
+  const archivedCashAccount = input.accounts.find(
+    (account) => account.isArchived && account.currency === input.currency && account.name === "Cash",
+  );
+
+  if (archivedCashAccount) {
+    return restoreAccount({
+      accessToken: input.accessToken,
+      accountId: archivedCashAccount.id,
+      workspaceId: input.workspaceId,
+    });
+  }
+
+  return createAccount({
+    accessToken: input.accessToken,
+    currency: input.currency,
+    workspaceId: input.workspaceId,
+  });
+}
 
 export function GuestTransactionsProvider({
   children,
@@ -98,9 +133,12 @@ export function GuestTransactionsProvider({
         listAccounts({ accessToken, workspaceId }),
         listCategories({ accessToken, workspaceId }),
       ]);
-      const activeAccount =
-        accounts.find((account) => !account.isArchived && account.currency === input.currency) ??
-        (await createAccount({ accessToken, currency: input.currency, workspaceId }));
+      const activeAccount = await findOrCreateWritableAccount({
+        accessToken,
+        accounts,
+        currency: input.currency,
+        workspaceId,
+      });
       const category = categories.find(
         (item) => item.name === input.category && item.transactionType === input.type,
       );
@@ -133,9 +171,12 @@ export function GuestTransactionsProvider({
         listAccounts({ accessToken, workspaceId }),
         listCategories({ accessToken, workspaceId }),
       ]);
-      const activeAccount =
-        accounts.find((account) => !account.isArchived && account.currency === input.currency) ??
-        (await createAccount({ accessToken, currency: input.currency, workspaceId }));
+      const activeAccount = await findOrCreateWritableAccount({
+        accessToken,
+        accounts,
+        currency: input.currency,
+        workspaceId,
+      });
       const category = categories.find(
         (item) => item.name === input.category && item.transactionType === input.type,
       );

@@ -54,7 +54,7 @@ export class AccountController {
     response: Response,
   ) => {
     const auth = getAuthContext(response);
-    const account = await this.service.createAccount(
+    const result = await this.service.createAccount(
       auth.userId,
       request.params.workspaceId,
       request.body,
@@ -62,9 +62,9 @@ export class AccountController {
     );
 
     sendSuccess(response, {
-      data: account,
-      message: "Account created successfully.",
-      status: 201,
+      data: result.account,
+      message: result.created ? "Account created successfully." : "Account already exists.",
+      status: result.created ? 201 : 200,
     });
   };
 

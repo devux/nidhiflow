@@ -14,6 +14,17 @@ function duplicateAccountName() {
   });
 }
 
+function normalizeDecimal(value: string) {
+  const trimmed = value.trim();
+  const negative = trimmed.startsWith("-");
+  const [wholePartRaw, fractionalPart = ""] = (negative ? trimmed.slice(1) : trimmed).split(".");
+  const wholePart = BigInt(wholePartRaw || "0");
+  const normalizedFraction = `${fractionalPart}0000`.slice(0, 4);
+  const magnitude = wholePart * 10_000n + BigInt(normalizedFraction);
+
+  return negative ? -magnitude : magnitude;
+}
+
 export class AccountService {
   private readonly workspaceRepository: WorkspaceRepository;
   private readonly repository: AccountRepository;
@@ -77,6 +88,17 @@ export class AccountService {
       const existingAccount = await repository.findActiveByName(workspaceId, input.name, transaction);
 
       if (existingAccount) {
+        const isIdempotentCreate =
+          existingAccount.currency === input.currency &&
+          existingAccount.currency === input.openingBalance.currency &&
+          existingAccount.type === input.type &&
+          normalizeDecimal(existingAccount.openingBalance) ===
+            normalizeDecimal(input.openingBalance.amount);
+
+        if (isIdempotentCreate) {
+          return { account: existingAccount, created: false };
+        }
+
         throw duplicateAccountName();
       }
 
@@ -110,7 +132,7 @@ export class AccountService {
         transaction,
       );
 
-      return account;
+      return { account, created: true };
     });
   }
 

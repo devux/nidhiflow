@@ -52,7 +52,7 @@ considered stable enough for production rollout.
 Run the following after a staging deploy:
 
 1. Open the guest home screen.
-2. Navigate to Activity, Flow, Budget, and You.
+2. Navigate to Reports, Flow, Budget, and You.
 3. Submit the Flow launch notification form.
 4. Submit guest feedback.
 5. Verify login and protected reads with a test account.

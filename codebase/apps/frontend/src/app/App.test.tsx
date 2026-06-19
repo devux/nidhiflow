@@ -97,12 +97,25 @@ function createTransactionRepository(
 function mockAuthenticatedFinanceSession(
   fetchMock: jest.MockedFunction<typeof fetch>,
   options: {
+    accounts?: Array<Record<string, unknown>>;
     budgets?: Array<Record<string, unknown>>;
+    failAccountCreateAsConflict?: boolean;
     failFirstBudgetCreateAsUnauthenticated?: boolean;
     reportingCurrency?: string;
     transactions?: unknown[];
   } = {},
 ) {
+  let accounts = [
+    ...(options.accounts ?? [
+      {
+        currency: "USD",
+        id: "acc_cash",
+        isArchived: false,
+        name: "Cash",
+        type: "cash",
+      },
+    ]),
+  ];
   let budgets = [...(options.budgets ?? [])];
   let hasRejectedBudgetCreate = false;
   const reportingCurrency = options.reportingCurrency ?? "USD";
@@ -183,16 +196,80 @@ function mockAuthenticatedFinanceSession(
     if (url.endsWith("/api/v1/workspaces/wsp_finance/accounts") && method === "GET") {
       return Promise.resolve(
         createJsonResponse({
-          data: [
-            {
-              currency: "USD",
-              id: "acc_cash",
-              isArchived: false,
-              name: "Cash",
-              type: "cash",
-            },
-          ],
+          data: accounts,
           message: "Accounts retrieved successfully.",
+          success: true,
+        }),
+      );
+    }
+
+    if (url.endsWith("/api/v1/workspaces/wsp_finance/accounts") && method === "POST") {
+      if (options.failAccountCreateAsConflict) {
+        return Promise.resolve(
+          createJsonResponse(
+            {
+              error: { code: "CONFLICT" },
+              message: "An active account with this name already exists.",
+              success: false,
+            },
+            false,
+            409,
+          ),
+        );
+      }
+
+      const body = JSON.parse(String(init?.body ?? "{}")) as {
+        currency: string;
+        name: string;
+        type: string;
+      };
+      const account = {
+        currency: body.currency,
+        id: `acc_${accounts.length + 1}`,
+        isArchived: false,
+        name: body.name,
+        type: body.type,
+      };
+      accounts = [...accounts, account];
+
+      return Promise.resolve(
+        createJsonResponse({
+          data: account,
+          message: "Account created successfully.",
+          success: true,
+        }),
+      );
+    }
+
+    const restoreAccountMatch = /\/api\/v1\/workspaces\/wsp_finance\/accounts\/([^/]+)\/restore$/.exec(
+      url,
+    );
+
+    if (restoreAccountMatch && method === "POST") {
+      const accountId = restoreAccountMatch[1];
+      const account = accounts.find((item) => item.id === accountId);
+
+      if (!account) {
+        return Promise.resolve(
+          createJsonResponse(
+            {
+              error: { code: "NOT_FOUND" },
+              message: "The requested resource was not found.",
+              success: false,
+            },
+            false,
+            404,
+          ),
+        );
+      }
+
+      const restoredAccount = { ...account, isArchived: false };
+      accounts = accounts.map((item) => (item.id === accountId ? restoredAccount : item));
+
+      return Promise.resolve(
+        createJsonResponse({
+          data: restoredAccount,
+          message: "Account restored successfully.",
           success: true,
         }),
       );
@@ -203,6 +280,35 @@ function mockAuthenticatedFinanceSession(
         createJsonResponse({
           data: options.transactions ?? [],
           message: "Transactions retrieved successfully.",
+          success: true,
+        }),
+      );
+    }
+
+    if (url.endsWith("/api/v1/workspaces/wsp_finance/transactions") && method === "POST") {
+      const body = JSON.parse(String(init?.body ?? "{}")) as {
+        accountId: string;
+        categoryId: string;
+        money: { amount: string; currency: string };
+        note?: string;
+        transactionDate: string;
+        type: "expense" | "income";
+      };
+
+      return Promise.resolve(
+        createJsonResponse({
+          data: {
+            amount: body.money.amount,
+            categoryId: body.categoryId,
+            createdAt: "2026-06-19T00:00:00.000Z",
+            currency: body.money.currency,
+            id: "txn_created",
+            note: body.note ?? "",
+            transactionDate: body.transactionDate,
+            type: body.type,
+            updatedAt: "2026-06-19T00:00:00.000Z",
+          },
+          message: "Transaction created successfully.",
           success: true,
         }),
       );
@@ -345,10 +451,11 @@ describe("App", () => {
       link.textContent?.trim(),
     );
 
-    expect(links).toEqual(["Home", "Activity", "Flow", "Budget", "You"]);
+    expect(links).toEqual(["Home", "Reports", "Flow", "Budget", "You"]);
+    expect(links).not.toContain("Activity");
 
-    await user.click(screen.getByRole("link", { name: "Activity" }));
-    expect(await screen.findByRole("heading", { name: "Activity" })).toBeDefined();
+    await user.click(screen.getByRole("link", { name: "Reports" }));
+    expect(await screen.findByRole("heading", { name: "Reports" })).toBeDefined();
 
     await user.click(screen.getByRole("link", { name: "Flow" }));
     expect(await screen.findByRole("heading", { name: "Flow" })).toBeDefined();
@@ -1351,6 +1458,53 @@ describe("App", () => {
     expect((amount as HTMLInputElement).value).toBe("10.99");
     expect(screen.getByLabelText<HTMLTextAreaElement>(/Note/).value).toBe(longNote);
   }, 10000);
+
+  it("restores an archived Cash account before creating the default account", async () => {
+    const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
+    mockAuthenticatedFinanceSession(fetchMock, {
+      accounts: [
+        {
+          currency: "USD",
+          id: "acc_archived_cash",
+          isArchived: true,
+          name: "Cash",
+          type: "cash",
+        },
+      ],
+      failAccountCreateAsConflict: true,
+    });
+    window.history.replaceState({}, "", "/transactions/new?type=expense");
+    const user = userEvent.setup();
+    render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    await user.type(await screen.findByLabelText("Amount"), "12.50");
+    await user.click(screen.getByRole("button", { name: "Save Expense" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "/api/v1/workspaces/wsp_finance/accounts/acc_archived_cash/restore",
+        ),
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+
+    const accountCreateCalls = fetchMock.mock.calls.filter(([input, init]) => {
+      const url = getRequestUrl(input);
+      return url.endsWith("/api/v1/workspaces/wsp_finance/accounts") && init?.method === "POST";
+    });
+
+    expect(accountCreateCalls).toHaveLength(0);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/api/v1/workspaces/wsp_finance/transactions"),
+      expect.objectContaining({
+        body: expect.stringContaining('"accountId":"acc_archived_cash"'),
+        method: "POST",
+      }),
+    );
+  });
 
   it("collapses extra expense categories behind a More option", async () => {
     mockAuthenticatedFinanceSession(globalThis.fetch as jest.MockedFunction<typeof fetch>);

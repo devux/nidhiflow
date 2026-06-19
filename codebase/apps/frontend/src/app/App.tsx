@@ -22,6 +22,9 @@ const ActivityPage = lazy(async () => ({
 const FlowPage = lazy(async () => ({
   default: (await import("../features/flow/pages/FlowPage")).FlowPage,
 }));
+const ReportsPage = lazy(async () => ({
+  default: (await import("../features/reports/pages/ReportsPage")).ReportsPage,
+}));
 const BudgetPage = lazy(async () => ({
   default: (await import("../features/budgets/pages/BudgetPage")).BudgetPage,
 }));
@@ -56,6 +59,7 @@ export function App({ repository, transactionRepository }: AppProps) {
                     <Route element={<HomePage />} index />
                     <Route element={<ActivityPage />} path="activity" />
                     <Route element={<FlowPage />} path="flow" />
+                    <Route element={<ReportsPage />} path="reports" />
                     <Route element={<BudgetPage />} path="budget" />
                     <Route element={<Navigate replace to="/budget" />} path="plan" />
                     <Route element={<YouPage />} path="you" />

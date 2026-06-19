@@ -847,12 +847,34 @@ p {
   gap: var(--space-3);
 }
 
+.report-custom-range {
+  display: grid;
+  gap: var(--space-3);
+}
+
 .filter-grid label {
   display: grid;
   gap: var(--space-1);
   color: var(--color-text-secondary);
   font-size: 0.82rem;
   font-weight: 800;
+}
+
+.report-custom-range label {
+  display: grid;
+  gap: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.report-custom-range input {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
 }
 
 .text-button {
@@ -881,6 +903,10 @@ p {
 @media (min-width: 36rem) {
   .filter-grid {
     grid-template-columns: 1.4fr 1fr 1fr;
+  }
+
+  .report-custom-range {
+    grid-template-columns: 1fr 1fr;
   }
 }
 

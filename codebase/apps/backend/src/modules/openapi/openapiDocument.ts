@@ -679,12 +679,19 @@ const paths = {
     post: operation({
       tags: ["Accounts"],
       summary: "Create account",
-      description: "Creates a manual cash, bank, credit card, loan, wallet, or other account.",
+      description:
+        "Creates a manual cash, bank, credit card, loan, wallet, or other account. Exact duplicate create requests return the existing account so safe retries do not fail.",
       operationId: "createAccount",
       security: bearerSecurity,
       parameters: [parameterRef("workspaceId")],
       requestBody: requestBody(ref("CreateAccountRequest")),
-      responses: responseSet({ "201": successResponse("Account created.", ref("Account")) }, { auth: true, conflict: true, notFound: true, validation: true }),
+      responses: responseSet(
+        {
+          "200": successResponse("Existing matching account returned.", ref("Account")),
+          "201": successResponse("Account created.", ref("Account")),
+        },
+        { auth: true, conflict: true, notFound: true, validation: true },
+      ),
     }),
   },
   "/api/v1/workspaces/{workspaceId}/accounts/summary": {

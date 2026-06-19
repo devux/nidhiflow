@@ -8,7 +8,7 @@ const destinations: Array<{
   path: string;
 }> = [
   { icon: "home", label: "Home", path: "/" },
-  { icon: "activity", label: "Activity", path: "/activity" },
+  { icon: "report", label: "Reports", path: "/reports" },
   { icon: "flow", label: "Flow", path: "/flow" },
   { icon: "plan", label: "Budget", path: "/budget" },
   { icon: "user", label: "You", path: "/you" },

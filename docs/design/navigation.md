@@ -9,7 +9,7 @@ Design and verify mobile first, desktop second, tablet third.
 Use a persistent five-item bottom navigation:
 
 1. Home
-2. Activity
+2. Reports
 3. Flow
 4. Budget
 5. You
@@ -24,14 +24,15 @@ forms, primary actions, or the software keyboard.
 ## Destination Ownership
 
 - **Home:** financial overview and quick actions
-- **Activity:** searchable transaction history
+- **Reports:** income, expense, savings, category, and recent transaction summaries
 - **Flow:** Phase 1 preview; Phase 2 assistant
 - **Budget:** monthly budgets, category budgets, yearly budget insights, and goals
 - **You:** profile state, tools, preferences, privacy, and account conversion
 
-Goals and Reports are secondary destinations opened from Home or You. Add
-Income and Add Expense are task flows opened from Home and relevant activity
-actions.
+Activity remains a live secondary destination opened from Home, Reports,
+transaction flows, and relevant links. Goals are secondary destinations opened
+from Home or You. Add Income and Add Expense are task flows opened from Home and
+relevant activity actions.
 
 ## Focused Flows
 

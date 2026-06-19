@@ -168,6 +168,10 @@ Create example:
 }
 ```
 
+Exact duplicate account create requests return `200` with the existing matching
+account so safe client retries do not fail. Duplicate account names with
+different type, currency, or opening balance return `409 CONFLICT`.
+
 ### Categories
 
 | Method | Endpoint | Access |

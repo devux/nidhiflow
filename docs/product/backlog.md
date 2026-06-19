@@ -24,6 +24,8 @@
 
 ## Budget
 
+- Add a smart first-time budget setup flow that guides new users through a
+  question-and-answer experience to create the first/current month budget plan.
 - Continue refining monthly budget planning UX, including month navigation,
   quick-fill review, category limit editing, and derived yearly reporting.
 - Revisit Active Goals placement outside the Budget page with a dedicated

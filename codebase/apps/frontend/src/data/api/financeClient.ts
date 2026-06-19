@@ -202,6 +202,20 @@ export async function listAccounts(input: {
   return result.data;
 }
 
+export async function restoreAccount(input: {
+  accessToken: string;
+  accountId: string;
+  workspaceId: string;
+}): Promise<AccountResource> {
+  const result = await apiRequest<AccountResource>(
+    `/workspaces/${input.workspaceId}/accounts/${input.accountId}/restore`,
+    input.accessToken,
+    { method: "POST" },
+  );
+
+  return result.data;
+}
+
 export async function createAccount(input: {
   accessToken: string;
   currency: SupportedCurrency;
@@ -230,12 +244,19 @@ export async function createAccount(input: {
 
     const accounts = await listAccounts(input);
     const existingCashAccount = accounts.find(
-      (account) =>
-        !account.isArchived && account.currency === input.currency && account.name === "Cash",
+      (account) => account.currency === input.currency && account.name === "Cash",
     );
 
     if (!existingCashAccount) {
       throw error;
+    }
+
+    if (existingCashAccount.isArchived) {
+      return restoreAccount({
+        accessToken: input.accessToken,
+        accountId: existingCashAccount.id,
+        workspaceId: input.workspaceId,
+      });
     }
 
     return existingCashAccount;

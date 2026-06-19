@@ -93,12 +93,10 @@ export class AccountRepository {
   }
 
   async findActiveByName(workspaceId: string, name: string, queryable: Queryable = this.database) {
-    const result = await queryable.query<Pick<AccountRecord, "id">>(
-      `SELECT id
-         FROM accounts
-        WHERE workspace_id = $1
-          AND name = $2
-          AND deleted_at IS NULL
+    const result = await queryable.query<AccountRecord>(
+      `${this.balanceQuery}
+         AND a.name = $2
+       GROUP BY a.id
         LIMIT 1`,
       [workspaceId, name],
     );

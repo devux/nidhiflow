@@ -183,6 +183,33 @@ describe("finance workflow integration", () => {
     expect(cashResponse.status).toBe(201);
     expect(minorUnits(cashBody.data.currentBalance)).toBe(10_000_000n);
 
+    const repeatedCashResponse = await request(app)
+      .post(`/api/v1/workspaces/${workspaceId}/accounts`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        currency: "INR",
+        name: "Cash",
+        openingBalance: { amount: "1000.00", currency: "INR" },
+        type: "cash",
+      });
+    const repeatedCashBody = repeatedCashResponse.body as AccountResponseBody;
+
+    expect(repeatedCashResponse.status).toBe(200);
+    expect(repeatedCashBody.data.id).toBe(cashBody.data.id);
+    expect(repeatedCashResponse.body.message).toBe("Account already exists.");
+
+    const duplicateCashResponse = await request(app)
+      .post(`/api/v1/workspaces/${workspaceId}/accounts`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        currency: "INR",
+        name: "Cash",
+        openingBalance: { amount: "0.0000", currency: "INR" },
+        type: "cash",
+      });
+    expect(duplicateCashResponse.status).toBe(409);
+    expect(duplicateCashResponse.body.error.code).toBe("CONFLICT");
+
     const bankResponse = await request(app)
       .post(`/api/v1/workspaces/${workspaceId}/accounts`)
       .set("Authorization", `Bearer ${accessToken}`)
