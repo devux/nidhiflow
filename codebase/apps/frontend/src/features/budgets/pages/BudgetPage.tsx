@@ -32,12 +32,6 @@ interface BudgetCategory {
   periodStart: string;
 }
 
-const lessons = [
-  "Check whether one category is growing faster than income.",
-  "Review yearly patterns before raising monthly limits.",
-  "Use goals for direction, not pressure.",
-];
-
 function toDateValue(date: Date): string {
   return [
     date.getFullYear(),
@@ -622,11 +616,6 @@ export function BudgetPage() {
       ? 0n
       : yearlyMonthRows.reduce((total, row) => total + row.remainingMinor, 0n) /
         BigInt(yearlyMonthRows.length);
-  const strongestMonth = yearlyMonthRows.reduce(
-    (best, row) => (row.remainingMinor > best.remainingMinor ? row : best),
-    yearlyMonthRows[0],
-  );
-  const highestSpendCategory = yearlyCategoryRows[0];
   const projectedYearlySavingsMinor = yearlyAverageRemainingMinor * 12n;
 
   return (
@@ -776,50 +765,6 @@ export function BudgetPage() {
             )}
           </Card>
 
-          <Card>
-            <div className="section-heading">
-              <span>
-                <h2>Yearly trends and insights</h2>
-                <small>Simple signals from the last 12 monthly plans</small>
-              </span>
-            </div>
-            <div className="settings-list">
-              <div className="insight-row">
-                <span className="icon-tile">
-                  <Icon name="sparkles" />
-                </span>
-                <span>
-                  <strong>
-                    {strongestMonth
-                      ? `${strongestMonth.label} has the highest remaining budget`
-                      : "Add monthly budgets to see trends"}
-                  </strong>
-                  <small>
-                    {strongestMonth
-                      ? `${money(strongestMonth.remainingMinor)} remains against planned limits.`
-                      : "Yearly insights need at least one monthly budget."}
-                  </small>
-                </span>
-              </div>
-              <div className="insight-row">
-                <span className="icon-tile">
-                  <Icon name="report" />
-                </span>
-                <span>
-                  <strong>
-                    {highestSpendCategory
-                      ? `${highestSpendCategory.category} leads yearly budget usage`
-                      : "Category trends will appear here"}
-                  </strong>
-                  <small>
-                    {highestSpendCategory
-                      ? `${money(highestSpendCategory.spentMinor)} spent across the yearly window.`
-                      : "Create budget categories to compare planned and actual spending."}
-                  </small>
-                </span>
-              </div>
-            </div>
-          </Card>
         </>
       ) : (
         <>
@@ -1069,31 +1014,6 @@ export function BudgetPage() {
         </>
       )}
 
-      <section aria-labelledby="learning-title">
-        <div className="section-heading">
-          <h2 id="learning-title">Practical lessons</h2>
-        </div>
-        <Card className="settings-list">
-          {lessons.map((lesson) => (
-            <button key={lesson} type="button">
-              <span className="icon-tile">
-                <Icon name="sparkles" />
-              </span>
-              <span>
-                <strong>{lesson}</strong>
-                <small>Short guidance you can use without creating an account</small>
-              </span>
-            </button>
-          ))}
-        </Card>
-      </section>
-      <Card className="privacy-card" subtle>
-        <Icon name="shield" />
-        <span>
-          <h2>Healthy progress only</h2>
-          <p>Budgets stay editable and are meant for planning, not pressure.</p>
-        </span>
-      </Card>
     </main>
   );
 }

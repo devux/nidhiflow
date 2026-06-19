@@ -911,10 +911,9 @@ p {
 }
 
 .quick-action span:nth-child(2),
-.settings-list button span:nth-child(2),
+.settings-list :is(a, button) span:nth-child(2),
 .feature-list li > span:last-child,
-.select-field > span,
-.toggle-field > span {
+.select-field > span {
   display: grid;
   gap: var(--space-1);
 }
@@ -922,16 +921,14 @@ p {
 .quick-action strong,
 .settings-list strong,
 .feature-list strong,
-.select-field strong,
-.toggle-field strong {
+.select-field strong {
   font-size: 0.98rem;
 }
 
 .quick-action small,
 .settings-list small,
 .feature-list small,
-.select-field small,
-.toggle-field small {
+.select-field small {
   color: var(--color-text-secondary);
   line-height: 1.4;
 }
@@ -1443,31 +1440,6 @@ p {
   gap: var(--space-3);
 }
 
-.migration-consent {
-  display: grid;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border: 1px solid color-mix(in srgb, var(--color-brand) 24%, var(--color-border));
-  border-radius: var(--radius-card);
-  background: var(--color-surface-subtle);
-}
-
-.migration-consent h3 {
-  margin: 0 0 var(--space-1);
-  font-size: 1rem;
-}
-
-.migration-consent p {
-  margin: 0;
-  color: var(--color-text-secondary);
-  line-height: 1.45;
-}
-
-.migration-consent__actions {
-  display: grid;
-  gap: var(--space-2);
-}
-
 .auth-switch {
   text-align: center;
 }
@@ -1482,7 +1454,7 @@ p {
   padding-block: var(--space-1);
 }
 
-.settings-list button {
+.settings-list :is(a, button) {
   display: grid;
   width: 100%;
   min-height: 4.5rem;
@@ -1495,9 +1467,10 @@ p {
   text-align: left;
   background: transparent;
   cursor: pointer;
+  text-decoration: none;
 }
 
-.settings-list button:last-child {
+.settings-list :is(a, button):last-child {
   border-bottom: 0;
 }
 
@@ -1541,8 +1514,7 @@ p {
   background: var(--color-brand-faint);
 }
 
-.select-field,
-.toggle-field {
+.select-field {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--space-3);
@@ -1556,19 +1528,6 @@ p {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-control);
   background: var(--color-surface);
-}
-
-.toggle-field {
-  position: relative;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  cursor: pointer;
-}
-
-.toggle-field input {
-  width: 3rem;
-  height: 1.75rem;
-  accent-color: var(--color-brand);
 }
 
 .privacy-card {

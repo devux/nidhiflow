@@ -60,12 +60,12 @@ async function apiRequest<Data>(
   options: RequestInit = {},
 ): Promise<ApiEnvelope<Data>> {
   const response = await fetch(`${environment.NIDHIFLOW_API_BASE_URL}/api/v1${path}`, {
+    ...options,
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...options.headers,
     },
-    ...options,
   });
 
   return parseResponse<Data>(response);
@@ -142,6 +142,23 @@ export async function getCurrentUser(accessToken: string): Promise<AuthUser> {
       Authorization: `Bearer ${accessToken}`,
     },
     method: "GET",
+  });
+
+  return result.data;
+}
+
+export async function updateCurrentUser(
+  accessToken: string,
+  input: Partial<
+    Pick<AuthUser, "displayName" | "locale" | "preferredCurrency" | "theme" | "timezone">
+  >,
+): Promise<AuthUser> {
+  const result = await apiRequest<AuthUser>("/users/me", {
+    body: JSON.stringify(input),
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    method: "PATCH",
   });
 
   return result.data;

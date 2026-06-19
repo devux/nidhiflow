@@ -174,16 +174,36 @@ function mockAuthenticatedFinanceSession(
         createJsonResponse({
           data: [
             { id: "cat_salary", isArchived: false, name: "Salary", transactionType: "income" },
-            { id: "cat_freelance", isArchived: false, name: "Freelance", transactionType: "income" },
+            {
+              id: "cat_freelance",
+              isArchived: false,
+              name: "Freelance",
+              transactionType: "income",
+            },
             { id: "cat_business", isArchived: false, name: "Business", transactionType: "income" },
             { id: "cat_interest", isArchived: false, name: "Interest", transactionType: "income" },
             { id: "cat_food", isArchived: false, name: "Food", transactionType: "expense" },
             { id: "cat_shopping", isArchived: false, name: "Shopping", transactionType: "expense" },
-            { id: "cat_transport", isArchived: false, name: "Transport", transactionType: "expense" },
+            {
+              id: "cat_transport",
+              isArchived: false,
+              name: "Transport",
+              transactionType: "expense",
+            },
             { id: "cat_bills", isArchived: false, name: "Bills", transactionType: "expense" },
-            { id: "cat_entertainment", isArchived: false, name: "Entertainment", transactionType: "expense" },
+            {
+              id: "cat_entertainment",
+              isArchived: false,
+              name: "Entertainment",
+              transactionType: "expense",
+            },
             { id: "cat_health", isArchived: false, name: "Health", transactionType: "expense" },
-            { id: "cat_education", isArchived: false, name: "Education", transactionType: "expense" },
+            {
+              id: "cat_education",
+              isArchived: false,
+              name: "Education",
+              transactionType: "expense",
+            },
             { id: "cat_travel", isArchived: false, name: "Travel", transactionType: "expense" },
             { id: "cat_home", isArchived: false, name: "Home", transactionType: "expense" },
           ],
@@ -241,9 +261,8 @@ function mockAuthenticatedFinanceSession(
       );
     }
 
-    const restoreAccountMatch = /\/api\/v1\/workspaces\/wsp_finance\/accounts\/([^/]+)\/restore$/.exec(
-      url,
-    );
+    const restoreAccountMatch =
+      /\/api\/v1\/workspaces\/wsp_finance\/accounts\/([^/]+)\/restore$/.exec(url);
 
     if (restoreAccountMatch && method === "POST") {
       const accountId = restoreAccountMatch[1];
@@ -938,7 +957,8 @@ describe("App", () => {
     );
 
     expect(await screen.findByRole("heading", { name: /Nila/ })).toBeDefined();
-    expect(screen.getByText("Nila Workspace")).toBeDefined();
+    expect(screen.getByText("Nila's workspace")).toBeDefined();
+    expect(screen.queryByText("Nila Workspace")).toBeNull();
     expect(screen.queryByRole("heading", { name: /Guest/ })).toBeNull();
   });
 
@@ -1209,7 +1229,9 @@ describe("App", () => {
     expect(screen.getByText("Budget vs actual")).toBeDefined();
     expect(screen.getByRole("heading", { name: "Month-wise breakdown" })).toBeDefined();
     expect(screen.getByRole("heading", { name: "Category analysis" })).toBeDefined();
-    expect(screen.getByRole("heading", { name: "Yearly trends and insights" })).toBeDefined();
+    expect(screen.queryByRole("heading", { name: "Yearly trends and insights" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Practical lessons" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Healthy progress only" })).toBeNull();
     expect(screen.getByText("Projected yearly savings")).toBeDefined();
     expect(screen.getByText("1 of 12 monthly plans entered")).toBeDefined();
     await user.click(screen.getByRole("button", { name: "Monthly" }));
@@ -1382,7 +1404,7 @@ describe("App", () => {
     await user.clear(displayName);
     await user.click(screen.getByRole("button", { name: "Save" }));
 
-    expect(screen.getByText("Enter a name between 1 and 40 characters.")).toBeDefined();
+    expect(screen.getByText("Enter a name between 1 and 80 characters.")).toBeDefined();
     expect(repository.save).not.toHaveBeenCalled();
 
     await user.type(displayName, "Maya");
@@ -1395,6 +1417,101 @@ describe("App", () => {
       }),
     );
     expect(screen.getByText("Preferences saved on this device.")).toBeDefined();
+  });
+
+  it("saves the authenticated display name and uses it across the app", async () => {
+    window.sessionStorage.setItem("nidhiflow.accessToken", "access-token-profile");
+    const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
+    let displayName = "Nila";
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = getRequestUrl(input);
+      const method = init?.method ?? "GET";
+
+      if (url.endsWith("/api/v1/users/me") && method === "GET") {
+        return Promise.resolve(
+          createJsonResponse({
+            data: {
+              displayName,
+              email: "nila@example.com",
+              id: "usr_profile",
+              locale: "en-US",
+              preferredCurrency: "USD",
+              theme: "system",
+              timezone: "UTC",
+            },
+            message: "Current user retrieved successfully.",
+            success: true,
+          }),
+        );
+      }
+
+      if (url.endsWith("/api/v1/users/me") && method === "PATCH") {
+        const body = JSON.parse(String(init?.body ?? "{}")) as { displayName: string };
+        displayName = body.displayName;
+
+        return Promise.resolve(
+          createJsonResponse({
+            data: {
+              displayName,
+              email: "nila@example.com",
+              id: "usr_profile",
+              locale: "en-US",
+              preferredCurrency: "USD",
+              theme: "system",
+              timezone: "UTC",
+            },
+            message: "Profile updated successfully.",
+            success: true,
+          }),
+        );
+      }
+
+      if (url.endsWith("/api/v1/workspaces") && method === "GET") {
+        return Promise.resolve(
+          createJsonResponse({
+            data: [{ id: "wsp_profile", name: "Old Workspace Name", type: "personal" }],
+            message: "Workspaces retrieved successfully.",
+            success: true,
+          }),
+        );
+      }
+
+      return Promise.reject(new Error(`Unexpected request: ${url}`));
+    });
+
+    window.history.replaceState({}, "", "/you");
+    const user = userEvent.setup();
+    render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    const displayNameInput = await screen.findByLabelText("Display name");
+    expect((displayNameInput as HTMLInputElement).value).toBe("Nila");
+
+    await user.clear(displayNameInput);
+    await user.type(displayNameInput, "Priya");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    await screen.findByText("Profile updated.");
+    expect(screen.getByRole("heading", { name: "Priya" })).toBeDefined();
+
+    await user.click(screen.getByRole("link", { name: "Home" }));
+
+    expect(await screen.findByRole("heading", { name: /Priya/ })).toBeDefined();
+    expect(screen.getByText("Priya's workspace")).toBeDefined();
+    expect(screen.queryByText("Old Workspace Name")).toBeNull();
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/api/v1/users/me"),
+      expect.objectContaining({
+        body: JSON.stringify({ displayName: "Priya" }),
+        headers: expect.objectContaining({
+          Authorization: "Bearer access-token-profile",
+          "Content-Type": "application/json",
+        }),
+        method: "PATCH",
+      }),
+    );
   });
 
   it("has no automated accessibility violations on the guest home screen", async () => {
@@ -1551,6 +1668,11 @@ describe("App", () => {
     );
 
     await screen.findByRole("heading", { name: "You" });
+    expect(screen.getByRole("link", { name: /Activity/ })).toBeDefined();
+    expect(screen.queryByText("Goals")).toBeNull();
+    expect(screen.queryByRole("link", { name: /Feedback/ })).toBeNull();
+    expect(screen.queryByText("Data-protection reminder")).toBeNull();
+    expect(screen.queryByText("Repeat reminder")).toBeNull();
     expect((await axe(container)).violations).toHaveLength(0);
   });
 });

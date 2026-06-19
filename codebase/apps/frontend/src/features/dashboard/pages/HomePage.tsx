@@ -33,8 +33,11 @@ export function HomePage() {
   const budgetProgress = incomeMinor === 0n ? 0 : Number((expenseMinor * 100n) / incomeMinor);
   const budgetProgressValue = Math.min(100, budgetProgress);
   const displayName = user?.displayName ?? preferences.displayName;
+  const activeWorkspace = workspaces[0];
   const workspaceLabel = isAuthenticated
-    ? (workspaces[0]?.name ?? "Personal workspace")
+    ? activeWorkspace?.type === "family"
+      ? activeWorkspace.name
+      : `${displayName}'s workspace`
     : "Guest read-only workspace";
   const workspaceDescription = isAuthenticated
     ? "Your saved data is loaded from your account."
@@ -135,10 +138,9 @@ export function HomePage() {
                   <small>Track spending</small>
                 </span>
                 <Icon name="chevron" />
-              </Link>              
+              </Link>
             </div>
           </Card>
-
         </div>
       </section>
 

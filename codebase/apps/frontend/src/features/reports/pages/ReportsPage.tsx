@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
@@ -11,7 +11,6 @@ import { EmptyState } from "../../../shared/components/EmptyState";
 import { Icon } from "../../../shared/components/Icon";
 import { PageHeader } from "../../../shared/components/PageHeader";
 import { SegmentedControl } from "../../../shared/components/SegmentedControl";
-import { TransactionRow } from "../../transactions/components/TransactionRow";
 
 type ReportPeriod = "custom" | "lastMonth" | "month" | "year";
 
@@ -125,7 +124,6 @@ export function ReportsPage() {
       .sort((left, right) => Number(right.amountMinor - left.amountMinor));
   }, [reportTransactions, totals.expenseMinor]);
 
-  const recentTransactions = reportTransactions.slice(0, 4);
   const money = (amountMinor: bigint) =>
     formatMoney(
       { amountMinor: amountMinor.toString(), currency: reportingCurrency },
@@ -249,30 +247,6 @@ export function ReportsPage() {
             description="Expense categories will appear after spending is recorded for this period."
             icon="chart"
             title="No expense data"
-          />
-        )}
-      </Card>
-
-      <Card>
-        <div className="section-heading">
-          <h2>Recent transactions</h2>
-          <Link to="/activity">View all</Link>
-        </div>
-        {recentTransactions.length > 0 ? (
-          <div className="transaction-list">
-            {recentTransactions.map((transaction) => (
-              <TransactionRow
-                key={transaction.id}
-                locale={preferences.locale}
-                transaction={transaction}
-              />
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            description="Transactions for the selected period will appear here."
-            icon="activity"
-            title="No transactions"
           />
         )}
       </Card>

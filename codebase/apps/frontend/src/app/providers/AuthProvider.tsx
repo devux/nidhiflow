@@ -16,6 +16,7 @@ import {
   logout,
   refreshAccessToken,
   registerAccount,
+  updateCurrentUser,
   verifyEmail,
   type AuthUser,
   type WorkspaceSummary,
@@ -36,6 +37,11 @@ interface AuthContextValue {
     theme: string;
     timezone: string;
   }) => Promise<{ debugToken?: string; message: string }>;
+  updateProfile: (
+    input: Partial<
+      Pick<AuthUser, "displayName" | "locale" | "preferredCurrency" | "theme" | "timezone">
+    >,
+  ) => Promise<AuthUser>;
   user: AuthUser | null;
   verifyEmail: (token: string) => Promise<void>;
   workspaces: WorkspaceSummary[];
@@ -208,6 +214,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setWorkspaces(session.workspaces);
   }, []);
 
+  const handleUpdateProfile = useCallback(
+    async (
+      input: Partial<
+        Pick<AuthUser, "displayName" | "locale" | "preferredCurrency" | "theme" | "timezone">
+      >,
+    ) => {
+      if (!accessToken) {
+        throw new ApiRequestError("Authentication is required.", 401);
+      }
+
+      const updatedUser = await updateCurrentUser(accessToken, input);
+      setUser(updatedUser);
+
+      if (accessToken) {
+        storeAuthSession({
+          accessToken,
+          user: updatedUser,
+          workspaces,
+        });
+      }
+
+      return updatedUser;
+    },
+    [accessToken, workspaces],
+  );
+
   const handleLogout = useCallback(async () => {
     await logout();
     clearStoredAuthSession();
@@ -224,6 +256,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login: handleLogin,
       logout: handleLogout,
       register: handleRegister,
+      updateProfile: handleUpdateProfile,
       user,
       verifyEmail: handleVerifyEmail,
       workspaces,
@@ -233,6 +266,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       handleLogin,
       handleLogout,
       handleRegister,
+      handleUpdateProfile,
       handleVerifyEmail,
       isCheckingSession,
       user,

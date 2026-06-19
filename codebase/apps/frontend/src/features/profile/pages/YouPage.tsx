@@ -3,10 +3,7 @@ import { Link } from "react-router-dom";
 
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
-import { useGuestTransactions } from "../../../app/providers/GuestTransactionsProvider";
 import { environment } from "../../../config/environment";
-import { commitGuestMigration } from "../../../data/api/guestMigrationClient";
-import { createGuestMigrationPayload } from "../../../data/migrations/createGuestMigrationPayload";
 import {
   supportedCurrencies,
   supportedLocales,
@@ -21,10 +18,19 @@ import { Icon, type IconName } from "../../../shared/components/Icon";
 import { InlineAlert } from "../../../shared/components/InlineAlert";
 import { PageHeader } from "../../../shared/components/PageHeader";
 
-const tools: Array<{ description: string; icon: IconName; title: string }> = [
-  { description: "Track savings milestones", icon: "goal", title: "Goals" },
-  { description: "Understand your financial story", icon: "report", title: "Reports" },
-  { description: "Share thoughts without an account", icon: "feedback", title: "Feedback" },
+const tools: Array<{ description: string; href: string; icon: IconName; title: string }> = [
+  {
+    description: "Review income and expenses",
+    href: "/activity",
+    icon: "activity",
+    title: "Activity",
+  },
+  {
+    description: "Understand your financial story",
+    href: "/reports",
+    icon: "report",
+    title: "Reports",
+  },
 ];
 
 const localeLabels: Record<SupportedLocale, string> = {
@@ -41,10 +47,10 @@ const currencyLabels: Record<SupportedCurrency, string> = {
 };
 
 export function YouPage() {
-  const { accessToken, isAuthenticated, logout, user } = useAuth();
+  const { isAuthenticated, logout, updateProfile, user } = useAuth();
   const { preferences, savePreferences } = useGuestPreferences();
-  const { transactions } = useGuestTransactions();
-  const [displayName, setDisplayName] = useState(preferences.displayName);
+  const profileName = user?.displayName ?? preferences.displayName;
+  const [displayName, setDisplayName] = useState(profileName);
   const [feedbackCategory, setFeedbackCategory] = useState<"general" | "issue" | "suggestion">(
     "suggestion",
   );
@@ -52,14 +58,11 @@ export function YouPage() {
   const [feedbackState, setFeedbackState] = useState<"error" | "idle" | "sent" | "sending">("idle");
   const [fieldError, setFieldError] = useState("");
   const [logoutState, setLogoutState] = useState<"error" | "idle" | "saving">("idle");
-  const [migrationState, setMigrationState] = useState<
-    "declined" | "error" | "idle" | "migrated" | "saving"
-  >("idle");
   const [saveState, setSaveState] = useState<"error" | "idle" | "saved">("idle");
 
   useEffect(() => {
-    setDisplayName(preferences.displayName);
-  }, [preferences.displayName]);
+    setDisplayName(profileName);
+  }, [profileName]);
 
   async function persist(updatedPreferences: GuestPreferences) {
     setSaveState("idle");
@@ -76,12 +79,21 @@ export function YouPage() {
     event.preventDefault();
     const normalizedName = displayName.trim();
 
-    if (normalizedName.length < 1 || normalizedName.length > 40) {
-      setFieldError("Enter a name between 1 and 40 characters.");
+    if (normalizedName.length < 1 || normalizedName.length > 80) {
+      setFieldError("Enter a name between 1 and 80 characters.");
       return;
     }
 
     setFieldError("");
+
+    if (isAuthenticated && user) {
+      setSaveState("idle");
+      void updateProfile({ displayName: normalizedName })
+        .then(() => setSaveState("saved"))
+        .catch(() => setSaveState("error"));
+      return;
+    }
+
     void persist({ ...preferences, displayName: normalizedName });
   }
 
@@ -121,55 +133,7 @@ export function YouPage() {
     }
   }
 
-  async function handleGuestMigration() {
-    const pendingTransactions = transactions.filter(
-      (transaction) => !preferences.migratedTransactionIds.includes(transaction.id),
-    );
-
-    if (!accessToken || pendingTransactions.length === 0) return;
-
-    setMigrationState("saving");
-
-    try {
-      const clientMigrationId =
-        typeof crypto.randomUUID === "function"
-          ? crypto.randomUUID()
-          : `migration_${Date.now().toString(36)}`;
-      const payload = createGuestMigrationPayload({
-        clientMigrationId,
-        preferences,
-        transactions: pendingTransactions,
-      });
-
-      await commitGuestMigration({
-        accessToken,
-        idempotencyKey: clientMigrationId,
-        payload,
-      });
-      await savePreferences({
-        ...preferences,
-        migratedTransactionIds: [
-          ...new Set([
-            ...preferences.migratedTransactionIds,
-            ...pendingTransactions.map((transaction) => transaction.id),
-          ]),
-        ],
-      });
-      setMigrationState("migrated");
-    } catch {
-      setMigrationState("error");
-    }
-  }
-
-  const profileName = user?.displayName ?? preferences.displayName;
   const profileInitial = profileName.slice(0, 1).toUpperCase();
-  const pendingMigrationTransactions = transactions.filter(
-    (transaction) => !preferences.migratedTransactionIds.includes(transaction.id),
-  );
-  const shouldOfferMigration =
-    isAuthenticated &&
-    (migrationState === "idle" || migrationState === "saving") &&
-    pendingMigrationTransactions.length > 0;
 
   return (
     <main className="page" id="main-content">
@@ -198,40 +162,6 @@ export function YouPage() {
             <InlineAlert title="Account active">
               {user.email} is signed in. You can now back up finance data to your account.
             </InlineAlert>
-            {shouldOfferMigration ? (
-              <div className="migration-consent" role="region" aria-label="Move local data">
-                <span className="icon-tile">
-                  <Icon name="cloud" size={22} />
-                </span>
-                <span>
-                  <h3>Move local data to this account?</h3>
-                  <p>
-                    We found {pendingMigrationTransactions.length} local transaction
-                    {pendingMigrationTransactions.length === 1 ? "" : "s"}. With your consent,
-                    NidhiFlow will copy them to your signed-in workspace while keeping this local
-                    view intact on this device.
-                  </p>
-                </span>
-                <div className="migration-consent__actions">
-                  <Button
-                    disabled={migrationState === "saving"}
-                    fullWidth
-                    onClick={() => void handleGuestMigration()}
-                  >
-                    <Icon name="check" size={20} />
-                    {migrationState === "saving" ? "Moving data" : "Move my data"}
-                  </Button>
-                  <Button
-                    disabled={migrationState === "saving"}
-                    fullWidth
-                    onClick={() => setMigrationState("declined")}
-                    variant="secondary"
-                  >
-                    Keep local only
-                  </Button>
-                </div>
-              </div>
-            ) : null}
             <Button
               disabled={logoutState === "saving"}
               fullWidth
@@ -265,12 +195,14 @@ export function YouPage() {
       {saveState === "saved" ? (
         <div className="success-message" role="status">
           <Icon name="check" size={20} />
-          Preferences saved on this device.
+          {isAuthenticated ? "Profile updated." : "Preferences saved on this device."}
         </div>
       ) : null}
       {saveState === "error" ? (
         <div className="error-message" role="alert">
-          Preferences could not be saved. Your previous settings remain unchanged.
+          {isAuthenticated
+            ? "Profile could not be updated. Your previous name remains unchanged."
+            : "Preferences could not be saved. Your previous settings remain unchanged."}
         </div>
       ) : null}
       {feedbackState === "sent" ? (
@@ -289,40 +221,27 @@ export function YouPage() {
           Logout could not complete. Please try again.
         </div>
       ) : null}
-      {migrationState === "migrated" ? (
-        <div className="success-message" role="status">
-          <Icon name="check" size={20} />
-          Local finance data copied to your account.
-        </div>
-      ) : null}
-      {migrationState === "declined" ? (
-        <InlineAlert title="Local data kept on this device">
-          You can keep using it locally. NidhiFlow will not upload guest finance data without your
-          consent.
-        </InlineAlert>
-      ) : null}
-      {migrationState === "error" ? (
-        <div className="error-message" role="alert">
-          Local data could not be moved. Nothing was removed from this device.
-        </div>
-      ) : null}
 
-      <section aria-labelledby="guest-profile-title">
+      <section aria-labelledby="profile-settings-title">
         <div className="section-heading">
-          <h2 id="guest-profile-title">Local profile</h2>
+          <h2 id="profile-settings-title">
+            {isAuthenticated ? "Account profile" : "Local profile"}
+          </h2>
         </div>
         <Card>
           <form className="settings-form" onSubmit={handleDisplayNameSubmit}>
             <label htmlFor="display-name">Display name</label>
             <p className="field-help" id="display-name-help">
-              This name is stored only in this browser.
+              {isAuthenticated
+                ? "This name appears across your signed-in NidhiFlow profile."
+                : "This name is stored only in this browser."}
             </p>
             <div className="field-row">
               <input
                 aria-describedby={`display-name-help${fieldError ? " display-name-error" : ""}`}
                 aria-invalid={Boolean(fieldError)}
                 id="display-name"
-                maxLength={40}
+                maxLength={80}
                 onChange={(event) => setDisplayName(event.target.value)}
                 value={displayName}
               />
@@ -343,7 +262,7 @@ export function YouPage() {
         </div>
         <Card className="settings-list">
           {tools.map((tool) => (
-            <button key={tool.title} type="button">
+            <Link key={tool.title} to={tool.href}>
               <span className="icon-tile">
                 <Icon name={tool.icon} />
               </span>
@@ -352,7 +271,7 @@ export function YouPage() {
                 <small>{tool.description}</small>
               </span>
               <Icon name="chevron" />
-            </button>
+            </Link>
           ))}
         </Card>
       </section>
@@ -465,41 +384,6 @@ export function YouPage() {
                 </option>
               ))}
             </select>
-          </label>
-
-          <label className="toggle-field">
-            <span>
-              <strong>Data-protection reminder</strong>
-              <small>Keep the optional local guest reminder enabled</small>
-            </span>
-            <input
-              checked={preferences.reminderEnabled}
-              onChange={(event) =>
-                void persist({
-                  ...preferences,
-                  reminderEnabled: event.target.checked,
-                })
-              }
-              type="checkbox"
-            />
-          </label>
-
-          <label className="toggle-field">
-            <span>
-              <strong>Repeat reminder</strong>
-              <small>Show the data-protection reminder every five active minutes</small>
-            </span>
-            <input
-              checked={preferences.reminderRepeatEnabled}
-              disabled={!preferences.reminderEnabled}
-              onChange={(event) =>
-                void persist({
-                  ...preferences,
-                  reminderRepeatEnabled: event.target.checked,
-                })
-              }
-              type="checkbox"
-            />
           </label>
         </Card>
       </section>
