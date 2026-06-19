@@ -207,21 +207,39 @@ export async function createAccount(input: {
   currency: SupportedCurrency;
   workspaceId: string;
 }): Promise<AccountResource> {
-  const result = await apiRequest<AccountResource>(
-    `/workspaces/${input.workspaceId}/accounts`,
-    input.accessToken,
-    {
-      body: JSON.stringify({
-        currency: input.currency,
-        name: "Cash",
-        openingBalance: { amount: "0.00", currency: input.currency },
-        type: "cash",
-      }),
-      method: "POST",
-    },
-  );
+  try {
+    const result = await apiRequest<AccountResource>(
+      `/workspaces/${input.workspaceId}/accounts`,
+      input.accessToken,
+      {
+        body: JSON.stringify({
+          currency: input.currency,
+          name: "Cash",
+          openingBalance: { amount: "0.00", currency: input.currency },
+          type: "cash",
+        }),
+        method: "POST",
+      },
+    );
 
-  return result.data;
+    return result.data;
+  } catch (error) {
+    if (!(error instanceof FinanceApiRequestError) || error.status !== 409) {
+      throw error;
+    }
+
+    const accounts = await listAccounts(input);
+    const existingCashAccount = accounts.find(
+      (account) =>
+        !account.isArchived && account.currency === input.currency && account.name === "Cash",
+    );
+
+    if (!existingCashAccount) {
+      throw error;
+    }
+
+    return existingCashAccount;
+  }
 }
 
 export async function listCategories(input: {

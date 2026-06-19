@@ -6,6 +6,14 @@ import { WorkspaceRepository } from "../workspaces/workspace.repository.js";
 import { AccountRepository } from "./account.repository.js";
 import type { CreateAccountBody, UpdateAccountBody } from "./account.schemas.js";
 
+function duplicateAccountName() {
+  return new AppError({
+    code: "CONFLICT",
+    message: "An active account with this name already exists.",
+    status: 409,
+  });
+}
+
 export class AccountService {
   private readonly workspaceRepository: WorkspaceRepository;
   private readonly repository: AccountRepository;
@@ -66,6 +74,12 @@ export class AccountService {
 
     return this.database.transaction(async (transaction) => {
       const repository = new AccountRepository(transaction);
+      const existingAccount = await repository.findActiveByName(workspaceId, input.name, transaction);
+
+      if (existingAccount) {
+        throw duplicateAccountName();
+      }
+
       const account = await repository.create(
         {
           currency: input.openingBalance.currency,
@@ -132,6 +146,18 @@ export class AccountService {
 
       if (input.type !== undefined) {
         updates.type = input.type;
+      }
+
+      if (input.name !== undefined) {
+        const existingAccount = await repository.findActiveByName(
+          workspaceId,
+          input.name,
+          transaction,
+        );
+
+        if (existingAccount && existingAccount.id !== accountId) {
+          throw duplicateAccountName();
+        }
       }
 
       const account = await repository.update(workspaceId, accountId, updates, transaction);

@@ -72,7 +72,7 @@ export function HomePage() {
                   <Icon name="plan" />
                 </span>
                 <span>
-                  <strong>Family Transactions</strong>
+                  <strong>Transactions</strong>
                   <small>Shared planning appears when you join a family workspace.</small>
                 </span>
               </span>
@@ -116,16 +116,6 @@ export function HomePage() {
               </h2>
             </div>
             <div className="quick-actions">
-              <Link className="quick-action" to="/transactions/new?type=expense">
-                <span className="quick-action__icon">
-                  <Icon name="expense" />
-                </span>
-                <span>
-                  <strong>Add expense</strong>
-                  <small>Track spending</small>
-                </span>
-                <Icon name="chevron" />
-              </Link>
               <Link className="quick-action" to="/transactions/new?type=income">
                 <span className="quick-action__icon">
                   <Icon name="income" />
@@ -136,6 +126,16 @@ export function HomePage() {
                 </span>
                 <Icon name="chevron" />
               </Link>
+              <Link className="quick-action" to="/transactions/new?type=expense">
+                <span className="quick-action__icon">
+                  <Icon name="expense" />
+                </span>
+                <span>
+                  <strong>Add expense</strong>
+                  <small>Track spending</small>
+                </span>
+                <Icon name="chevron" />
+              </Link>              
             </div>
           </Card>
 

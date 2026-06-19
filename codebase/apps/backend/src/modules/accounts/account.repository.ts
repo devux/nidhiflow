@@ -92,6 +92,20 @@ export class AccountRepository {
     return result.rows[0] ?? null;
   }
 
+  async findActiveByName(workspaceId: string, name: string, queryable: Queryable = this.database) {
+    const result = await queryable.query<Pick<AccountRecord, "id">>(
+      `SELECT id
+         FROM accounts
+        WHERE workspace_id = $1
+          AND name = $2
+          AND deleted_at IS NULL
+        LIMIT 1`,
+      [workspaceId, name],
+    );
+
+    return result.rows[0] ?? null;
+  }
+
   async create(
     input: {
       currency: string;
