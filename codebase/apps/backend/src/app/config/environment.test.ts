@@ -35,6 +35,8 @@ describe("parseEnvironment", () => {
       API_RATE_LIMIT_MAX: 100,
       AUTH_RATE_LIMIT_MAX: 10,
       FEEDBACK_RATE_LIMIT_MAX: 5,
+      APP_PUBLIC_URL: "http://localhost:5173",
+      EMAIL_DELIVERY_PROVIDER: "none",
       JWT_ACCESS_ISSUER: "nidhiflow.test",
       JWT_ACCESS_AUDIENCE: "nidhiflow-web",
       JWT_ACCESS_TTL_SECONDS: 900,
@@ -48,5 +50,14 @@ describe("parseEnvironment", () => {
 
   it("rejects missing configuration without echoing sensitive values", () => {
     expect(() => parseEnvironment({})).toThrow("Invalid backend environment configuration.");
+  });
+
+  it("requires Resend credentials when email delivery is enabled", () => {
+    expect(() =>
+      parseEnvironment({
+        ...validEnvironment,
+        EMAIL_DELIVERY_PROVIDER: "resend",
+      }),
+    ).toThrow("Invalid backend environment configuration.");
   });
 });

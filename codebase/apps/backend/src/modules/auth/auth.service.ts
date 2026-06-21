@@ -6,6 +6,7 @@ import { createId } from "../../shared/security/ids.js";
 import { createAccessToken } from "../../shared/security/jwt.js";
 import { hashPassword, verifyPassword } from "../../shared/security/passwords.js";
 import { createOpaqueToken, hashToken } from "../../shared/security/tokens.js";
+import { AuthEmailService } from "./authEmail.js";
 import { AuthRepository } from "./auth.repository.js";
 import { WorkspaceRepository } from "../workspaces/workspace.repository.js";
 
@@ -56,6 +57,7 @@ function ensureActiveAccount(
 
 export class AuthService {
   private readonly repository: AuthRepository;
+  private readonly emailService: AuthEmailService;
   private readonly workspaceRepository: WorkspaceRepository;
 
   constructor(
@@ -63,6 +65,7 @@ export class AuthService {
     private readonly environment: Environment,
   ) {
     this.repository = new AuthRepository(database);
+    this.emailService = new AuthEmailService(environment);
     this.workspaceRepository = new WorkspaceRepository(database);
   }
 
@@ -278,6 +281,14 @@ export class AuthService {
       return pendingVerificationToken;
     });
 
+    if (verificationToken) {
+      await this.emailService.sendVerificationEmail({
+        displayName: input.displayName,
+        email: input.email,
+        token: verificationToken,
+      });
+    }
+
     return {
       debugToken:
         this.environment.APP_ENV === "production" ? undefined : (verificationToken ?? undefined),
@@ -421,6 +432,12 @@ export class AuthService {
       );
     });
 
+    await this.emailService.sendVerificationEmail({
+      displayName: user.displayName,
+      email: user.email,
+      token: verificationToken,
+    });
+
     return {
       debugToken: this.environment.APP_ENV === "production" ? undefined : verificationToken,
       message: "If the details are valid, verification instructions are ready for this account.",
@@ -453,6 +470,12 @@ export class AuthService {
         },
         transaction,
       );
+    });
+
+    await this.emailService.sendPasswordResetEmail({
+      displayName: user.displayName,
+      email: user.email,
+      token: resetToken,
     });
 
     return {

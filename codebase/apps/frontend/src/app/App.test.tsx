@@ -586,8 +586,8 @@ describe("App", () => {
     expect(await screen.findByDisplayValue("verify-token-123")).toBeDefined();
     await user.click(screen.getByRole("button", { name: "Verify and continue" }));
 
-    expect(await screen.findByText("Signed in")).toBeDefined();
-    expect(screen.getByText(/maya@example.com/)).toBeDefined();
+    expect(await screen.findByText("Maya's workspace")).toBeDefined();
+    expect(screen.getByText(/Your saved data is loaded from your account/)).toBeDefined();
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining("/api/v1/auth/register"),
       expect.objectContaining({ method: "POST" }),
@@ -657,7 +657,7 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Create account" }));
     await user.click(await screen.findByRole("button", { name: "Verify and continue" }));
 
-    expect(await screen.findByText("Signed in")).toBeDefined();
+    expect(await screen.findByText("Maya's workspace")).toBeDefined();
     expect(screen.queryByRole("region", { name: "Move local data" })).toBeNull();
     const migrationCall = fetchMock.mock.calls.find(([input]) =>
       getRequestUrl(input).endsWith("/api/v1/users/me/guest-migrations"),

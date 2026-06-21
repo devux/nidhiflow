@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: nidhiflow-backend
+    runtime: node
+    plan: free
+    buildCommand: cd codebase && npm install && npm run build --workspace @nidhiflow/backend
+    startCommand: cd codebase && npm run start --workspace @nidhiflow/backend
+    healthCheckPath: /health/ready
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_SSL
+        value: "true"
+      - key: CORS_ORIGINS
+        value: https://nidhiflow.vercel.app
+      - key: JWT_ACCESS_SECRET
+        sync: false
+      - key: AUTH_DEBUG_TOKENS_ENABLED
+        value: "true"
+      - key: FLOW_AI_ENABLED
+        value: "false"
+      - key: APP_PUBLIC_URL
+        value: https://nidhiflow.vercel.app
+      - key: EMAIL_DELIVERY_PROVIDER
+        value: resend
+      - key: EMAIL_FROM
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false

@@ -1,6 +1,11 @@
 import type { Request, Response } from "express";
 
-import { clearRefreshCookie, readRefreshCookie, setRefreshCookie } from "../../app/authCookies.js";
+import {
+  clearRefreshCookie,
+  getRefreshCookieOptions,
+  readRefreshCookie,
+  setRefreshCookie,
+} from "../../app/authCookies.js";
 import type { Environment } from "../../app/config/environment.js";
 import { sendError, sendSuccess } from "../../app/http.js";
 import type { AuthContext } from "../../app/middleware/authenticate.js";
@@ -77,7 +82,7 @@ export class AuthController {
 
     setRefreshCookie(response, {
       maxAgeSeconds: result.refreshTokenTtlSeconds,
-      secure: this.environment.APP_ENV === "production",
+      ...getRefreshCookieOptions(this.environment.APP_ENV),
       token: result.refreshToken,
     });
     sendSuccess(response, {
@@ -99,7 +104,7 @@ export class AuthController {
 
     setRefreshCookie(response, {
       maxAgeSeconds: result.refreshTokenTtlSeconds,
-      secure: this.environment.APP_ENV === "production",
+      ...getRefreshCookieOptions(this.environment.APP_ENV),
       token: result.refreshToken,
     });
     sendSuccess(response, {
@@ -154,7 +159,7 @@ export class AuthController {
       response.locals.requestId as string | null,
     );
 
-    clearRefreshCookie(response, this.environment.APP_ENV === "production");
+    clearRefreshCookie(response, getRefreshCookieOptions(this.environment.APP_ENV));
     sendSuccess(response, {
       data: { status: "password_reset" },
       message: result.message,
@@ -165,7 +170,7 @@ export class AuthController {
     const refreshToken = readRefreshCookie(request.headers.cookie);
 
     if (!refreshToken) {
-      clearRefreshCookie(response, this.environment.APP_ENV === "production");
+      clearRefreshCookie(response, getRefreshCookieOptions(this.environment.APP_ENV));
       sendError(response, {
         code: "INVALID_SESSION",
         message: "The current session is invalid or expired.",
@@ -182,7 +187,7 @@ export class AuthController {
 
     setRefreshCookie(response, {
       maxAgeSeconds: result.refreshTokenTtlSeconds,
-      secure: this.environment.APP_ENV === "production",
+      ...getRefreshCookieOptions(this.environment.APP_ENV),
       token: result.refreshToken,
     });
     sendSuccess(response, {
@@ -199,7 +204,7 @@ export class AuthController {
       response.locals.requestId as string | null,
     );
 
-    clearRefreshCookie(response, this.environment.APP_ENV === "production");
+    clearRefreshCookie(response, getRefreshCookieOptions(this.environment.APP_ENV));
     sendSuccess(response, {
       data: { status: "logged_out" },
       message: result.message,
@@ -213,7 +218,7 @@ export class AuthController {
       response.locals.requestId as string | null,
     );
 
-    clearRefreshCookie(response, this.environment.APP_ENV === "production");
+    clearRefreshCookie(response, getRefreshCookieOptions(this.environment.APP_ENV));
     sendSuccess(response, {
       data: { status: "logged_out_all" },
       message: result.message,

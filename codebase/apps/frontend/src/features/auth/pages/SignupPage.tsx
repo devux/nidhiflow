@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useMemo, useState, type FormEvent } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
@@ -11,13 +11,20 @@ import { PageHeader } from "../../../shared/components/PageHeader";
 
 export function SignupPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const tokenFromUrl = useMemo(
+    () => searchParams.get("verificationToken")?.trim() ?? "",
+    [searchParams],
+  );
   const { register, verifyEmail } = useAuth();
   const { preferences } = useGuestPreferences();
   const [displayName, setDisplayName] = useState(preferences.displayName);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [verificationToken, setVerificationToken] = useState("");
-  const [status, setStatus] = useState<"idle" | "registered" | "saving" | "verifying">("idle");
+  const [verificationToken, setVerificationToken] = useState(tokenFromUrl);
+  const [status, setStatus] = useState<"idle" | "registered" | "saving" | "verifying">(
+    tokenFromUrl ? "registered" : "idle",
+  );
   const [error, setError] = useState("");
 
   async function handleRegister(event: FormEvent<HTMLFormElement>) {
@@ -53,7 +60,7 @@ export function SignupPage() {
 
     try {
       await verifyEmail(verificationToken);
-      void navigate("/you");
+      void navigate("/");
     } catch (verifyError) {
       setError(verifyError instanceof Error ? verifyError.message : "Email could not be verified.");
       setStatus("registered");
@@ -67,8 +74,8 @@ export function SignupPage() {
       {error ? <InlineAlert title="Account action failed">{error}</InlineAlert> : null}
       {status === "registered" ? (
         <InlineAlert title="Verify your email">
-          Enter the verification token to finish creating your account and start your signed-in
-          session.
+          We sent a verification link to your email. Use the link or paste the token below to start
+          your signed-in session.
         </InlineAlert>
       ) : null}
 

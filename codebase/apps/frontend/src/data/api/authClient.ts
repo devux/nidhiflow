@@ -45,6 +45,8 @@ export interface RegisterResult {
   message: string;
 }
 
+let refreshAccessTokenRequest: Promise<string> | null = null;
+
 async function parseResponse<Data>(response: Response): Promise<ApiEnvelope<Data>> {
   const body = (await response.json()) as ApiEnvelope<Data>;
 
@@ -118,11 +120,15 @@ export async function login(input: { email: string; password: string }): Promise
 }
 
 export async function refreshAccessToken(): Promise<string> {
-  const result = await apiRequest<{ accessToken: string }>("/auth/refresh", {
+  refreshAccessTokenRequest ??= apiRequest<{ accessToken: string }>("/auth/refresh", {
     method: "POST",
-  });
+  })
+    .then((result) => result.data.accessToken)
+    .finally(() => {
+      refreshAccessTokenRequest = null;
+    });
 
-  return result.data.accessToken;
+  return refreshAccessTokenRequest;
 }
 
 export async function getWorkspaces(accessToken: string): Promise<WorkspaceSummary[]> {

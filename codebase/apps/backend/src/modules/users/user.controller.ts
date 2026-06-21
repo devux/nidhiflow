@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 
-import { clearRefreshCookie } from "../../app/authCookies.js";
+import { clearRefreshCookie, getRefreshCookieOptions } from "../../app/authCookies.js";
 import type { Environment } from "../../app/config/environment.js";
 import { sendSuccess } from "../../app/http.js";
 import type { AuthContext } from "../../app/middleware/authenticate.js";
@@ -65,7 +65,7 @@ export class UserController {
     await this.service.revokeSession(auth.userId, request.params.sessionId);
 
     if (request.params.sessionId === auth.sessionId) {
-      clearRefreshCookie(response, this.environment.APP_ENV === "production");
+      clearRefreshCookie(response, getRefreshCookieOptions(this.environment.APP_ENV));
     }
 
     sendSuccess(response, {

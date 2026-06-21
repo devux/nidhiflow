@@ -2,12 +2,20 @@ import type { Response } from "express";
 
 const refreshCookieName = "nidhiflow_refresh";
 
+export function getRefreshCookieOptions(appEnvironment: string) {
+  return appEnvironment === "production"
+    ? { sameSite: "None" as const, secure: true }
+    : { sameSite: "Strict" as const, secure: false };
+}
+
 function buildCookie({
   maxAgeSeconds,
+  sameSite,
   secure,
   value,
 }: {
   maxAgeSeconds: number;
+  sameSite: "None" | "Strict";
   secure: boolean;
   value: string;
 }) {
@@ -15,7 +23,7 @@ function buildCookie({
     `${refreshCookieName}=${encodeURIComponent(value)}`,
     "HttpOnly",
     "Path=/api/v1/auth",
-    "SameSite=Strict",
+    `SameSite=${sameSite}`,
     `Max-Age=${maxAgeSeconds}`,
   ];
 
@@ -28,29 +36,33 @@ function buildCookie({
 
 export function setRefreshCookie(
   response: Response,
-  options: { maxAgeSeconds: number; secure: boolean; token: string },
+  options: { maxAgeSeconds: number; sameSite: "None" | "Strict"; secure: boolean; token: string },
 ) {
   response.append(
     "Set-Cookie",
     buildCookie({
       maxAgeSeconds: options.maxAgeSeconds,
+      sameSite: options.sameSite,
       secure: options.secure,
       value: options.token,
     }),
   );
 }
 
-export function clearRefreshCookie(response: Response, secure: boolean) {
+export function clearRefreshCookie(
+  response: Response,
+  options: { sameSite: "None" | "Strict"; secure: boolean },
+) {
   const parts = [
     `${refreshCookieName}=`,
     "HttpOnly",
     "Path=/api/v1/auth",
-    "SameSite=Strict",
+    `SameSite=${options.sameSite}`,
     "Expires=Thu, 01 Jan 1970 00:00:00 GMT",
     "Max-Age=0",
   ];
 
-  if (secure) {
+  if (options.secure) {
     parts.push("Secure");
   }
 
