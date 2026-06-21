@@ -12,13 +12,6 @@ import { EmptyState } from "../../../shared/components/EmptyState";
 import { Icon } from "../../../shared/components/Icon";
 import { TransactionRow } from "../../transactions/components/TransactionRow";
 
-function getGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
-}
-
 function toDateValue(date: Date): string {
   return [
     date.getFullYear(),
@@ -68,32 +61,18 @@ export function HomePage() {
       ? activeWorkspace.name
       : `${displayName}'s workspace`
     : "Guest read-only workspace";
-  const workspaceDescription = isAuthenticated
-    ? "Your saved data is loaded from your account."
-    : "Guest mode is read-only. Log in to save finance changes.";
 
   return (
     <main className="page page--home" id="main-content">
       <header className="home-header">
-        <Brand />
+        <div className="home-header__identity">
+          <Brand />
+          <p className="eyebrow">{workspaceLabel}</p>
+        </div>
         <Link aria-label="Notification preferences" className="icon-button" to="/you#preferences">
           <Icon name="bell" />
         </Link>
       </header>
-
-      <section className="greeting">
-        <span>
-          <p className="eyebrow">{workspaceLabel}</p>
-          <h1>
-            {getGreeting()}, {displayName}
-          </h1>
-          <p>{workspaceDescription}</p>
-        </span>
-        <Link className="insights-link" to="/flow">
-          <Icon name="sparkles" size={20} />
-          Flow preview
-        </Link>
-      </section>
 
       <section aria-label="Budget summaries">
         <div className="home-summary-grid">
@@ -142,28 +121,37 @@ export function HomePage() {
             className="home-summary-card home-actions-card"
           >
             <div className="home-summary-card__header">
-              <h2 id="quick-actions-title">
-                <Icon name="plus" size={18} />
-                Quick actions
-              </h2>
+              <h2 id="quick-actions-title">Quick actions</h2>
             </div>
             <div className="quick-actions">
-              <Link className="quick-action" to="/transactions/new?type=income">
+              <Link
+                aria-label="Add income"
+                className="quick-action"
+                to="/transactions/new?type=income"
+              >
                 <span className="quick-action__icon">
                   <Icon name="income" />
                 </span>
                 <span>
-                  <strong>Add income</strong>
+                  <strong>
+                    <span className="quick-action__verb">Add </span>income
+                  </strong>
                   <small>Record earnings</small>
                 </span>
                 <Icon name="chevron" />
               </Link>
-              <Link className="quick-action" to="/transactions/new?type=expense">
+              <Link
+                aria-label="Add expense"
+                className="quick-action"
+                to="/transactions/new?type=expense"
+              >
                 <span className="quick-action__icon">
                   <Icon name="expense" />
                 </span>
                 <span>
-                  <strong>Add expense</strong>
+                  <strong>
+                    <span className="quick-action__verb">Add </span>expense
+                  </strong>
                   <small>Track spending</small>
                 </span>
                 <Icon name="chevron" />

@@ -11,6 +11,7 @@ export const expenseCategories = [
   "Education",
   "Travel",
   "Home",
+  "Misc",
 ] as const;
 
 export type IncomeCategory = (typeof incomeCategories)[number];

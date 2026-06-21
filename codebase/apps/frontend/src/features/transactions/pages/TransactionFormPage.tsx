@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
@@ -20,7 +20,12 @@ import {
   type TransactionFormValues,
 } from "../schemas/transactionFormSchema";
 
-const COLLAPSED_CATEGORY_COUNT = 7;
+const COLLAPSED_CATEGORY_COUNT = 8;
+const DEFAULT_EXPENSE_CATEGORY = "Misc";
+const expenseFormCategories = [
+  DEFAULT_EXPENSE_CATEGORY,
+  ...expenseCategories.filter((category) => category !== DEFAULT_EXPENSE_CATEGORY),
+];
 
 interface FlowTransactionDraft {
   amount?: string | null;
@@ -92,8 +97,8 @@ export function TransactionFormPage() {
   const initialType: TransactionType =
     existing?.type ?? flowDraft?.type ?? (requestedType === "income" ? "income" : "expense");
   const initialCategories: readonly string[] =
-    initialType === "income" ? incomeCategories : expenseCategories;
-  const defaultCategory = initialType === "income" ? incomeCategories[0] : expenseCategories[0];
+    initialType === "income" ? incomeCategories : expenseFormCategories;
+  const defaultCategory = initialType === "income" ? incomeCategories[0] : DEFAULT_EXPENSE_CATEGORY;
   const draftCategory =
     flowDraft?.category && initialCategories.includes(flowDraft.category)
       ? flowDraft.category
@@ -112,12 +117,6 @@ export function TransactionFormPage() {
   const [showAllCategories, setShowAllCategories] = useState(
     existing ? initialCategories.indexOf(existing.category) >= COLLAPSED_CATEGORY_COUNT : false,
   );
-  const amountRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    amountRef.current?.focus();
-  }, []);
-
   useEffect(() => {
     if (existing) return;
 
@@ -125,7 +124,7 @@ export function TransactionFormPage() {
 
     if (values.type === nextType) return;
 
-    const nextCategory = nextType === "income" ? incomeCategories[0] : expenseCategories[0];
+    const nextCategory = nextType === "income" ? incomeCategories[0] : DEFAULT_EXPENSE_CATEGORY;
 
     setValues({
       amount: "",
@@ -179,7 +178,7 @@ export function TransactionFormPage() {
   }
 
   const categories: readonly string[] =
-    values.type === "income" ? incomeCategories : expenseCategories;
+    values.type === "income" ? incomeCategories : expenseFormCategories;
   const shouldCollapseCategories =
     categories.length > COLLAPSED_CATEGORY_COUNT + 1 && !showAllCategories;
   const visibleCategories = shouldCollapseCategories
@@ -257,33 +256,6 @@ export function TransactionFormPage() {
       ) : null}
 
       <form className="transaction-form" noValidate onSubmit={(event) => void handleSubmit(event)}>
-        <Card className="amount-card">
-          <div className="amount-input">
-            <span aria-hidden="true">{currencySymbol}</span>
-            <input
-              aria-describedby={errors.amount ? "transaction-amount-error" : undefined}
-              aria-invalid={Boolean(errors.amount)}
-              aria-label="Amount"
-              autoComplete="off"
-              id="transaction-amount"
-              inputMode="decimal"
-              onChange={(event) => updateValue("amount", normalizeAmountInput(event.target.value))}
-              pattern="[0-9]*[.]?[0-9]{0,2}"
-              placeholder="0"
-              ref={amountRef}
-              value={values.amount}
-            />
-          </div>
-          <label className="amount-card__label" htmlFor="transaction-amount">
-            {amountLabel}
-          </label>
-          {errors.amount ? (
-            <p className="field-error" id="transaction-amount-error">
-              {errors.amount}
-            </p>
-          ) : null}
-        </Card>
-
         <fieldset className="transaction-category-section">
           <legend>Category</legend>
           <div className="category-grid" id="transaction-category">
@@ -314,6 +286,32 @@ export function TransactionFormPage() {
           {errors.category ? <p className="field-error">{errors.category}</p> : null}
         </fieldset>
 
+        <Card className="amount-card">
+          <div className="amount-input">
+            <span aria-hidden="true">{currencySymbol}</span>
+            <input
+              aria-describedby={errors.amount ? "transaction-amount-error" : undefined}
+              aria-invalid={Boolean(errors.amount)}
+              aria-label="Amount"
+              autoComplete="off"
+              id="transaction-amount"
+              inputMode="decimal"
+              onChange={(event) => updateValue("amount", normalizeAmountInput(event.target.value))}
+              pattern="[0-9]*[.]?[0-9]{0,2}"
+              placeholder="0"
+              value={values.amount}
+            />
+          </div>
+          <label className="amount-card__label" htmlFor="transaction-amount">
+            {amountLabel}
+          </label>
+          {errors.amount ? (
+            <p className="field-error" id="transaction-amount-error">
+              {errors.amount}
+            </p>
+          ) : null}
+        </Card>
+
         <Card className="form-fields transaction-details-card">
           <label htmlFor="transaction-date">
             <span>Date</span>
@@ -332,7 +330,7 @@ export function TransactionFormPage() {
             </p>
           ) : null}
           <label htmlFor="transaction-note">
-            <span>Note</span>
+            <span>Notes</span>
             <textarea
               aria-describedby="transaction-note-help"
               aria-invalid={Boolean(errors.note)}

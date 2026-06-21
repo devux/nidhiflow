@@ -471,6 +471,13 @@ npm run format
 Stop the frontend and backend with `Ctrl+C` in the terminal running
 `npm run dev`.
 
+If Flow AI was tested locally and Ollama should not stay active, stop all
+Ollama processes:
+
+```bash
+pkill -f '[o]llama'
+```
+
 Stop PostgreSQL while preserving its data:
 
 ```bash
@@ -493,6 +500,35 @@ Recreate and start it:
 
 ```bash
 docker compose up -d postgres
+```
+
+Check the PostgreSQL container status:
+
+```bash
+docker compose ps
+```
+
+Restart the full local development stack:
+
+```bash
+cd /home/devakumar/Documents/projects/NidhiFlow/codebase
+pkill -f '[o]llama'
+docker compose up -d postgres
+npm run dev
+```
+
+The expected local URLs are:
+
+```text
+Frontend: http://127.0.0.1:5173
+Backend:  http://127.0.0.1:3000
+```
+
+Start only one application when debugging a single side of the stack:
+
+```bash
+npm run dev --workspace @nidhiflow/frontend
+npm run dev --workspace @nidhiflow/backend
 ```
 
 ## 12. Database Migration Commands

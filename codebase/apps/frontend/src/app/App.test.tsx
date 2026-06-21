@@ -44,6 +44,12 @@ const defaultPreferences: GuestPreferences = {
   timezone: "UTC",
 };
 
+async function expectHomeHeader(workspaceName: string | RegExp): Promise<void> {
+  expect(await screen.findByText(workspaceName)).toBeDefined();
+  expect(screen.getByLabelText("NidhiFlow")).toBeDefined();
+  expect(screen.getByRole("link", { name: "Notification preferences" })).toBeDefined();
+}
+
 function createRepository(
   preferences: GuestPreferences = defaultPreferences,
 ): GuestPreferencesRepository & { save: jest.Mock } {
@@ -206,6 +212,7 @@ function mockAuthenticatedFinanceSession(
             },
             { id: "cat_travel", isArchived: false, name: "Travel", transactionType: "expense" },
             { id: "cat_home", isArchived: false, name: "Home", transactionType: "expense" },
+            { id: "cat_misc", isArchived: false, name: "Misc", transactionType: "expense" },
           ],
           message: "Categories retrieved successfully.",
           success: true,
@@ -463,7 +470,7 @@ describe("App", () => {
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    expect(await screen.findByRole("heading", { name: /Guest/ })).toBeDefined();
+    await expectHomeHeader("Guest read-only workspace");
 
     const navigation = screen.getByRole("navigation", { name: "Primary navigation" });
     const links = Array.from(navigation.querySelectorAll("a")).map((link) =>
@@ -519,7 +526,7 @@ describe("App", () => {
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    await screen.findByRole("heading", { name: /Guest/ });
+    await expectHomeHeader("Guest read-only workspace");
     await user.click(screen.getByRole("link", { name: "Notification preferences" }));
 
     expect(await screen.findByRole("heading", { name: "You" })).toBeDefined();
@@ -574,7 +581,7 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Create account" }));
 
     expect(await screen.findByText("Maya's workspace")).toBeDefined();
-    expect(screen.getByText(/Your saved data is loaded from your account/)).toBeDefined();
+    expect(screen.getByRole("link", { name: "Notification preferences" })).toBeDefined();
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining("/api/v1/auth/register"),
       expect.objectContaining({ method: "POST" }),
@@ -688,7 +695,7 @@ describe("App", () => {
     await user.type(screen.getByLabelText("Password"), "StrongPassword123");
     await user.click(screen.getByRole("button", { name: "Log in" }));
 
-    expect(await screen.findByRole("heading", { name: /Nila/ })).toBeDefined();
+    await expectHomeHeader("Nila's workspace");
     expect(screen.getByText("Nila's workspace")).toBeDefined();
   });
 
@@ -738,7 +745,7 @@ describe("App", () => {
     await user.type(screen.getByLabelText("Password"), "StrongPassword123");
     await user.click(screen.getByRole("button", { name: "Log in" }));
 
-    expect(await screen.findByRole("heading", { name: /Nila/ })).toBeDefined();
+    await expectHomeHeader("Nila's workspace");
     firstRender.unmount();
 
     fetchMock.mockImplementation(() => Promise.reject(new Error("Network unavailable.")));
@@ -932,7 +939,7 @@ describe("App", () => {
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    expect(await screen.findByRole("heading", { name: /Nila/ })).toBeDefined();
+    await expectHomeHeader("Nila's workspace");
     expect(screen.getByText("Nila's workspace")).toBeDefined();
     expect(screen.queryByText("Nila Workspace")).toBeNull();
     expect(screen.queryByRole("heading", { name: /Guest/ })).toBeNull();
@@ -1035,7 +1042,7 @@ describe("App", () => {
     await user.type(screen.getByLabelText("Password"), "StrongPassword123");
     await user.click(screen.getByRole("button", { name: "Log in" }));
 
-    expect(await screen.findByRole("heading", { name: /Maya/ })).toBeDefined();
+    await expectHomeHeader("Maya's workspace");
     expect(screen.queryByRole("region", { name: "Move local data" })).toBeNull();
   });
 
@@ -1088,7 +1095,7 @@ describe("App", () => {
     await user.type(screen.getByLabelText("Password"), "StrongPassword123");
     await user.click(screen.getByRole("button", { name: "Log in" }));
 
-    expect(await screen.findByRole("heading", { name: /Nila/ })).toBeDefined();
+    await expectHomeHeader("Nila's workspace");
 
     act(() => {
       jest.advanceTimersByTime(5 * 60 * 1000 + 1);
@@ -1130,7 +1137,7 @@ describe("App", () => {
       />,
     );
 
-    expect(await screen.findByRole("heading", { name: /Guest/ })).toBeDefined();
+    await expectHomeHeader("Guest read-only workspace");
     const budgetSection = screen.getByRole("region", { name: "Budget summaries" });
 
     expect(within(budgetSection).queryByText("Savings goal")).toBeNull();
@@ -1474,7 +1481,7 @@ describe("App", () => {
 
     await user.click(screen.getByRole("link", { name: "Home" }));
 
-    expect(await screen.findByRole("heading", { name: /Priya/ })).toBeDefined();
+    await expectHomeHeader("Priya's workspace");
     expect(screen.getByText("Priya's workspace")).toBeDefined();
     expect(screen.queryByText("Old Workspace Name")).toBeNull();
     expect(fetchMock).toHaveBeenCalledWith(
@@ -1496,7 +1503,7 @@ describe("App", () => {
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    await screen.findByRole("heading", { name: /Guest/ });
+    await expectHomeHeader("Guest read-only workspace");
 
     expect((await axe(container)).violations).toHaveLength(0);
   });
@@ -1547,7 +1554,7 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Save Expense" }));
 
     expect(screen.getByText("Keep the note to 100 characters or fewer.")).toBeDefined();
-    expect(screen.getByRole("button", { name: "Food" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "Misc" }).getAttribute("aria-pressed")).toBe("true");
     expect((amount as HTMLInputElement).value).toBe("10.99");
     expect(screen.getByLabelText<HTMLTextAreaElement>(/Note/).value).toBe(longNote);
   }, 10000);

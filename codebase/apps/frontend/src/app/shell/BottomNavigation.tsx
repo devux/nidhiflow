@@ -29,7 +29,7 @@ export function BottomNavigation() {
           to={destination.path}
         >
           <span className="bottom-navigation__icon">
-            <Icon name={destination.icon} size={destination.label === "Flow" ? 30 : 25} />
+            <Icon name={destination.icon} size={destination.label === "Flow" ? 28 : 22} />
           </span>
           <span>{destination.label}</span>
         </NavLink>

@@ -11,6 +11,7 @@ const expenseCategories = [
   "Education",
   "Travel",
   "Home",
+  "Misc",
 ] as const;
 
 const currencySchema = z
