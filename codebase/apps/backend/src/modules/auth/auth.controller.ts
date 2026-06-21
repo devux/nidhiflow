@@ -53,16 +53,23 @@ export class AuthController {
   ) => {
     const result = await this.service.register(
       request.body,
+      getDeviceContext(request),
       response.locals.requestId as string | null,
     );
 
+    setRefreshCookie(response, {
+      maxAgeSeconds: result.refreshTokenTtlSeconds,
+      ...getRefreshCookieOptions(this.environment.APP_ENV),
+      token: result.refreshToken,
+    });
     sendSuccess(response, {
       data: {
-        status: "pending_verification",
-        ...(result.debugToken ? { debugToken: result.debugToken } : {}),
+        accessToken: result.accessToken,
+        user: result.user,
+        workspaces: result.workspaces,
       },
-      message: result.message,
-      status: 202,
+      message: "Account created successfully.",
+      status: 201,
     });
   };
 

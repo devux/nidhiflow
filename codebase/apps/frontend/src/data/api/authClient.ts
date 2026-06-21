@@ -40,11 +40,6 @@ export interface AuthSession {
   workspaces: WorkspaceSummary[];
 }
 
-export interface RegisterResult {
-  debugToken?: string;
-  message: string;
-}
-
 let refreshAccessTokenRequest: Promise<string> | null = null;
 
 async function parseResponse<Data>(response: Response): Promise<ApiEnvelope<Data>> {
@@ -81,16 +76,13 @@ export async function registerAccount(input: {
   preferredCurrency: string;
   theme: string;
   timezone: string;
-}): Promise<RegisterResult> {
-  const result = await apiRequest<{ debugToken?: string; status: string }>("/auth/register", {
+}): Promise<AuthSession> {
+  const result = await apiRequest<AuthSession>("/auth/register", {
     body: JSON.stringify(input),
     method: "POST",
   });
 
-  return {
-    debugToken: result.data.debugToken,
-    message: result.message,
-  };
+  return result.data;
 }
 
 export async function verifyEmail(token: string): Promise<AuthSession> {

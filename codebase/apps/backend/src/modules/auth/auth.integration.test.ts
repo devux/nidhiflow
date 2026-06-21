@@ -12,17 +12,11 @@ import { createDatabase, type Database } from "../../shared/database/database.js
 
 interface RegisterResponseBody {
   data: {
-    debugToken: string;
-  };
-}
-
-interface VerifyResponseBody {
-  data: {
     accessToken: string;
-    workspace: {
+    workspaces: Array<{
       id: string;
       type: string;
-    };
+    }>;
   };
 }
 
@@ -136,7 +130,7 @@ describe("authentication integration", () => {
     await adminClient.end();
   });
 
-  it("supports register, verify, sessions, workspace membership, and password reset flows", async () => {
+  it("supports register, sessions, workspace membership, and password reset flows", async () => {
     const app = createApp({
       database,
       environment,
@@ -153,27 +147,13 @@ describe("authentication integration", () => {
       timezone: "Asia/Kolkata",
     });
     const registerBody = registerResponse.body as RegisterResponseBody;
+    const initialCookie = getSetCookie(registerResponse);
+    const initialAccessToken = registerBody.data.accessToken;
+    const workspaceId = registerBody.data.workspaces[0]?.id;
 
-    expect(registerResponse.status).toBe(202);
-    expect(registerBody.data.debugToken).toEqual(expect.any(String));
-
-    const loginBeforeVerifyResponse = await request(app).post("/api/v1/auth/login").send({
-      email: "asha@example.com",
-      password: "AshaSecret1234",
-    });
-
-    expect(loginBeforeVerifyResponse.status).toBe(401);
-
-    const verifyResponse = await request(app).post("/api/v1/auth/verify-email").send({
-      token: registerBody.data.debugToken,
-    });
-    const verifyBody = verifyResponse.body as VerifyResponseBody;
-    const initialCookie = getSetCookie(verifyResponse);
-    const initialAccessToken = verifyBody.data.accessToken;
-    const workspaceId = verifyBody.data.workspace.id;
-
-    expect(verifyResponse.status).toBe(200);
-    expect(verifyBody.data.workspace.type).toBe("personal");
+    expect(registerResponse.status).toBe(201);
+    expect(registerBody.data.workspaces[0]).toMatchObject({ type: "personal" });
+    expect(workspaceId).toEqual(expect.any(String));
 
     const currentUserResponse = await request(app)
       .get("/api/v1/users/me")

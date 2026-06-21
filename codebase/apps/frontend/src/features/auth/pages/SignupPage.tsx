@@ -1,30 +1,22 @@
-import { useMemo, useState, type FormEvent } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useState, type FormEvent } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
 import { Button } from "../../../shared/components/Button";
-import { Card } from "../../../shared/components/Card";
 import { Icon } from "../../../shared/components/Icon";
 import { InlineAlert } from "../../../shared/components/InlineAlert";
 import { PageHeader } from "../../../shared/components/PageHeader";
+import { Card } from "../../../shared/components/Card";
 
 export function SignupPage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const tokenFromUrl = useMemo(
-    () => searchParams.get("verificationToken")?.trim() ?? "",
-    [searchParams],
-  );
-  const { register, verifyEmail } = useAuth();
+  const { register } = useAuth();
   const { preferences } = useGuestPreferences();
   const [displayName, setDisplayName] = useState(preferences.displayName);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [verificationToken, setVerificationToken] = useState(tokenFromUrl);
-  const [status, setStatus] = useState<"idle" | "registered" | "saving" | "verifying">(
-    tokenFromUrl ? "registered" : "idle",
-  );
+  const [status, setStatus] = useState<"idle" | "saving">("idle");
   const [error, setError] = useState("");
 
   async function handleRegister(event: FormEvent<HTMLFormElement>) {
@@ -33,7 +25,7 @@ export function SignupPage() {
     setStatus("saving");
 
     try {
-      const result = await register({
+      await register({
         displayName,
         email,
         locale: preferences.locale,
@@ -43,8 +35,7 @@ export function SignupPage() {
         timezone: preferences.timezone,
       });
 
-      setVerificationToken(result.debugToken ?? "");
-      setStatus("registered");
+      void navigate("/");
     } catch (registerError) {
       setError(
         registerError instanceof Error ? registerError.message : "Account could not be created.",
@@ -53,32 +44,11 @@ export function SignupPage() {
     }
   }
 
-  async function handleVerify(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError("");
-    setStatus("verifying");
-
-    try {
-      await verifyEmail(verificationToken);
-      void navigate("/");
-    } catch (verifyError) {
-      setError(verifyError instanceof Error ? verifyError.message : "Email could not be verified.");
-      setStatus("registered");
-    }
-  }
-
   return (
     <main className="page focused-page" id="main-content">
       <PageHeader eyebrow="Optional account" title="Create account" />
 
       {error ? <InlineAlert title="Account action failed">{error}</InlineAlert> : null}
-      {status === "registered" ? (
-        <InlineAlert title="Verify your email">
-          We sent a verification link to your email. Use the link or paste the token below to start
-          your signed-in session.
-        </InlineAlert>
-      ) : null}
-
       <Card>
         <form className="settings-form" onSubmit={(event) => void handleRegister(event)}>
           <label htmlFor="signup-name">Display name</label>
@@ -118,25 +88,6 @@ export function SignupPage() {
           </Button>
         </form>
       </Card>
-
-      {status === "registered" || status === "verifying" ? (
-        <Card>
-          <form className="settings-form" onSubmit={(event) => void handleVerify(event)}>
-            <label htmlFor="verification-token">Verification token</label>
-            <textarea
-              id="verification-token"
-              onChange={(event) => setVerificationToken(event.target.value)}
-              required
-              rows={3}
-              value={verificationToken}
-            />
-            <Button disabled={status === "verifying"} fullWidth type="submit">
-              <Icon name="check" size={20} />
-              {status === "verifying" ? "Verifying" : "Verify and continue"}
-            </Button>
-          </form>
-        </Card>
-      ) : null}
 
       <p className="auth-switch">
         Already have an account? <Link to="/login">Log in</Link>

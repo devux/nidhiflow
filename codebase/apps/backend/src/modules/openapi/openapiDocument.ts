@@ -516,11 +516,11 @@ const paths = {
       tags: ["Auth"],
       summary: "Register account",
       description:
-        "Creates an account in pending verification state. Non-production responses may include debugToken.",
+        "Creates an active account, creates the personal workspace, starts a browser session, and sets the rotating HttpOnly refresh cookie. Email verification is deferred.",
       operationId: "registerAccount",
       requestBody: requestBody(ref("RegisterRequest")),
       responses: responseSet(
-        { "202": successResponse("Registration accepted.", ref("RegisterResult")) },
+        { "201": successResponse("Account created successfully.", ref("AuthSession")) },
         { conflict: true, rateLimit: true, validation: true },
       ),
     }),
@@ -1803,7 +1803,8 @@ export const openApiDocument = {
         type: "http",
         scheme: "bearer",
         bearerFormat: "JWT",
-        description: "Short-lived access JWT returned by login, verify-email, or refresh.",
+        description:
+          "Short-lived access JWT returned by register, login, verify-email, or refresh.",
       },
     },
     parameters: {
@@ -2370,13 +2371,6 @@ export const openApiDocument = {
           },
           theme: { default: "system", enum: ["system", "light", "dark"], type: "string" },
           timezone: { example: "Asia/Kolkata", type: "string" },
-        },
-      },
-      RegisterResult: {
-        type: "object",
-        properties: {
-          status: { example: "pending_verification", type: "string" },
-          debugToken: { description: "Only returned outside production.", type: "string" },
         },
       },
       LoginRequest: {

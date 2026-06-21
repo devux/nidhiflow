@@ -525,7 +525,7 @@ describe("App", () => {
     expect(await screen.findByRole("heading", { name: "You" })).toBeDefined();
   });
 
-  it("lets a guest create and verify an account", async () => {
+  it("lets a guest create an account and start a session", async () => {
     const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
 
     fetchMock.mockImplementation((input, init) => {
@@ -539,16 +539,6 @@ describe("App", () => {
       if (url.endsWith("/api/v1/auth/register") && method === "POST") {
         return Promise.resolve(
           createJsonResponse({
-            data: { debugToken: "verify-token-123", status: "pending_verification" },
-            message: "Verification instructions are ready.",
-            success: true,
-          }),
-        );
-      }
-
-      if (url.endsWith("/api/v1/auth/verify-email") && method === "POST") {
-        return Promise.resolve(
-          createJsonResponse({
             data: {
               accessToken: "access-token-123",
               user: {
@@ -560,9 +550,9 @@ describe("App", () => {
                 theme: "system",
                 timezone: "UTC",
               },
-              workspace: { id: "wsp_123", name: "Maya", type: "personal" },
+              workspaces: [{ id: "wsp_123", name: "Maya", type: "personal" }],
             },
-            message: "Email verified successfully.",
+            message: "Account created successfully.",
             success: true,
           }),
         );
@@ -582,9 +572,6 @@ describe("App", () => {
     await user.type(screen.getByLabelText("Email"), "maya@example.com");
     await user.type(screen.getByLabelText("Password"), "StrongPassword123");
     await user.click(screen.getByRole("button", { name: "Create account" }));
-
-    expect(await screen.findByDisplayValue("verify-token-123")).toBeDefined();
-    await user.click(screen.getByRole("button", { name: "Verify and continue" }));
 
     expect(await screen.findByText("Maya's workspace")).toBeDefined();
     expect(screen.getByText(/Your saved data is loaded from your account/)).toBeDefined();
@@ -608,16 +595,6 @@ describe("App", () => {
       if (url.endsWith("/api/v1/auth/register") && method === "POST") {
         return Promise.resolve(
           createJsonResponse({
-            data: { debugToken: "verify-token-789", status: "pending_verification" },
-            message: "Verification instructions are ready.",
-            success: true,
-          }),
-        );
-      }
-
-      if (url.endsWith("/api/v1/auth/verify-email") && method === "POST") {
-        return Promise.resolve(
-          createJsonResponse({
             data: {
               accessToken: "access-token-789",
               user: {
@@ -629,9 +606,9 @@ describe("App", () => {
                 theme: "system",
                 timezone: "UTC",
               },
-              workspace: { id: "wsp_789", name: "Maya", type: "personal" },
+              workspaces: [{ id: "wsp_789", name: "Maya", type: "personal" }],
             },
-            message: "Email verified successfully.",
+            message: "Account created successfully.",
             success: true,
           }),
         );
@@ -655,7 +632,6 @@ describe("App", () => {
     await user.type(await screen.findByLabelText("Email"), "maya@example.com");
     await user.type(screen.getByLabelText("Password"), "StrongPassword123");
     await user.click(screen.getByRole("button", { name: "Create account" }));
-    await user.click(await screen.findByRole("button", { name: "Verify and continue" }));
 
     expect(await screen.findByText("Maya's workspace")).toBeDefined();
     expect(screen.queryByRole("region", { name: "Move local data" })).toBeNull();

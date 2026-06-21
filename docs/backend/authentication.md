@@ -10,13 +10,14 @@
 
 1. Register with normalized email and password.
 2. Hash password using Argon2id or an approved adaptive alternative.
-3. Send single-use, expiring email verification.
-4. Create a personal workspace after verification or according to finalized
-   onboarding policy.
+3. Create the account as active while email verification is parked.
+4. Create a personal workspace during registration.
 5. Issue short-lived access credentials and a rotating refresh session.
 
-For Milestone 5, NidhiFlow creates the personal workspace at successful email
-verification time and immediately starts the first authenticated session.
+Temporary production policy: NidhiFlow does not require email verification to
+complete signup. Users can register with display name, email, and password, then
+log in with email and password. Full email-link verification is tracked in the
+product backlog.
 
 ## JWT Strategy
 
@@ -34,8 +35,8 @@ Prefer an opaque rotating refresh token stored in a `Secure`, `HttpOnly`,
 reuse, revoke the token family, and record a security event.
 
 Milestone 5 uses the refresh cookie for server-managed session rotation. In
-non-production environments, verification and password-reset flows may return a
-debug token in the success payload until email delivery infrastructure exists.
+non-production environments, password-reset flows may return a debug token in
+the success payload until email delivery infrastructure exists.
 
 Access token storage must minimize XSS exposure. The final browser token
 transport and CSRF design must be decided before implementation.

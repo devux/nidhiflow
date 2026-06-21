@@ -2,9 +2,8 @@
 
 ## Auth and Onboarding
 
-- Replace the local-development verification-token entry with a production email-link flow.
-  In development, the API may continue returning `debugToken`, but the user-facing
-  experience should explain that real users verify by clicking an email link.
+- Reintroduce production email verification with a verified sender/domain and
+  email-link flow; signup currently creates an active account without token entry.
 - Revisit the entire user login flow because logged-in user details are not retained
   consistently after refresh. Confirm session restore, workspace restore, refresh-token
   cookie behavior, and guest/authenticated mode transitions end to end.

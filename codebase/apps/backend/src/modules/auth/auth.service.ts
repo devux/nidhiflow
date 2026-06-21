@@ -191,17 +191,21 @@ export class AuthService {
       theme: string;
       timezone: string;
     },
+    device: SessionDeviceContext,
     requestId: string | null,
   ) {
     const passwordHash = await hashPassword(input.password);
 
-    const verificationToken = await this.database.transaction(async (transaction) => {
+    return this.database.transaction(async (transaction) => {
       const repository = new AuthRepository(transaction);
       const existingUser = await repository.findUserByEmail(input.email);
-      const pendingVerificationToken = createOpaqueToken(48);
 
       if (existingUser?.emailVerifiedAt) {
-        return null;
+        throw new AppError({
+          code: "EMAIL_ALREADY_REGISTERED",
+          message: "An account with this email already exists. Log in instead.",
+          status: 409,
+        });
       }
 
       if (existingUser) {
@@ -218,20 +222,39 @@ export class AuthService {
           transaction,
         );
         await repository.revokeOutstandingEmailVerificationTokens(existingUser.id, transaction);
-        await repository.createEmailVerificationToken(
-          {
-            expiresAt: addDuration(
-              new Date(),
-              this.environment.EMAIL_VERIFICATION_TTL_HOURS,
-              "hours",
-            ),
-            id: createId("evt"),
-            tokenHash: hashToken(pendingVerificationToken),
-            userId: existingUser.id,
-          },
+        await repository.markUserVerified(existingUser.id, transaction);
+        const workspace = await this.ensurePersonalWorkspace(
           transaction,
+          {
+            displayName: input.displayName,
+            id: existingUser.id,
+            preferredCurrency: input.preferredCurrency,
+            timezone: input.timezone,
+          },
+          requestId,
         );
-        return pendingVerificationToken;
+        const tokens = await this.createSessionTokens(transaction, {
+          device,
+          requestId,
+          rotatedFromSessionId: null,
+          userId: existingUser.id,
+        });
+
+        return {
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          refreshTokenTtlSeconds: tokens.refreshTokenTtlSeconds,
+          user: {
+            id: existingUser.id,
+            displayName: input.displayName,
+            email: existingUser.email,
+            locale: input.locale,
+            preferredCurrency: input.preferredCurrency,
+            theme: input.theme,
+            timezone: input.timezone,
+          },
+          workspaces: workspace ? [workspace] : [],
+        };
       }
 
       const userId = createId("usr");
@@ -244,31 +267,35 @@ export class AuthService {
           locale: input.locale,
           passwordHash,
           preferredCurrency: input.preferredCurrency,
-          status: "pending_verification",
+          status: "active",
           theme: input.theme,
           timezone: input.timezone,
         },
         transaction,
       );
 
-      await repository.createEmailVerificationToken(
-        {
-          expiresAt: addDuration(
-            new Date(),
-            this.environment.EMAIL_VERIFICATION_TTL_HOURS,
-            "hours",
-          ),
-          id: createId("evt"),
-          tokenHash: hashToken(pendingVerificationToken),
-          userId,
-        },
+      await repository.markUserVerified(userId, transaction);
+      const workspace = await this.ensurePersonalWorkspace(
         transaction,
+        {
+          displayName: input.displayName,
+          id: userId,
+          preferredCurrency: input.preferredCurrency,
+          timezone: input.timezone,
+        },
+        requestId,
       );
+      const tokens = await this.createSessionTokens(transaction, {
+        device,
+        requestId,
+        rotatedFromSessionId: null,
+        userId,
+      });
       await repository.insertAuditLog(
         {
           action: "auth.registered",
           actorUserId: userId,
-          changeMetadata: { verified: false },
+          changeMetadata: { verificationDeferred: true },
           id: createId("aud"),
           requestId,
           resourceId: userId,
@@ -278,22 +305,22 @@ export class AuthService {
         transaction,
       );
 
-      return pendingVerificationToken;
+      return {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        refreshTokenTtlSeconds: tokens.refreshTokenTtlSeconds,
+        user: {
+          id: userId,
+          displayName: input.displayName,
+          email: input.email,
+          locale: input.locale,
+          preferredCurrency: input.preferredCurrency,
+          theme: input.theme,
+          timezone: input.timezone,
+        },
+        workspaces: workspace ? [workspace] : [],
+      };
     });
-
-    if (verificationToken) {
-      await this.emailService.sendVerificationEmail({
-        displayName: input.displayName,
-        email: input.email,
-        token: verificationToken,
-      });
-    }
-
-    return {
-      debugToken:
-        this.environment.APP_ENV === "production" ? undefined : (verificationToken ?? undefined),
-      message: "If the details are valid, verification instructions are ready for this account.",
-    };
   }
 
   async login(

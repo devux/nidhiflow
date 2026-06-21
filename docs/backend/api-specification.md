@@ -87,30 +87,30 @@ session receive `401` and must not create, update, delete, or modify data.
 
 ### Auth
 
-| Method | Endpoint | Access | Purpose |
-|---|---|---|---|
-| POST | `/auth/register` | Public | Create account |
-| POST | `/auth/login` | Public | Start session |
-| POST | `/auth/refresh` | Session | Rotate session |
-| POST | `/auth/logout` | Session | Revoke current session |
-| POST | `/auth/logout-all` | Protected | Revoke all sessions |
-| POST | `/auth/verify-email` | Public token | Verify email |
-| POST | `/auth/resend-verification` | Public | Resend safely |
-| POST | `/auth/forgot-password` | Public | Request reset |
-| POST | `/auth/reset-password` | Public token | Set new password |
+| Method | Endpoint                    | Access       | Purpose                          |
+| ------ | --------------------------- | ------------ | -------------------------------- |
+| POST   | `/auth/register`            | Public       | Create account and start session |
+| POST   | `/auth/login`               | Public       | Start session                    |
+| POST   | `/auth/refresh`             | Session      | Rotate session                   |
+| POST   | `/auth/logout`              | Session      | Revoke current session           |
+| POST   | `/auth/logout-all`          | Protected    | Revoke all sessions              |
+| POST   | `/auth/verify-email`        | Public token | Deferred email verification      |
+| POST   | `/auth/resend-verification` | Public       | Deferred verification resend     |
+| POST   | `/auth/forgot-password`     | Public       | Request reset                    |
+| POST   | `/auth/reset-password`      | Public token | Set new password                 |
 
 ### Users
 
-| Method | Endpoint | Access | Purpose |
-|---|---|---|---|
-| GET | `/users/me` | Protected | Current profile |
-| PATCH | `/users/me` | Protected | Update profile/preferences |
-| GET | `/users/me/sessions` | Protected | Active sessions |
-| DELETE | `/users/me/sessions/:sessionId` | Protected | Revoke session |
-| POST | `/users/me/export` | Protected | Request complete export |
-| DELETE | `/users/me` | Protected | Request account deletion |
-| POST | `/users/me/guest-migrations/preview` | Protected | Preview import |
-| POST | `/users/me/guest-migrations` | Protected | Commit idempotent import |
+| Method | Endpoint                             | Access    | Purpose                    |
+| ------ | ------------------------------------ | --------- | -------------------------- |
+| GET    | `/users/me`                          | Protected | Current profile            |
+| PATCH  | `/users/me`                          | Protected | Update profile/preferences |
+| GET    | `/users/me/sessions`                 | Protected | Active sessions            |
+| DELETE | `/users/me/sessions/:sessionId`      | Protected | Revoke session             |
+| POST   | `/users/me/export`                   | Protected | Request complete export    |
+| DELETE | `/users/me`                          | Protected | Request account deletion   |
+| POST   | `/users/me/guest-migrations/preview` | Protected | Preview import             |
+| POST   | `/users/me/guest-migrations`         | Protected | Commit idempotent import   |
 
 Migration request example:
 
@@ -129,18 +129,18 @@ Migration request example:
 
 ### Workspaces
 
-| Method | Endpoint | Access | Purpose |
-|---|---|---|---|
-| GET | `/workspaces` | Protected | List memberships |
-| POST | `/workspaces` | Protected | Create personal/family workspace |
-| GET | `/workspaces/:workspaceId` | Protected | Workspace details |
-| PATCH | `/workspaces/:workspaceId` | Protected | Update settings |
-| DELETE | `/workspaces/:workspaceId` | Manager | Delete/request deletion |
-| GET | `/workspaces/:workspaceId/members` | Protected | List members |
-| POST | `/workspaces/:workspaceId/invitations` | Manager | Invite member |
-| POST | `/workspace-invitations/:token/accept` | Protected | Join workspace |
-| DELETE | `/workspaces/:workspaceId/members/:userId` | Manager | Remove member |
-| POST | `/workspaces/:workspaceId/leave` | Protected | Leave workspace |
+| Method | Endpoint                                   | Access    | Purpose                          |
+| ------ | ------------------------------------------ | --------- | -------------------------------- |
+| GET    | `/workspaces`                              | Protected | List memberships                 |
+| POST   | `/workspaces`                              | Protected | Create personal/family workspace |
+| GET    | `/workspaces/:workspaceId`                 | Protected | Workspace details                |
+| PATCH  | `/workspaces/:workspaceId`                 | Protected | Update settings                  |
+| DELETE | `/workspaces/:workspaceId`                 | Manager   | Delete/request deletion          |
+| GET    | `/workspaces/:workspaceId/members`         | Protected | List members                     |
+| POST   | `/workspaces/:workspaceId/invitations`     | Manager   | Invite member                    |
+| POST   | `/workspace-invitations/:token/accept`     | Protected | Join workspace                   |
+| DELETE | `/workspaces/:workspaceId/members/:userId` | Manager   | Remove member                    |
+| POST   | `/workspaces/:workspaceId/leave`           | Protected | Leave workspace                  |
 
 Family workspaces use the minimal manager role only for membership and
 workspace lifecycle actions. All members may view and edit ordinary shared
@@ -150,13 +150,13 @@ flow before email delivery infrastructure exists.
 
 ### Accounts
 
-| Method | Endpoint | Access |
-|---|---|---|
-| GET, POST | `/workspaces/:workspaceId/accounts` | Protected |
-| GET, PATCH, DELETE | `/workspaces/:workspaceId/accounts/:accountId` | Protected |
-| POST | `/workspaces/:workspaceId/accounts/:accountId/archive` | Protected |
-| POST | `/workspaces/:workspaceId/accounts/:accountId/restore` | Protected |
-| GET | `/workspaces/:workspaceId/accounts/summary` | Protected |
+| Method             | Endpoint                                               | Access    |
+| ------------------ | ------------------------------------------------------ | --------- |
+| GET, POST          | `/workspaces/:workspaceId/accounts`                    | Protected |
+| GET, PATCH, DELETE | `/workspaces/:workspaceId/accounts/:accountId`         | Protected |
+| POST               | `/workspaces/:workspaceId/accounts/:accountId/archive` | Protected |
+| POST               | `/workspaces/:workspaceId/accounts/:accountId/restore` | Protected |
+| GET                | `/workspaces/:workspaceId/accounts/summary`            | Protected |
 
 Create example:
 
@@ -174,22 +174,22 @@ different type, currency, or opening balance return `409 CONFLICT`.
 
 ### Categories
 
-| Method | Endpoint | Access |
-|---|---|---|
-| GET | `/categories/system` | Public |
-| GET, POST | `/workspaces/:workspaceId/categories` | Protected |
-| GET, PATCH, DELETE | `/workspaces/:workspaceId/categories/:categoryId` | Protected |
-| POST | `/workspaces/:workspaceId/categories/:categoryId/archive` | Protected |
-| POST | `/workspaces/:workspaceId/categories/:categoryId/restore` | Protected |
+| Method             | Endpoint                                                  | Access    |
+| ------------------ | --------------------------------------------------------- | --------- |
+| GET                | `/categories/system`                                      | Public    |
+| GET, POST          | `/workspaces/:workspaceId/categories`                     | Protected |
+| GET, PATCH, DELETE | `/workspaces/:workspaceId/categories/:categoryId`         | Protected |
+| POST               | `/workspaces/:workspaceId/categories/:categoryId/archive` | Protected |
+| POST               | `/workspaces/:workspaceId/categories/:categoryId/restore` | Protected |
 
 ### Transactions
 
-| Method | Endpoint | Access |
-|---|---|---|
-| GET, POST | `/workspaces/:workspaceId/transactions` | Protected |
+| Method             | Endpoint                                               | Access    |
+| ------------------ | ------------------------------------------------------ | --------- |
+| GET, POST          | `/workspaces/:workspaceId/transactions`                | Protected |
 | GET, PATCH, DELETE | `/workspaces/:workspaceId/transactions/:transactionId` | Protected |
-| POST | `/workspaces/:workspaceId/transactions/imports` | Protected |
-| GET | `/workspaces/:workspaceId/transactions/exports` | Protected |
+| POST               | `/workspaces/:workspaceId/transactions/imports`        | Protected |
+| GET                | `/workspaces/:workspaceId/transactions/exports`        | Protected |
 
 Create example:
 
@@ -213,64 +213,64 @@ deletes the transaction and records an audit event.
 
 ### Recurring Transactions
 
-| Method | Endpoint | Access |
-|---|---|---|
-| GET, POST | `/workspaces/:workspaceId/recurring-transactions` | Protected |
-| GET, PATCH, DELETE | `/workspaces/:workspaceId/recurring-transactions/:recurringTransactionId` | Protected |
-| POST | `/workspaces/:workspaceId/recurring-transactions/:recurringTransactionId/pause` | Protected |
-| POST | `/workspaces/:workspaceId/recurring-transactions/:recurringTransactionId/resume` | Protected |
+| Method             | Endpoint                                                                         | Access    |
+| ------------------ | -------------------------------------------------------------------------------- | --------- |
+| GET, POST          | `/workspaces/:workspaceId/recurring-transactions`                                | Protected |
+| GET, PATCH, DELETE | `/workspaces/:workspaceId/recurring-transactions/:recurringTransactionId`        | Protected |
+| POST               | `/workspaces/:workspaceId/recurring-transactions/:recurringTransactionId/pause`  | Protected |
+| POST               | `/workspaces/:workspaceId/recurring-transactions/:recurringTransactionId/resume` | Protected |
 
 Generation jobs use the recurring item ID plus occurrence date as an
 idempotency boundary.
 
 ### Budgets
 
-| Method | Endpoint | Access |
-|---|---|---|
-| GET, POST | `/workspaces/:workspaceId/budgets` | Protected |
+| Method             | Endpoint                                     | Access    |
+| ------------------ | -------------------------------------------- | --------- |
+| GET, POST          | `/workspaces/:workspaceId/budgets`           | Protected |
 | GET, PATCH, DELETE | `/workspaces/:workspaceId/budgets/:budgetId` | Protected |
-| GET | `/workspaces/:workspaceId/budgets/summary` | Protected |
+| GET                | `/workspaces/:workspaceId/budgets/summary`   | Protected |
 
 ### Goals
 
-| Method | Endpoint | Access |
-|---|---|---|
-| GET, POST | `/workspaces/:workspaceId/goals` | Protected |
-| GET, PATCH, DELETE | `/workspaces/:workspaceId/goals/:goalId` | Protected |
-| POST | `/workspaces/:workspaceId/goals/:goalId/contributions` | Protected |
-| DELETE | `/workspaces/:workspaceId/goals/:goalId/contributions/:id` | Protected |
+| Method             | Endpoint                                                   | Access    |
+| ------------------ | ---------------------------------------------------------- | --------- |
+| GET, POST          | `/workspaces/:workspaceId/goals`                           | Protected |
+| GET, PATCH, DELETE | `/workspaces/:workspaceId/goals/:goalId`                   | Protected |
+| POST               | `/workspaces/:workspaceId/goals/:goalId/contributions`     | Protected |
+| DELETE             | `/workspaces/:workspaceId/goals/:goalId/contributions/:id` | Protected |
 
 ### Bills
 
-| Method | Endpoint | Access |
-|---|---|---|
-| GET, POST | `/workspaces/:workspaceId/bills` | Protected |
-| GET, PATCH, DELETE | `/workspaces/:workspaceId/bills/:billId` | Protected |
-| POST | `/workspaces/:workspaceId/bills/:billId/mark-paid` | Protected |
+| Method             | Endpoint                                           | Access    |
+| ------------------ | -------------------------------------------------- | --------- |
+| GET, POST          | `/workspaces/:workspaceId/bills`                   | Protected |
+| GET, PATCH, DELETE | `/workspaces/:workspaceId/bills/:billId`           | Protected |
+| POST               | `/workspaces/:workspaceId/bills/:billId/mark-paid` | Protected |
 
 ### Attachments
 
-| Method | Endpoint | Access | Purpose |
-|---|---|---|---|
-| POST | `/workspaces/:workspaceId/attachments/upload-requests` | Protected | Request controlled upload |
-| POST | `/workspaces/:workspaceId/attachments/:attachmentId/complete` | Protected | Confirm upload and start validation |
-| GET | `/workspaces/:workspaceId/attachments/:attachmentId` | Protected | Metadata/status |
-| GET | `/workspaces/:workspaceId/attachments/:attachmentId/download` | Protected | Short-lived authorized download |
-| DELETE | `/workspaces/:workspaceId/attachments/:attachmentId` | Protected | Remove attachment |
+| Method | Endpoint                                                      | Access    | Purpose                             |
+| ------ | ------------------------------------------------------------- | --------- | ----------------------------------- |
+| POST   | `/workspaces/:workspaceId/attachments/upload-requests`        | Protected | Request controlled upload           |
+| POST   | `/workspaces/:workspaceId/attachments/:attachmentId/complete` | Protected | Confirm upload and start validation |
+| GET    | `/workspaces/:workspaceId/attachments/:attachmentId`          | Protected | Metadata/status                     |
+| GET    | `/workspaces/:workspaceId/attachments/:attachmentId/download` | Protected | Short-lived authorized download     |
+| DELETE | `/workspaces/:workspaceId/attachments/:attachmentId`          | Protected | Remove attachment                   |
 
 Do not expose a download until ownership, type/size validation, and required
 malware scanning succeed.
 
 ### Reports
 
-| Method | Endpoint | Access | Purpose |
-|---|---|---|---|
-| GET | `/workspaces/:workspaceId/reports/summary` | Protected | Income/expense/savings |
-| GET | `/workspaces/:workspaceId/reports/categories` | Protected | Category breakdown |
-| GET | `/workspaces/:workspaceId/reports/cash-flow` | Protected | Trend |
-| POST | `/workspaces/:workspaceId/reports/exports` | Protected | Generate export |
-| GET | `/workspaces/:workspaceId/reports/exports/:exportId` | Protected | Export status/link |
-| GET | `/workspaces/:workspaceId/reports/exports/:exportId/download` | Protected | Download CSV |
+| Method | Endpoint                                                      | Access    | Purpose                |
+| ------ | ------------------------------------------------------------- | --------- | ---------------------- |
+| GET    | `/workspaces/:workspaceId/reports/summary`                    | Protected | Income/expense/savings |
+| GET    | `/workspaces/:workspaceId/reports/categories`                 | Protected | Category breakdown     |
+| GET    | `/workspaces/:workspaceId/reports/cash-flow`                  | Protected | Trend                  |
+| POST   | `/workspaces/:workspaceId/reports/exports`                    | Protected | Generate export        |
+| GET    | `/workspaces/:workspaceId/reports/exports/:exportId`          | Protected | Export status/link     |
+| GET    | `/workspaces/:workspaceId/reports/exports/:exportId/download` | Protected | Download CSV           |
 
 Report filters use `period=thisMonth|lastMonth|thisYear|custom`. Custom ranges require
 `from` and `to` in `YYYY-MM-DD` form and are interpreted in the workspace timezone.
@@ -278,26 +278,26 @@ The export request accepts `reportType=summary|categories|cashFlow`.
 
 ### Feedback
 
-| Method | Endpoint | Access |
-|---|---|---|
-| POST | `/feedback` | Public, rate-limited |
-| GET | `/feedback/mine` | Protected |
-| GET | `/feedback/:feedbackId` | Owner/admin |
-| POST | `/feedback/:feedbackId/messages` | Owner/admin |
+| Method | Endpoint                         | Access               |
+| ------ | -------------------------------- | -------------------- |
+| POST   | `/feedback`                      | Public, rate-limited |
+| GET    | `/feedback/mine`                 | Protected            |
+| GET    | `/feedback/:feedbackId`          | Owner/admin          |
+| POST   | `/feedback/:feedbackId/messages` | Owner/admin          |
 
 Anonymous requests omit identity and contact data. Attachments use a separate
 approved upload flow.
 
 ### Notifications
 
-| Method | Endpoint | Access |
-|---|---|---|
-| GET | `/notifications` | Protected |
-| PATCH | `/notifications/:notificationId/read` | Protected |
-| POST | `/notifications/read-all` | Protected |
-| GET, PATCH | `/users/me/notification-preferences` | Protected |
-| POST | `/flow-launch-subscriptions` | Public consent or protected |
-| DELETE | `/flow-launch-subscriptions/:token` | Unsubscribe token |
+| Method     | Endpoint                              | Access                      |
+| ---------- | ------------------------------------- | --------------------------- |
+| GET        | `/notifications`                      | Protected                   |
+| PATCH      | `/notifications/:notificationId/read` | Protected                   |
+| POST       | `/notifications/read-all`             | Protected                   |
+| GET, PATCH | `/users/me/notification-preferences`  | Protected                   |
+| POST       | `/flow-launch-subscriptions`          | Public consent or protected |
+| DELETE     | `/flow-launch-subscriptions/:token`   | Unsubscribe token           |
 
 Flow launch subscriptions require an email address when used without an
 account. Store only hashed unsubscribe tokens server-side; non-production

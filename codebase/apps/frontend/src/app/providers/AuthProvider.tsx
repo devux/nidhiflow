@@ -36,7 +36,7 @@ interface AuthContextValue {
     preferredCurrency: string;
     theme: string;
     timezone: string;
-  }) => Promise<{ debugToken?: string; message: string }>;
+  }) => Promise<void>;
   updateProfile: (
     input: Partial<
       Pick<AuthUser, "displayName" | "locale" | "preferredCurrency" | "theme" | "timezone">
@@ -194,7 +194,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const handleRegister = useCallback(
-    (input: {
+    async (input: {
       displayName: string;
       email: string;
       locale: string;
@@ -202,7 +202,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       preferredCurrency: string;
       theme: string;
       timezone: string;
-    }) => registerAccount(input),
+    }) => {
+      const session = await registerAccount(input);
+      storeAuthSession(session);
+      setAccessToken(session.accessToken);
+      setUser(session.user);
+      setWorkspaces(session.workspaces);
+    },
     [],
   );
 
