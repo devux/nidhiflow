@@ -43,6 +43,40 @@ function buildEmailHtml(content: {
   `;
 }
 
+function getErrorProperty(error: unknown, property: string) {
+  if (!error || typeof error !== "object" || !(property in error)) {
+    return null;
+  }
+
+  const value = (error as Record<string, unknown>)[property];
+
+  return typeof value === "string" || typeof value === "number" ? String(value) : null;
+}
+
+function classifyEmailDeliveryFailure(error: unknown) {
+  const code = getErrorProperty(error, "code");
+  const command = getErrorProperty(error, "command");
+  const responseCode = getErrorProperty(error, "responseCode");
+
+  if (code === "EAUTH" || responseCode === "534" || responseCode === "535") {
+    return "smtp_auth_failed";
+  }
+
+  if (code === "ECONNECTION" || code === "ESOCKET" || code === "ETIMEDOUT") {
+    return "smtp_connection_failed";
+  }
+
+  if (command === "MAIL FROM") {
+    return "smtp_sender_rejected";
+  }
+
+  if (command === "RCPT TO") {
+    return "smtp_recipient_rejected";
+  }
+
+  return "provider_rejected";
+}
+
 async function sendWithResend(
   environment: Environment,
   email: { html: string; subject: string; text: string; to: string },
@@ -64,7 +98,9 @@ async function sendWithResend(
 
   if (!response.ok) {
     throw new AppError({
+      cause: new Error(`Resend email delivery failed with status ${response.status}`),
       code: "EMAIL_DELIVERY_FAILED",
+      details: [{ message: "provider_rejected" }],
       message: "Email could not be sent right now. Please try again.",
       status: 502,
     });
@@ -93,9 +129,13 @@ async function sendWithSmtp(
       text: email.text,
       to: email.to,
     });
-  } catch {
+  } catch (error) {
+    const reason = classifyEmailDeliveryFailure(error);
+
     throw new AppError({
+      cause: error,
       code: "EMAIL_DELIVERY_FAILED",
+      details: [{ message: reason }],
       message: "Email could not be sent right now. Please try again.",
       status: 502,
     });

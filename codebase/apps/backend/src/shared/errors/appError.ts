@@ -5,8 +5,14 @@ export class AppError extends Error {
   readonly details: ErrorDetail[] | undefined;
   readonly status: number;
 
-  constructor(options: { code: string; details?: ErrorDetail[]; message: string; status: number }) {
-    super(options.message);
+  constructor(options: {
+    cause?: unknown;
+    code: string;
+    details?: ErrorDetail[];
+    message: string;
+    status: number;
+  }) {
+    super(options.message, { cause: options.cause });
     this.name = "AppError";
     this.code = options.code;
     this.details = options.details;
