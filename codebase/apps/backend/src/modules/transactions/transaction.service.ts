@@ -48,7 +48,11 @@ export class TransactionService {
   ) {
     const accountRepository = new AccountRepository(transaction);
     const categoryRepository = new WorkspaceCategoryRepository(transaction);
-    const sourceAccount = await accountRepository.findById(workspaceId, input.accountId, transaction);
+    const sourceAccount = await accountRepository.findById(
+      workspaceId,
+      input.accountId,
+      transaction,
+    );
 
     if (!sourceAccount) {
       throw notFound();

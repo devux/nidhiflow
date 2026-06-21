@@ -220,7 +220,9 @@ export class BudgetService {
       const nextCategoryId =
         input.categoryId !== undefined ? input.categoryId : currentBudget.categoryId;
       const nextPeriodStart =
-        input.periodStart !== undefined ? input.periodStart : currentBudget.periodStart.slice(0, 10);
+        input.periodStart !== undefined
+          ? input.periodStart
+          : currentBudget.periodStart.slice(0, 10);
       const nextPeriodEnd =
         input.periodEnd !== undefined ? input.periodEnd : currentBudget.periodEnd.slice(0, 10);
       const duplicate = await repository.findActiveByCategoryPeriod(

@@ -226,27 +226,20 @@ export function BudgetPage() {
   }, [accessToken, isAuthenticated, workspaceId]);
 
   const monthlyBudgets = useMemo(
-    () =>
-      dedupeBudgetCategories(
-        budgets.filter((budget) => isBudgetForRange(budget, monthRange)),
-      ),
+    () => dedupeBudgetCategories(budgets.filter((budget) => isBudgetForRange(budget, monthRange))),
     [budgets, monthRange.from, monthRange.to],
   );
 
   const previousMonthBudgets = useMemo(
     () =>
-      dedupeByCategory(
-        budgets.filter((budget) => isBudgetForRange(budget, previousMonthRange)),
-      ),
+      dedupeByCategory(budgets.filter((budget) => isBudgetForRange(budget, previousMonthRange))),
     [budgets, previousMonthRange.from, previousMonthRange.to],
   );
 
   const yearlyBudgets = useMemo(
     () =>
       budgets.filter(
-        (budget) =>
-          budget.periodStart >= yearlyRange.from &&
-          budget.periodEnd <= yearlyRange.to,
+        (budget) => budget.periodStart >= yearlyRange.from && budget.periodEnd <= yearlyRange.to,
       ),
     [budgets, yearlyRange.from, yearlyRange.to],
   );
@@ -294,9 +287,8 @@ export function BudgetPage() {
       .reduce((total, transaction) => total + BigInt(transaction.amountMinor), 0n);
     const remainingMinor = totalMinor - spentMinor;
     const progress = totalMinor === 0n ? 0 : Number((spentMinor * 100n) / totalMinor);
-    const monthsCovered = new Set(
-      yearlyBudgets.map((budget) => budget.periodStart.slice(0, 7)),
-    ).size;
+    const monthsCovered = new Set(yearlyBudgets.map((budget) => budget.periodStart.slice(0, 7)))
+      .size;
 
     return {
       monthsCovered,
@@ -378,7 +370,9 @@ export function BudgetPage() {
       .map((row) => ({
         ...row,
         progress:
-          row.totalMinor === 0n ? 0 : Math.min(100, Number((row.spentMinor * 100n) / row.totalMinor)),
+          row.totalMinor === 0n
+            ? 0
+            : Math.min(100, Number((row.spentMinor * 100n) / row.totalMinor)),
       }))
       .sort((left, right) => Number(right.totalMinor - left.totalMinor));
   }, [transactions, yearlyBudgets, yearlyRange.from, yearlyRange.to]);
@@ -764,7 +758,6 @@ export function BudgetPage() {
               />
             )}
           </Card>
-
         </>
       ) : (
         <>
@@ -974,7 +967,10 @@ export function BudgetPage() {
                     Close
                   </button>
                 </div>
-                <form className="budget-category-form" onSubmit={(event) => void handleSubmit(event)}>
+                <form
+                  className="budget-category-form"
+                  onSubmit={(event) => void handleSubmit(event)}
+                >
                   <label>
                     <span>Category</span>
                     <select
@@ -1013,7 +1009,6 @@ export function BudgetPage() {
           ) : null}
         </>
       )}
-
     </main>
   );
 }

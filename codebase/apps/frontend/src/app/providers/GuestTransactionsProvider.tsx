@@ -63,7 +63,8 @@ async function findOrCreateWritableAccount(input: {
   }
 
   const archivedCashAccount = input.accounts.find(
-    (account) => account.isArchived && account.currency === input.currency && account.name === "Cash",
+    (account) =>
+      account.isArchived && account.currency === input.currency && account.name === "Cash",
   );
 
   if (archivedCashAccount) {
@@ -101,9 +102,10 @@ export function GuestTransactionsProvider({
       };
     }
 
-    const load = isAuthenticated && accessToken && workspaceId
-      ? listTransactions({ accessToken, workspaceId })
-      : repository.list();
+    const load =
+      isAuthenticated && accessToken && workspaceId
+        ? listTransactions({ accessToken, workspaceId })
+        : repository.list();
 
     load
       .then((records) => {

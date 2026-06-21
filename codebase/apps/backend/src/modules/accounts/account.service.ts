@@ -85,7 +85,11 @@ export class AccountService {
 
     return this.database.transaction(async (transaction) => {
       const repository = new AccountRepository(transaction);
-      const existingAccount = await repository.findActiveByName(workspaceId, input.name, transaction);
+      const existingAccount = await repository.findActiveByName(
+        workspaceId,
+        input.name,
+        transaction,
+      );
 
       if (existingAccount) {
         const isIdempotentCreate =
