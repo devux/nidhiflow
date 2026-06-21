@@ -23,7 +23,7 @@ export function LoginPage() {
 
     try {
       await login({ email, password });
-      void navigate("/you");
+      void navigate("/");
     } catch (loginError) {
       setError(loginError instanceof Error ? loginError.message : "Login failed.");
       setStatus("idle");

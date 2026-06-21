@@ -712,8 +712,8 @@ describe("App", () => {
     await user.type(screen.getByLabelText("Password"), "StrongPassword123");
     await user.click(screen.getByRole("button", { name: "Log in" }));
 
-    expect(await screen.findByText("Signed in")).toBeDefined();
-    expect(screen.getByText(/nila@example.com/)).toBeDefined();
+    expect(await screen.findByRole("heading", { name: /Nila/ })).toBeDefined();
+    expect(screen.getByText("Nila's workspace")).toBeDefined();
   });
 
   it("keeps the signed-in details after a browser refresh in the same session", async () => {
@@ -762,7 +762,7 @@ describe("App", () => {
     await user.type(screen.getByLabelText("Password"), "StrongPassword123");
     await user.click(screen.getByRole("button", { name: "Log in" }));
 
-    expect(await screen.findByText("Signed in")).toBeDefined();
+    expect(await screen.findByRole("heading", { name: /Nila/ })).toBeDefined();
     firstRender.unmount();
 
     fetchMock.mockImplementation(() => Promise.reject(new Error("Network unavailable.")));
@@ -1059,7 +1059,7 @@ describe("App", () => {
     await user.type(screen.getByLabelText("Password"), "StrongPassword123");
     await user.click(screen.getByRole("button", { name: "Log in" }));
 
-    expect(await screen.findByText("Signed in")).toBeDefined();
+    expect(await screen.findByRole("heading", { name: /Maya/ })).toBeDefined();
     expect(screen.queryByRole("region", { name: "Move local data" })).toBeNull();
   });
 
@@ -1112,7 +1112,7 @@ describe("App", () => {
     await user.type(screen.getByLabelText("Password"), "StrongPassword123");
     await user.click(screen.getByRole("button", { name: "Log in" }));
 
-    expect(await screen.findByText("Signed in")).toBeDefined();
+    expect(await screen.findByRole("heading", { name: /Nila/ })).toBeDefined();
 
     act(() => {
       jest.advanceTimersByTime(5 * 60 * 1000 + 1);
