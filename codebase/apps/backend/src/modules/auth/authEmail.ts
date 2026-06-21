@@ -1,6 +1,5 @@
 import type { Environment } from "../../app/config/environment.js";
 import { AppError } from "../../shared/errors/appError.js";
-import nodemailer from "nodemailer";
 
 interface AuthEmailInput {
   displayName: string;
@@ -43,40 +42,6 @@ function buildEmailHtml(content: {
   `;
 }
 
-function getErrorProperty(error: unknown, property: string) {
-  if (!error || typeof error !== "object" || !(property in error)) {
-    return null;
-  }
-
-  const value = (error as Record<string, unknown>)[property];
-
-  return typeof value === "string" || typeof value === "number" ? String(value) : null;
-}
-
-function classifyEmailDeliveryFailure(error: unknown) {
-  const code = getErrorProperty(error, "code");
-  const command = getErrorProperty(error, "command");
-  const responseCode = getErrorProperty(error, "responseCode");
-
-  if (code === "EAUTH" || responseCode === "534" || responseCode === "535") {
-    return "smtp_auth_failed";
-  }
-
-  if (code === "ECONNECTION" || code === "ESOCKET" || code === "ETIMEDOUT") {
-    return "smtp_connection_failed";
-  }
-
-  if (command === "MAIL FROM") {
-    return "smtp_sender_rejected";
-  }
-
-  if (command === "RCPT TO") {
-    return "smtp_recipient_rejected";
-  }
-
-  return "provider_rejected";
-}
-
 async function sendWithResend(
   environment: Environment,
   email: { html: string; subject: string; text: string; to: string },
@@ -107,51 +72,11 @@ async function sendWithResend(
   }
 }
 
-async function sendWithSmtp(
-  environment: Environment,
-  email: { html: string; subject: string; text: string; to: string },
-) {
-  const transporter = nodemailer.createTransport({
-    auth: {
-      pass: environment.EMAIL_PASSWORD,
-      user: environment.EMAIL_USER,
-    },
-    host: environment.EMAIL_HOST,
-    port: environment.EMAIL_PORT,
-    secure: environment.EMAIL_PORT === 465,
-  });
-
-  try {
-    await transporter.sendMail({
-      from: environment.EMAIL_FROM,
-      html: email.html,
-      subject: email.subject,
-      text: email.text,
-      to: email.to,
-    });
-  } catch (error) {
-    const reason = classifyEmailDeliveryFailure(error);
-
-    throw new AppError({
-      cause: error,
-      code: "EMAIL_DELIVERY_FAILED",
-      details: [{ message: reason }],
-      message: "Email could not be sent right now. Please try again.",
-      status: 502,
-    });
-  }
-}
-
 async function sendEmail(
   environment: Environment,
   email: { html: string; subject: string; text: string; to: string },
 ) {
   if (environment.EMAIL_DELIVERY_PROVIDER === "none") {
-    return;
-  }
-
-  if (environment.EMAIL_DELIVERY_PROVIDER === "gmail") {
-    await sendWithSmtp(environment, email);
     return;
   }
 

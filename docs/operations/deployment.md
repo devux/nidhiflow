@@ -94,12 +94,9 @@ JWT_ACCESS_SECRET=<strong random secret>
 AUTH_DEBUG_TOKENS_ENABLED=false
 FLOW_AI_ENABLED=false
 APP_PUBLIC_URL=https://nidhiflow.vercel.app
-EMAIL_DELIVERY_PROVIDER=gmail
-EMAIL_FROM=nidhiflow.finance@gmail.com
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USER=nidhiflow.finance@gmail.com
-EMAIL_PASSWORD=<Gmail app password>
+EMAIL_DELIVERY_PROVIDER=resend
+EMAIL_FROM=<verified Resend sender>
+RESEND_API_KEY=<Resend API key>
 ```
 
 Optional Render environment variables, only when a feature needs them:
@@ -115,7 +112,6 @@ FEEDBACK_RATE_LIMIT_MAX=5
 FLOW_AI_TIMEOUT_MS=60000
 FLOW_MODEL=llama3.2:3b
 OLLAMA_BASE_URL=<private Ollama URL reachable by backend>
-RESEND_API_KEY=<only when EMAIL_DELIVERY_PROVIDER=resend>
 ```
 
 Keep `AUTH_DEBUG_TOKENS_ENABLED=false` in normal production. Turn it on only for
@@ -133,11 +129,10 @@ runs on the Vercel domain. The backend must set that cookie with
 `INVALID_SESSION` and protected calls such as `/users/me` and `/workspaces`
 return `UNAUTHENTICATED` after the short access token expires.
 
-Email verification can use Gmail SMTP or Resend in production. For Gmail,
-configure `EMAIL_DELIVERY_PROVIDER=gmail`, `EMAIL_HOST=smtp.gmail.com`,
-`EMAIL_PORT=587`, `EMAIL_USER`, `EMAIL_PASSWORD`, and `EMAIL_FROM` in Render.
-`EMAIL_PASSWORD` must be a Gmail app password, not the normal mailbox password.
-Signup and resend-verification emails link back to `APP_PUBLIC_URL`.
+Email verification uses Resend in production. Configure
+`EMAIL_DELIVERY_PROVIDER=resend`, `EMAIL_FROM`, and `RESEND_API_KEY` in Render.
+`EMAIL_FROM` must be a sender address or domain verified in Resend. Signup and
+resend-verification emails link back to `APP_PUBLIC_URL`.
 
 ## Neon Database Deployment
 

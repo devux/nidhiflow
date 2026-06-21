@@ -60,36 +60,4 @@ describe("parseEnvironment", () => {
       }),
     ).toThrow("Invalid backend environment configuration: EMAIL_FROM, RESEND_API_KEY.");
   });
-
-  it("parses Gmail SMTP configuration when email delivery uses Gmail", () => {
-    const parsed = parseEnvironment({
-      ...validEnvironment,
-      EMAIL_DELIVERY_PROVIDER: "gmail",
-      EMAIL_FROM: "nidhiflow.finance@gmail.com",
-      EMAIL_HOST: "smtp.gmail.com",
-      EMAIL_PASSWORD: "app-password",
-      EMAIL_PORT: "587",
-      EMAIL_USER: "nidhiflow.finance@gmail.com",
-    });
-
-    expect(parsed).toMatchObject({
-      EMAIL_DELIVERY_PROVIDER: "gmail",
-      EMAIL_FROM: "nidhiflow.finance@gmail.com",
-      EMAIL_HOST: "smtp.gmail.com",
-      EMAIL_PORT: 587,
-      EMAIL_USER: "nidhiflow.finance@gmail.com",
-    });
-  });
-
-  it("requires Gmail SMTP credentials when email delivery uses Gmail", () => {
-    expect(() =>
-      parseEnvironment({
-        ...validEnvironment,
-        EMAIL_DELIVERY_PROVIDER: "gmail",
-        EMAIL_FROM: "nidhiflow.finance@gmail.com",
-      }),
-    ).toThrow(
-      "Invalid backend environment configuration: EMAIL_HOST, EMAIL_PASSWORD, EMAIL_PORT, EMAIL_USER.",
-    );
-  });
 });

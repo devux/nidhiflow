@@ -20,12 +20,8 @@ const environmentSchema = z
     FLOW_MODEL: z.string().trim().min(1).default("llama3.2:3b"),
     OLLAMA_BASE_URL: z.string().url().default("http://127.0.0.1:11434"),
     APP_PUBLIC_URL: z.string().url().default("http://localhost:5173"),
-    EMAIL_DELIVERY_PROVIDER: z.enum(["none", "resend", "gmail"]).default("none"),
+    EMAIL_DELIVERY_PROVIDER: z.enum(["none", "resend"]).default("none"),
     EMAIL_FROM: z.string().trim().min(3).optional(),
-    EMAIL_HOST: z.string().trim().min(1).optional(),
-    EMAIL_PASSWORD: z.string().trim().min(1).optional(),
-    EMAIL_PORT: z.coerce.number().int().min(1).max(65_535).optional(),
-    EMAIL_USER: z.string().trim().min(1).optional(),
     RESEND_API_KEY: z.string().trim().min(1).optional(),
     JWT_ACCESS_SECRET: z.string().min(32).optional(),
     JWT_ACCESS_ISSUER: z.string().min(1).default("nidhiflow.local"),
@@ -68,18 +64,6 @@ const environmentSchema = z
         message: "EMAIL_FROM is required when email delivery is enabled.",
         path: ["EMAIL_FROM"],
       });
-    }
-
-    if (value.EMAIL_DELIVERY_PROVIDER === "gmail") {
-      for (const key of ["EMAIL_HOST", "EMAIL_PASSWORD", "EMAIL_PORT", "EMAIL_USER"] as const) {
-        if (!value[key]) {
-          context.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: `${key} is required when EMAIL_DELIVERY_PROVIDER=gmail.`,
-            path: [key],
-          });
-        }
-      }
     }
   });
 
