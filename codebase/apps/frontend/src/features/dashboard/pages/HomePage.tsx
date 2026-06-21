@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useMemo } from "react";
 
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
@@ -18,11 +19,39 @@ function getGreeting(): string {
   return "Good evening";
 }
 
+function toDateValue(date: Date): string {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+function getCurrentMonthRange() {
+  const today = new Date();
+
+  return {
+    from: toDateValue(new Date(today.getFullYear(), today.getMonth(), 1)),
+    to: toDateValue(new Date(today.getFullYear(), today.getMonth() + 1, 0)),
+  };
+}
+
 export function HomePage() {
   const { isAuthenticated, user, workspaces } = useAuth();
   const { preferences } = useGuestPreferences();
   const { transactions } = useGuestTransactions();
-  const totals = calculateTransactionTotals(transactions);
+  const currentMonthRange = useMemo(() => getCurrentMonthRange(), []);
+  const currentMonthTransactions = useMemo(
+    () =>
+      transactions.filter((transaction) => {
+        if (transaction.deletedAt) return false;
+        if (transaction.transactionDate < currentMonthRange.from) return false;
+        if (transaction.transactionDate > currentMonthRange.to) return false;
+        return true;
+      }),
+    [currentMonthRange.from, currentMonthRange.to, transactions],
+  );
+  const totals = calculateTransactionTotals(currentMonthTransactions);
   const recentTransactions = transactions.slice(0, 4);
   const money = (amountMinor: string) =>
     formatMoney({ amountMinor, currency: preferences.currency }, preferences.locale);
@@ -76,7 +105,7 @@ export function HomePage() {
                 </span>
                 <span>
                   <strong>Transactions</strong>
-                  <small>Shared planning appears when you join a family workspace.</small>
+                  <small>This month, matching Flow and Reports.</small>
                 </span>
               </span>
             </div>

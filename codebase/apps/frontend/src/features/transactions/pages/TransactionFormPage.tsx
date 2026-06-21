@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
 import { useGuestTransactions } from "../../../app/providers/GuestTransactionsProvider";
@@ -21,6 +21,14 @@ import {
 } from "../schemas/transactionFormSchema";
 
 const COLLAPSED_CATEGORY_COUNT = 7;
+
+interface FlowTransactionDraft {
+  amount?: string | null;
+  category?: string | null;
+  note?: string | null;
+  transactionDate?: string | null;
+  type?: TransactionType | null;
+}
 
 function getLocalDate(): string {
   const now = new Date();
@@ -62,6 +70,7 @@ function normalizeAmountInput(value: string): string {
 
 export function TransactionFormPage() {
   const { id } = useParams();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { preferences } = useGuestPreferences();
@@ -72,23 +81,28 @@ export function TransactionFormPage() {
     requiresAuthentication,
     transactions,
     updateTransaction,
-  } =
-    useGuestTransactions();
+  } = useGuestTransactions();
   const existing = useMemo(
     () => transactions.find((transaction) => transaction.id === id),
     [id, transactions],
   );
+  const flowDraft = (location.state as { flowTransactionDraft?: FlowTransactionDraft } | null)
+    ?.flowTransactionDraft;
   const requestedType = searchParams.get("type");
   const initialType: TransactionType =
-    existing?.type ?? (requestedType === "income" ? "income" : "expense");
+    existing?.type ?? flowDraft?.type ?? (requestedType === "income" ? "income" : "expense");
   const initialCategories: readonly string[] =
     initialType === "income" ? incomeCategories : expenseCategories;
   const defaultCategory = initialType === "income" ? incomeCategories[0] : expenseCategories[0];
+  const draftCategory =
+    flowDraft?.category && initialCategories.includes(flowDraft.category)
+      ? flowDraft.category
+      : defaultCategory;
   const [values, setValues] = useState<TransactionFormValues>(() => ({
-    amount: existing ? toAmountInput(existing) : "",
-    category: existing?.category ?? defaultCategory,
-    note: existing?.note ?? "",
-    transactionDate: existing?.transactionDate ?? getLocalDate(),
+    amount: existing ? toAmountInput(existing) : (flowDraft?.amount ?? ""),
+    category: existing?.category ?? draftCategory,
+    note: existing?.note ?? flowDraft?.note ?? "",
+    transactionDate: existing?.transactionDate ?? flowDraft?.transactionDate ?? getLocalDate(),
     type: initialType,
   }));
   const [errors, setErrors] = useState<TransactionFormErrors>({});
@@ -108,22 +122,21 @@ export function TransactionFormPage() {
     if (existing) return;
 
     const nextType: TransactionType = requestedType === "income" ? "income" : "expense";
+
+    if (values.type === nextType) return;
+
     const nextCategory = nextType === "income" ? incomeCategories[0] : expenseCategories[0];
 
-    setValues((current) =>
-      current.type === nextType
-        ? current
-        : {
-            amount: "",
-            category: nextCategory,
-            note: "",
-            transactionDate: getLocalDate(),
-            type: nextType,
-          },
-    );
+    setValues({
+      amount: "",
+      category: nextCategory,
+      note: "",
+      transactionDate: getLocalDate(),
+      type: nextType,
+    });
     setErrors({});
     setShowAllCategories(false);
-  }, [existing, requestedType]);
+  }, [existing, requestedType, values.type]);
 
   if (id && !existing) {
     return (
@@ -146,8 +159,8 @@ export function TransactionFormPage() {
           <Icon name="lock" size={28} />
           <h1>Sign in to save changes</h1>
           <p>
-            Guest mode is read-only. Log in or create an account to add income, add expenses,
-            edit transactions, or save finance changes to the database.
+            Guest mode is read-only. Log in or create an account to add income, add expenses, edit
+            transactions, or save finance changes to the database.
           </p>
           <div className="confirmation-actions">
             <Link className="button button--primary" to="/login">

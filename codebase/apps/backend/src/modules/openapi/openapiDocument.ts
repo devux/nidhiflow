@@ -83,13 +83,23 @@ function responseSet(
   return {
     ...success,
     "400": errorResponse("Malformed request or invalid token."),
-    ...(options.auth ? { "401": errorResponse("Authentication is required or the session expired.") } : {}),
-    ...(options.forbidden ? { "403": errorResponse("The authenticated actor is not allowed to perform this action.") } : {}),
+    ...(options.auth
+      ? { "401": errorResponse("Authentication is required or the session expired.") }
+      : {}),
+    ...(options.forbidden
+      ? { "403": errorResponse("The authenticated actor is not allowed to perform this action.") }
+      : {}),
     ...(options.notFound ? { "404": errorResponse("The requested resource was not found.") } : {}),
-    ...(options.conflict ? { "409": errorResponse("The request conflicts with the current resource state.") } : {}),
-    ...(options.validation ? { "422": errorResponse("Validation failed for the request body, path, query, or headers.") } : {}),
+    ...(options.conflict
+      ? { "409": errorResponse("The request conflicts with the current resource state.") }
+      : {}),
+    ...(options.validation
+      ? { "422": errorResponse("Validation failed for the request body, path, query, or headers.") }
+      : {}),
     ...(options.rateLimit ? { "429": errorResponse("The rate limit was exceeded.") } : {}),
-    "500": errorResponse("An unexpected server error occurred. Stack traces and internal details are never returned."),
+    "500": errorResponse(
+      "An unexpected server error occurred. Stack traces and internal details are never returned.",
+    ),
   };
 }
 
@@ -207,7 +217,10 @@ const createTransactionRequest = {
   required: ["accountId", "money", "transactionDate", "type"],
   properties: {
     accountId: { type: "string" },
-    categoryId: { description: "Required for income and expense. Omitted for transfers.", type: "string" },
+    categoryId: {
+      description: "Required for income and expense. Omitted for transfers.",
+      type: "string",
+    },
     destinationAccountId: { description: "Required for transfers.", type: "string" },
     money: moneySchema,
     note: { maxLength: 100, type: "string" },
@@ -293,12 +306,19 @@ const createRecurringTransactionRequest = {
   properties: {
     accountId: { type: "string" },
     amount: moneySchema,
-    categoryId: { description: "Required for income and expense. Omitted for transfers.", type: "string" },
+    categoryId: {
+      description: "Required for income and expense. Omitted for transfers.",
+      type: "string",
+    },
     destinationAccountId: { description: "Required for transfers.", type: "string" },
     name: { maxLength: 80, minLength: 1, type: "string" },
     nextOccurrence: dateOnly,
     note: { maxLength: 100, type: "string" },
-    scheduleRule: { description: "Application-defined recurrence rule string.", minLength: 1, type: "string" },
+    scheduleRule: {
+      description: "Application-defined recurrence rule string.",
+      minLength: 1,
+      type: "string",
+    },
     timezone: { example: "Asia/Kolkata", minLength: 1, type: "string" },
     type: { enum: ["income", "expense", "transfer"], type: "string" },
   },
@@ -337,9 +357,24 @@ const createReportExportRequest = {
 
 const guestTransaction = {
   type: "object",
-  required: ["amountMinor", "category", "createdAt", "currency", "id", "note", "transactionDate", "type", "updatedAt"],
+  required: [
+    "amountMinor",
+    "category",
+    "createdAt",
+    "currency",
+    "id",
+    "note",
+    "transactionDate",
+    "type",
+    "updatedAt",
+  ],
   properties: {
-    amountMinor: { description: "Positive whole-number minor-unit string from the guest device.", example: "125000", pattern: "^\\d+$", type: "string" },
+    amountMinor: {
+      description: "Positive whole-number minor-unit string from the guest device.",
+      example: "125000",
+      pattern: "^\\d+$",
+      type: "string",
+    },
     category: { type: "string" },
     createdAt: timestamp,
     currency: { example: "INR", pattern: "^[A-Z]{3}$", type: "string" },
@@ -379,14 +414,72 @@ const guestMigrationPayload = {
   },
 };
 
+const flowChatRequest = {
+  type: "object",
+  required: ["messages"],
+  properties: {
+    messages: {
+      maxItems: 12,
+      minItems: 1,
+      type: "array",
+      items: {
+        type: "object",
+        required: ["role", "content"],
+        properties: {
+          role: { enum: ["assistant", "user"], type: "string" },
+          content: { maxLength: 2000, minLength: 1, type: "string" },
+        },
+      },
+    },
+  },
+};
+
+const flowChatResponse = {
+  type: "object",
+  required: ["message", "model", "tools", "toolResults"],
+  properties: {
+    message: { type: "string" },
+    model: { example: "llama3.2:3b", type: "string" },
+    tools: {
+      type: "array",
+      items: {
+        type: "object",
+        required: ["name", "description"],
+        properties: {
+          name: { type: "string" },
+          description: { type: "string" },
+        },
+      },
+    },
+    toolResults: {
+      type: "array",
+      items: {
+        type: "object",
+        required: ["name", "result"],
+        properties: {
+          name: { type: "string" },
+          result: {},
+        },
+      },
+    },
+  },
+};
+
 const paths = {
   "/health/live": {
     get: operation({
       tags: ["Health"],
       summary: "Check backend liveness",
-      description: "Confirms that the backend process is running. This endpoint is outside the /api/v1 prefix.",
+      description:
+        "Confirms that the backend process is running. This endpoint is outside the /api/v1 prefix.",
       operationId: "getHealthLive",
-      responses: responseSet({ "200": successResponse("Backend process is alive.", { type: "object", required: ["status"], properties: { status: { example: "ok", type: "string" } } }) }),
+      responses: responseSet({
+        "200": successResponse("Backend process is alive.", {
+          type: "object",
+          required: ["status"],
+          properties: { status: { example: "ok", type: "string" } },
+        }),
+      }),
     }),
   },
   "/health/ready": {
@@ -396,8 +489,16 @@ const paths = {
       description: "Confirms PostgreSQL connectivity. This endpoint is outside the /api/v1 prefix.",
       operationId: "getHealthReady",
       responses: responseSet({
-        "200": successResponse("Backend is ready.", { type: "object", required: ["status"], properties: { status: { example: "ready", type: "string" } } }),
-        "503": successResponse("Backend is not ready.", { type: "object", required: ["status"], properties: { status: { example: "unavailable", type: "string" } } }),
+        "200": successResponse("Backend is ready.", {
+          type: "object",
+          required: ["status"],
+          properties: { status: { example: "ready", type: "string" } },
+        }),
+        "503": successResponse("Backend is not ready.", {
+          type: "object",
+          required: ["status"],
+          properties: { status: { example: "unavailable", type: "string" } },
+        }),
       }),
     }),
   },
@@ -414,20 +515,28 @@ const paths = {
     post: operation({
       tags: ["Auth"],
       summary: "Register account",
-      description: "Creates an account in pending verification state. Non-production responses may include debugToken.",
+      description:
+        "Creates an account in pending verification state. Non-production responses may include debugToken.",
       operationId: "registerAccount",
       requestBody: requestBody(ref("RegisterRequest")),
-      responses: responseSet({ "202": successResponse("Registration accepted.", ref("RegisterResult")) }, { conflict: true, rateLimit: true, validation: true }),
+      responses: responseSet(
+        { "202": successResponse("Registration accepted.", ref("RegisterResult")) },
+        { conflict: true, rateLimit: true, validation: true },
+      ),
     }),
   },
   "/api/v1/auth/login": {
     post: operation({
       tags: ["Auth"],
       summary: "Log in",
-      description: "Starts an authenticated browser session and sets the rotating HttpOnly refresh cookie.",
+      description:
+        "Starts an authenticated browser session and sets the rotating HttpOnly refresh cookie.",
       operationId: "login",
       requestBody: requestBody(ref("LoginRequest")),
-      responses: responseSet({ "200": successResponse("Login successful.", ref("AuthSession")) }, { auth: true, rateLimit: true, validation: true }),
+      responses: responseSet(
+        { "200": successResponse("Login successful.", ref("AuthSession")) },
+        { auth: true, rateLimit: true, validation: true },
+      ),
     }),
   },
   "/api/v1/auth/refresh": {
@@ -436,16 +545,22 @@ const paths = {
       summary: "Refresh session",
       description: "Rotates the refresh session cookie and returns a short-lived access token.",
       operationId: "refreshSession",
-      responses: responseSet({ "200": successResponse("Session refreshed successfully.", ref("RefreshResult")) }, { auth: true, rateLimit: true }),
+      responses: responseSet(
+        { "200": successResponse("Session refreshed successfully.", ref("RefreshResult")) },
+        { auth: true, rateLimit: true },
+      ),
     }),
   },
   "/api/v1/auth/logout": {
     post: operation({
       tags: ["Auth"],
       summary: "Log out current session",
-      description: "Revokes the current refresh session when present and clears the refresh cookie.",
+      description:
+        "Revokes the current refresh session when present and clears the refresh cookie.",
       operationId: "logout",
-      responses: responseSet({ "200": successResponse("Session closed successfully.", emptyStatus) }),
+      responses: responseSet({
+        "200": successResponse("Session closed successfully.", emptyStatus),
+      }),
     }),
   },
   "/api/v1/auth/logout-all": {
@@ -455,17 +570,24 @@ const paths = {
       description: "Revokes every active session for the authenticated user.",
       operationId: "logoutAllSessions",
       security: bearerSecurity,
-      responses: responseSet({ "200": successResponse("All sessions closed successfully.", emptyStatus) }, { auth: true }),
+      responses: responseSet(
+        { "200": successResponse("All sessions closed successfully.", emptyStatus) },
+        { auth: true },
+      ),
     }),
   },
   "/api/v1/auth/verify-email": {
     post: operation({
       tags: ["Auth"],
       summary: "Verify email",
-      description: "Consumes a verification token, creates the personal workspace, and starts the first session.",
+      description:
+        "Consumes a verification token, creates the personal workspace, and starts the first session.",
       operationId: "verifyEmail",
       requestBody: requestBody(ref("TokenRequest")),
-      responses: responseSet({ "200": successResponse("Email verified successfully.", ref("VerifyEmailResult")) }, { conflict: true, rateLimit: true, validation: true }),
+      responses: responseSet(
+        { "200": successResponse("Email verified successfully.", ref("VerifyEmailResult")) },
+        { conflict: true, rateLimit: true, validation: true },
+      ),
     }),
   },
   "/api/v1/auth/resend-verification": {
@@ -475,7 +597,10 @@ const paths = {
       description: "Accepts a resend request without revealing whether the email exists.",
       operationId: "resendVerification",
       requestBody: requestBody(ref("EmailRequest")),
-      responses: responseSet({ "202": successResponse("Verification resend accepted.", ref("DebugTokenResult")) }, { rateLimit: true, validation: true }),
+      responses: responseSet(
+        { "202": successResponse("Verification resend accepted.", ref("DebugTokenResult")) },
+        { rateLimit: true, validation: true },
+      ),
     }),
   },
   "/api/v1/auth/forgot-password": {
@@ -485,17 +610,24 @@ const paths = {
       description: "Accepts a password reset request without revealing whether the email exists.",
       operationId: "forgotPassword",
       requestBody: requestBody(ref("EmailRequest")),
-      responses: responseSet({ "202": successResponse("Password reset request accepted.", ref("DebugTokenResult")) }, { rateLimit: true, validation: true }),
+      responses: responseSet(
+        { "202": successResponse("Password reset request accepted.", ref("DebugTokenResult")) },
+        { rateLimit: true, validation: true },
+      ),
     }),
   },
   "/api/v1/auth/reset-password": {
     post: operation({
       tags: ["Auth"],
       summary: "Reset password",
-      description: "Consumes a password reset token, changes the password, and clears browser refresh cookies.",
+      description:
+        "Consumes a password reset token, changes the password, and clears browser refresh cookies.",
       operationId: "resetPassword",
       requestBody: requestBody(ref("ResetPasswordRequest")),
-      responses: responseSet({ "200": successResponse("Password reset successful.", emptyStatus) }, { rateLimit: true, validation: true }),
+      responses: responseSet(
+        { "200": successResponse("Password reset successful.", emptyStatus) },
+        { rateLimit: true, validation: true },
+      ),
     }),
   },
   "/api/v1/users/me": {
@@ -505,7 +637,10 @@ const paths = {
       description: "Returns the authenticated user's profile and preferences.",
       operationId: "getCurrentUser",
       security: bearerSecurity,
-      responses: responseSet({ "200": successResponse("Current profile retrieved.", ref("User")) }, { auth: true }),
+      responses: responseSet(
+        { "200": successResponse("Current profile retrieved.", ref("User")) },
+        { auth: true },
+      ),
     }),
     patch: operation({
       tags: ["Users"],
@@ -514,17 +649,24 @@ const paths = {
       operationId: "updateCurrentUser",
       security: bearerSecurity,
       requestBody: requestBody(ref("UpdateUserRequest")),
-      responses: responseSet({ "200": successResponse("Current profile updated.", ref("User")) }, { auth: true, validation: true }),
+      responses: responseSet(
+        { "200": successResponse("Current profile updated.", ref("User")) },
+        { auth: true, validation: true },
+      ),
     }),
   },
   "/api/v1/users/me/sessions": {
     get: operation({
       tags: ["Users"],
       summary: "List active sessions",
-      description: "Lists refresh sessions for the authenticated user without exposing token secrets.",
+      description:
+        "Lists refresh sessions for the authenticated user without exposing token secrets.",
       operationId: "listCurrentUserSessions",
       security: bearerSecurity,
-      responses: responseSet({ "200": successResponse("Sessions retrieved.", { items: ref("Session"), type: "array" }) }, { auth: true }),
+      responses: responseSet(
+        { "200": successResponse("Sessions retrieved.", { items: ref("Session"), type: "array" }) },
+        { auth: true },
+      ),
     }),
   },
   "/api/v1/users/me/sessions/{sessionId}": {
@@ -535,30 +677,48 @@ const paths = {
       operationId: "revokeCurrentUserSession",
       security: bearerSecurity,
       parameters: [parameterRef("sessionId")],
-      responses: responseSet({ "200": successResponse("Session revoked.", emptyStatus) }, { auth: true, notFound: true, validation: true }),
+      responses: responseSet(
+        { "200": successResponse("Session revoked.", emptyStatus) },
+        { auth: true, notFound: true, validation: true },
+      ),
     }),
   },
   "/api/v1/users/me/guest-migrations/preview": {
     post: operation({
       tags: ["Users", "Guest Migrations"],
       summary: "Preview guest migration",
-      description: "Validates local guest finance data and returns importability, duplicate, and skipped-deleted summaries. Does not upload changes permanently.",
+      description:
+        "Validates local guest finance data and returns importability, duplicate, and skipped-deleted summaries. Does not upload changes permanently.",
       operationId: "previewGuestMigration",
       security: bearerSecurity,
       requestBody: requestBody(ref("GuestMigrationPayload")),
-      responses: responseSet({ "200": successResponse("Guest migration preview generated.", ref("GuestMigrationPreview")) }, { auth: true, notFound: true, validation: true }),
+      responses: responseSet(
+        {
+          "200": successResponse(
+            "Guest migration preview generated.",
+            ref("GuestMigrationPreview"),
+          ),
+        },
+        { auth: true, notFound: true, validation: true },
+      ),
     }),
   },
   "/api/v1/users/me/guest-migrations": {
     post: operation({
       tags: ["Users", "Guest Migrations"],
       summary: "Commit guest migration",
-      description: "Idempotently imports confirmed guest data into the authenticated user's personal workspace.",
+      description:
+        "Idempotently imports confirmed guest data into the authenticated user's personal workspace.",
       operationId: "commitGuestMigration",
       security: bearerSecurity,
       parameters: [parameterRef("idempotencyKey")],
       requestBody: requestBody(ref("GuestMigrationCommitRequest")),
-      responses: responseSet({ "201": successResponse("Guest data migrated successfully.", ref("GuestMigrationCommit")) }, { auth: true, conflict: true, notFound: true, validation: true }),
+      responses: responseSet(
+        {
+          "201": successResponse("Guest data migrated successfully.", ref("GuestMigrationCommit")),
+        },
+        { auth: true, conflict: true, notFound: true, validation: true },
+      ),
     }),
   },
   "/api/v1/workspaces": {
@@ -568,16 +728,28 @@ const paths = {
       description: "Lists workspaces where the authenticated user is a member.",
       operationId: "listWorkspaces",
       security: bearerSecurity,
-      responses: responseSet({ "200": successResponse("Workspaces retrieved.", { items: ref("Workspace"), type: "array" }) }, { auth: true }),
+      responses: responseSet(
+        {
+          "200": successResponse("Workspaces retrieved.", {
+            items: ref("Workspace"),
+            type: "array",
+          }),
+        },
+        { auth: true },
+      ),
     }),
     post: operation({
       tags: ["Workspaces"],
       summary: "Create workspace",
-      description: "Creates a personal or family workspace and makes the authenticated user the manager.",
+      description:
+        "Creates a personal or family workspace and makes the authenticated user the manager.",
       operationId: "createWorkspace",
       security: bearerSecurity,
       requestBody: requestBody(ref("CreateWorkspaceRequest")),
-      responses: responseSet({ "201": successResponse("Workspace created.", ref("Workspace")) }, { auth: true, conflict: true, validation: true }),
+      responses: responseSet(
+        { "201": successResponse("Workspace created.", ref("Workspace")) },
+        { auth: true, conflict: true, validation: true },
+      ),
     }),
   },
   "/api/v1/workspaces/{workspaceId}": {
@@ -588,7 +760,10 @@ const paths = {
       operationId: "getWorkspace",
       security: bearerSecurity,
       parameters: [parameterRef("workspaceId")],
-      responses: responseSet({ "200": successResponse("Workspace retrieved.", ref("Workspace")) }, { auth: true, notFound: true, validation: true }),
+      responses: responseSet(
+        { "200": successResponse("Workspace retrieved.", ref("Workspace")) },
+        { auth: true, notFound: true, validation: true },
+      ),
     }),
     patch: operation({
       tags: ["Workspaces"],
@@ -598,16 +773,23 @@ const paths = {
       security: bearerSecurity,
       parameters: [parameterRef("workspaceId")],
       requestBody: requestBody(ref("UpdateWorkspaceRequest")),
-      responses: responseSet({ "200": successResponse("Workspace updated.", ref("Workspace")) }, { auth: true, forbidden: true, notFound: true, validation: true }),
+      responses: responseSet(
+        { "200": successResponse("Workspace updated.", ref("Workspace")) },
+        { auth: true, forbidden: true, notFound: true, validation: true },
+      ),
     }),
     delete: operation({
       tags: ["Workspaces"],
       summary: "Archive workspace",
-      description: "Archives a family workspace when the authenticated user has manager capability. Personal workspaces cannot be deleted here.",
+      description:
+        "Archives a family workspace when the authenticated user has manager capability. Personal workspaces cannot be deleted here.",
       operationId: "archiveWorkspace",
       security: bearerSecurity,
       parameters: [parameterRef("workspaceId")],
-      responses: responseSet({ "200": successResponse("Workspace archived.", ref("Workspace")) }, { auth: true, conflict: true, forbidden: true, notFound: true, validation: true }),
+      responses: responseSet(
+        { "200": successResponse("Workspace archived.", ref("Workspace")) },
+        { auth: true, conflict: true, forbidden: true, notFound: true, validation: true },
+      ),
     }),
   },
   "/api/v1/workspaces/{workspaceId}/members": {
@@ -618,30 +800,46 @@ const paths = {
       operationId: "listWorkspaceMembers",
       security: bearerSecurity,
       parameters: [parameterRef("workspaceId")],
-      responses: responseSet({ "200": successResponse("Workspace members retrieved.", { items: ref("WorkspaceMember"), type: "array" }) }, { auth: true, notFound: true, validation: true }),
+      responses: responseSet(
+        {
+          "200": successResponse("Workspace members retrieved.", {
+            items: ref("WorkspaceMember"),
+            type: "array",
+          }),
+        },
+        { auth: true, notFound: true, validation: true },
+      ),
     }),
   },
   "/api/v1/workspaces/{workspaceId}/invitations": {
     post: operation({
       tags: ["Workspace Members"],
       summary: "Invite workspace member",
-      description: "Creates a family workspace invitation. Non-production responses may include debugToken.",
+      description:
+        "Creates a family workspace invitation. Non-production responses may include debugToken.",
       operationId: "createWorkspaceInvitation",
       security: bearerSecurity,
       parameters: [parameterRef("workspaceId")],
       requestBody: requestBody(ref("CreateWorkspaceInvitationRequest")),
-      responses: responseSet({ "201": successResponse("Workspace invitation created.", ref("WorkspaceInvitation")) }, { auth: true, conflict: true, forbidden: true, notFound: true, validation: true }),
+      responses: responseSet(
+        { "201": successResponse("Workspace invitation created.", ref("WorkspaceInvitation")) },
+        { auth: true, conflict: true, forbidden: true, notFound: true, validation: true },
+      ),
     }),
   },
   "/api/v1/workspaces/{workspaceId}/members/{userId}": {
     delete: operation({
       tags: ["Workspace Members"],
       summary: "Remove workspace member",
-      description: "Removes a member from a family workspace when the authenticated user has manager capability.",
+      description:
+        "Removes a member from a family workspace when the authenticated user has manager capability.",
       operationId: "removeWorkspaceMember",
       security: bearerSecurity,
       parameters: [parameterRef("workspaceId"), parameterRef("userId")],
-      responses: responseSet({ "200": successResponse("Workspace member removed.", emptyStatus) }, { auth: true, conflict: true, forbidden: true, notFound: true, validation: true }),
+      responses: responseSet(
+        { "200": successResponse("Workspace member removed.", emptyStatus) },
+        { auth: true, conflict: true, forbidden: true, notFound: true, validation: true },
+      ),
     }),
   },
   "/api/v1/workspaces/{workspaceId}/leave": {
@@ -652,7 +850,10 @@ const paths = {
       operationId: "leaveWorkspace",
       security: bearerSecurity,
       parameters: [parameterRef("workspaceId")],
-      responses: responseSet({ "200": successResponse("Workspace left.", emptyStatus) }, { auth: true, conflict: true, notFound: true, validation: true }),
+      responses: responseSet(
+        { "200": successResponse("Workspace left.", emptyStatus) },
+        { auth: true, conflict: true, notFound: true, validation: true },
+      ),
     }),
   },
   "/api/v1/workspace-invitations/{token}/accept": {
@@ -663,7 +864,10 @@ const paths = {
       operationId: "acceptWorkspaceInvitation",
       security: bearerSecurity,
       parameters: [parameterRef("token")],
-      responses: responseSet({ "200": successResponse("Workspace invitation accepted.", ref("Workspace")) }, { auth: true, conflict: true, notFound: true, validation: true }),
+      responses: responseSet(
+        { "200": successResponse("Workspace invitation accepted.", ref("Workspace")) },
+        { auth: true, conflict: true, notFound: true, validation: true },
+      ),
     }),
   },
   "/api/v1/workspaces/{workspaceId}/accounts": {
@@ -674,7 +878,10 @@ const paths = {
       operationId: "listAccounts",
       security: bearerSecurity,
       parameters: [parameterRef("workspaceId")],
-      responses: responseSet({ "200": successResponse("Accounts retrieved.", { items: ref("Account"), type: "array" }) }, { auth: true, notFound: true, validation: true }),
+      responses: responseSet(
+        { "200": successResponse("Accounts retrieved.", { items: ref("Account"), type: "array" }) },
+        { auth: true, notFound: true, validation: true },
+      ),
     }),
     post: operation({
       tags: ["Accounts"],
@@ -698,11 +905,15 @@ const paths = {
     get: operation({
       tags: ["Accounts"],
       summary: "Get account summary",
-      description: "Returns account list plus asset, liability, and net-worth totals in minor units.",
+      description:
+        "Returns account list plus asset, liability, and net-worth totals in minor units.",
       operationId: "getAccountSummary",
       security: bearerSecurity,
       parameters: [parameterRef("workspaceId")],
-      responses: responseSet({ "200": successResponse("Account summary retrieved.", ref("AccountSummary")) }, { auth: true, notFound: true, validation: true }),
+      responses: responseSet(
+        { "200": successResponse("Account summary retrieved.", ref("AccountSummary")) },
+        { auth: true, notFound: true, validation: true },
+      ),
     }),
   },
   "/api/v1/workspaces/{workspaceId}/accounts/{accountId}": {
@@ -713,7 +924,10 @@ const paths = {
       operationId: "getAccount",
       security: bearerSecurity,
       parameters: [parameterRef("workspaceId"), parameterRef("accountId")],
-      responses: responseSet({ "200": successResponse("Account retrieved.", ref("Account")) }, { auth: true, notFound: true, validation: true }),
+      responses: responseSet(
+        { "200": successResponse("Account retrieved.", ref("Account")) },
+        { auth: true, notFound: true, validation: true },
+      ),
     }),
     patch: operation({
       tags: ["Accounts"],
@@ -723,7 +937,10 @@ const paths = {
       security: bearerSecurity,
       parameters: [parameterRef("workspaceId"), parameterRef("accountId")],
       requestBody: requestBody(ref("UpdateAccountRequest")),
-      responses: responseSet({ "200": successResponse("Account updated.", ref("Account")) }, { auth: true, conflict: true, notFound: true, validation: true }),
+      responses: responseSet(
+        { "200": successResponse("Account updated.", ref("Account")) },
+        { auth: true, conflict: true, notFound: true, validation: true },
+      ),
     }),
     delete: operation({
       tags: ["Accounts"],
@@ -732,7 +949,10 @@ const paths = {
       operationId: "deleteAccount",
       security: bearerSecurity,
       parameters: [parameterRef("workspaceId"), parameterRef("accountId")],
-      responses: responseSet({ "200": successResponse("Account archived.", ref("Account")) }, { auth: true, conflict: true, notFound: true, validation: true }),
+      responses: responseSet(
+        { "200": successResponse("Account archived.", ref("Account")) },
+        { auth: true, conflict: true, notFound: true, validation: true },
+      ),
     }),
   },
   "/api/v1/workspaces/{workspaceId}/accounts/{accountId}/archive": {
@@ -743,7 +963,10 @@ const paths = {
       operationId: "archiveAccount",
       security: bearerSecurity,
       parameters: [parameterRef("workspaceId"), parameterRef("accountId")],
-      responses: responseSet({ "200": successResponse("Account archived.", ref("Account")) }, { auth: true, conflict: true, notFound: true, validation: true }),
+      responses: responseSet(
+        { "200": successResponse("Account archived.", ref("Account")) },
+        { auth: true, conflict: true, notFound: true, validation: true },
+      ),
     }),
   },
   "/api/v1/workspaces/{workspaceId}/accounts/{accountId}/restore": {
@@ -754,7 +977,10 @@ const paths = {
       operationId: "restoreAccount",
       security: bearerSecurity,
       parameters: [parameterRef("workspaceId"), parameterRef("accountId")],
-      responses: responseSet({ "200": successResponse("Account restored.", ref("Account")) }, { auth: true, notFound: true, validation: true }),
+      responses: responseSet(
+        { "200": successResponse("Account restored.", ref("Account")) },
+        { auth: true, notFound: true, validation: true },
+      ),
     }),
   },
   "/api/v1/categories/system": {
@@ -763,8 +989,23 @@ const paths = {
       summary: "List system categories",
       description: "Lists read-only system income and expense categories. This endpoint is public.",
       operationId: "listSystemCategories",
-      parameters: [{ in: "query", name: "transactionType", required: false, schema: { enum: ["income", "expense"], type: "string" } }],
-      responses: responseSet({ "200": successResponse("System categories retrieved.", { items: ref("Category"), type: "array" }) }, { validation: true }),
+      parameters: [
+        {
+          in: "query",
+          name: "transactionType",
+          required: false,
+          schema: { enum: ["income", "expense"], type: "string" },
+        },
+      ],
+      responses: responseSet(
+        {
+          "200": successResponse("System categories retrieved.", {
+            items: ref("Category"),
+            type: "array",
+          }),
+        },
+        { validation: true },
+      ),
     }),
   },
   "/api/v1/workspaces/{workspaceId}/categories": {
@@ -775,7 +1016,15 @@ const paths = {
       operationId: "listWorkspaceCategories",
       security: bearerSecurity,
       parameters: [parameterRef("workspaceId")],
-      responses: responseSet({ "200": successResponse("Categories retrieved.", { items: ref("Category"), type: "array" }) }, { auth: true, notFound: true, validation: true }),
+      responses: responseSet(
+        {
+          "200": successResponse("Categories retrieved.", {
+            items: ref("Category"),
+            type: "array",
+          }),
+        },
+        { auth: true, notFound: true, validation: true },
+      ),
     }),
     post: operation({
       tags: ["Categories"],
@@ -785,51 +1034,134 @@ const paths = {
       security: bearerSecurity,
       parameters: [parameterRef("workspaceId")],
       requestBody: requestBody(ref("CreateCategoryRequest")),
-      responses: responseSet({ "201": successResponse("Category created.", ref("Category")) }, { auth: true, conflict: true, notFound: true, validation: true }),
+      responses: responseSet(
+        { "201": successResponse("Category created.", ref("Category")) },
+        { auth: true, conflict: true, notFound: true, validation: true },
+      ),
     }),
   },
   "/api/v1/workspaces/{workspaceId}/categories/{categoryId}": {
-    get: operation({ tags: ["Categories"], summary: "Get category", description: "Returns one workspace category.", operationId: "getWorkspaceCategory", security: bearerSecurity, parameters: [parameterRef("workspaceId"), parameterRef("categoryId")], responses: responseSet({ "200": successResponse("Category retrieved.", ref("Category")) }, { auth: true, notFound: true, validation: true }) }),
-    patch: operation({ tags: ["Categories"], summary: "Update category", description: "Updates a custom workspace category.", operationId: "updateWorkspaceCategory", security: bearerSecurity, parameters: [parameterRef("workspaceId"), parameterRef("categoryId")], requestBody: requestBody(ref("UpdateCategoryRequest")), responses: responseSet({ "200": successResponse("Category updated.", ref("Category")) }, { auth: true, conflict: true, notFound: true, validation: true }) }),
-    delete: operation({ tags: ["Categories"], summary: "Archive category", description: "Archives a category without breaking historical records.", operationId: "deleteWorkspaceCategory", security: bearerSecurity, parameters: [parameterRef("workspaceId"), parameterRef("categoryId")], responses: responseSet({ "200": successResponse("Category archived.", ref("Category")) }, { auth: true, conflict: true, notFound: true, validation: true }) }),
+    get: operation({
+      tags: ["Categories"],
+      summary: "Get category",
+      description: "Returns one workspace category.",
+      operationId: "getWorkspaceCategory",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), parameterRef("categoryId")],
+      responses: responseSet(
+        { "200": successResponse("Category retrieved.", ref("Category")) },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
+    patch: operation({
+      tags: ["Categories"],
+      summary: "Update category",
+      description: "Updates a custom workspace category.",
+      operationId: "updateWorkspaceCategory",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), parameterRef("categoryId")],
+      requestBody: requestBody(ref("UpdateCategoryRequest")),
+      responses: responseSet(
+        { "200": successResponse("Category updated.", ref("Category")) },
+        { auth: true, conflict: true, notFound: true, validation: true },
+      ),
+    }),
+    delete: operation({
+      tags: ["Categories"],
+      summary: "Archive category",
+      description: "Archives a category without breaking historical records.",
+      operationId: "deleteWorkspaceCategory",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), parameterRef("categoryId")],
+      responses: responseSet(
+        { "200": successResponse("Category archived.", ref("Category")) },
+        { auth: true, conflict: true, notFound: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/workspaces/{workspaceId}/categories/{categoryId}/archive": {
-    post: operation({ tags: ["Categories"], summary: "Archive category", description: "Archives a category without breaking historical records.", operationId: "archiveWorkspaceCategory", security: bearerSecurity, parameters: [parameterRef("workspaceId"), parameterRef("categoryId")], responses: responseSet({ "200": successResponse("Category archived.", ref("Category")) }, { auth: true, conflict: true, notFound: true, validation: true }) }),
+    post: operation({
+      tags: ["Categories"],
+      summary: "Archive category",
+      description: "Archives a category without breaking historical records.",
+      operationId: "archiveWorkspaceCategory",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), parameterRef("categoryId")],
+      responses: responseSet(
+        { "200": successResponse("Category archived.", ref("Category")) },
+        { auth: true, conflict: true, notFound: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/workspaces/{workspaceId}/categories/{categoryId}/restore": {
-    post: operation({ tags: ["Categories"], summary: "Restore category", description: "Restores an archived category.", operationId: "restoreWorkspaceCategory", security: bearerSecurity, parameters: [parameterRef("workspaceId"), parameterRef("categoryId")], responses: responseSet({ "200": successResponse("Category restored.", ref("Category")) }, { auth: true, notFound: true, validation: true }) }),
+    post: operation({
+      tags: ["Categories"],
+      summary: "Restore category",
+      description: "Restores an archived category.",
+      operationId: "restoreWorkspaceCategory",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), parameterRef("categoryId")],
+      responses: responseSet(
+        { "200": successResponse("Category restored.", ref("Category")) },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/workspaces/{workspaceId}/transactions": {
     get: operation({
       tags: ["Transactions"],
       summary: "List transactions",
-      description: "Lists workspace transactions with optional type, account, category, and date filters.",
+      description:
+        "Lists workspace transactions with optional type, account, category, and date filters.",
       operationId: "listTransactions",
       security: bearerSecurity,
-      parameters: [parameterRef("workspaceId"), parameterRef("transactionTypeQuery"), parameterRef("accountIdQuery"), parameterRef("categoryIdQuery"), parameterRef("fromQuery"), parameterRef("toQuery")],
-      responses: responseSet({ "200": successResponse("Transactions retrieved.", { items: ref("Transaction"), type: "array" }) }, { auth: true, notFound: true, validation: true }),
+      parameters: [
+        parameterRef("workspaceId"),
+        parameterRef("transactionTypeQuery"),
+        parameterRef("accountIdQuery"),
+        parameterRef("categoryIdQuery"),
+        parameterRef("fromQuery"),
+        parameterRef("toQuery"),
+      ],
+      responses: responseSet(
+        {
+          "200": successResponse("Transactions retrieved.", {
+            items: ref("Transaction"),
+            type: "array",
+          }),
+        },
+        { auth: true, notFound: true, validation: true },
+      ),
     }),
     post: operation({
       tags: ["Transactions"],
       summary: "Create transaction",
-      description: "Creates an income, expense, or transfer transaction. Transfers require a destination account and no category.",
+      description:
+        "Creates an income, expense, or transfer transaction. Transfers require a destination account and no category.",
       operationId: "createTransaction",
       security: bearerSecurity,
       parameters: [parameterRef("workspaceId")],
       requestBody: requestBody(ref("CreateTransactionRequest")),
-      responses: responseSet({ "201": successResponse("Transaction created.", ref("Transaction")) }, { auth: true, conflict: true, notFound: true, validation: true }),
+      responses: responseSet(
+        { "201": successResponse("Transaction created.", ref("Transaction")) },
+        { auth: true, conflict: true, notFound: true, validation: true },
+      ),
     }),
   },
   "/api/v1/workspaces/{workspaceId}/transactions/{transactionId}": {
     patch: operation({
       tags: ["Transactions"],
       summary: "Update transaction",
-      description: "Replaces an income, expense, or transfer transaction after validating workspace access, account ownership, and category rules.",
+      description:
+        "Replaces an income, expense, or transfer transaction after validating workspace access, account ownership, and category rules.",
       operationId: "updateTransaction",
       security: bearerSecurity,
       parameters: [parameterRef("workspaceId"), parameterRef("transactionId")],
       requestBody: requestBody(ref("UpdateTransactionRequest")),
-      responses: responseSet({ "200": successResponse("Transaction updated.", ref("Transaction")) }, { auth: true, conflict: true, notFound: true, validation: true }),
+      responses: responseSet(
+        { "200": successResponse("Transaction updated.", ref("Transaction")) },
+        { auth: true, conflict: true, notFound: true, validation: true },
+      ),
     }),
     delete: operation({
       tags: ["Transactions"],
@@ -838,99 +1170,583 @@ const paths = {
       operationId: "deleteTransaction",
       security: bearerSecurity,
       parameters: [parameterRef("workspaceId"), parameterRef("transactionId")],
-      responses: responseSet({ "200": successResponse("Transaction deleted.", ref("Transaction")) }, { auth: true, notFound: true, validation: true }),
+      responses: responseSet(
+        { "200": successResponse("Transaction deleted.", ref("Transaction")) },
+        { auth: true, notFound: true, validation: true },
+      ),
     }),
   },
   "/api/v1/workspaces/{workspaceId}/budgets": {
-    get: operation({ tags: ["Budgets"], summary: "List budgets", description: "Lists workspace budgets.", operationId: "listBudgets", security: bearerSecurity, parameters: [parameterRef("workspaceId")], responses: responseSet({ "200": successResponse("Budgets retrieved.", { items: ref("Budget"), type: "array" }) }, { auth: true, notFound: true, validation: true }) }),
-    post: operation({ tags: ["Budgets"], summary: "Create budget", description: "Creates a total or category budget for a period.", operationId: "createBudget", security: bearerSecurity, parameters: [parameterRef("workspaceId")], requestBody: requestBody(ref("CreateBudgetRequest")), responses: responseSet({ "201": successResponse("Budget created.", ref("Budget")) }, { auth: true, conflict: true, notFound: true, validation: true }) }),
+    get: operation({
+      tags: ["Budgets"],
+      summary: "List budgets",
+      description: "Lists workspace budgets.",
+      operationId: "listBudgets",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId")],
+      responses: responseSet(
+        { "200": successResponse("Budgets retrieved.", { items: ref("Budget"), type: "array" }) },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
+    post: operation({
+      tags: ["Budgets"],
+      summary: "Create budget",
+      description: "Creates a total or category budget for a period.",
+      operationId: "createBudget",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId")],
+      requestBody: requestBody(ref("CreateBudgetRequest")),
+      responses: responseSet(
+        { "201": successResponse("Budget created.", ref("Budget")) },
+        { auth: true, conflict: true, notFound: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/workspaces/{workspaceId}/budgets/summary": {
-    get: operation({ tags: ["Budgets"], summary: "Get budget summary", description: "Returns budget usage, remaining amounts, and overspending status.", operationId: "getBudgetSummary", security: bearerSecurity, parameters: [parameterRef("workspaceId")], responses: responseSet({ "200": successResponse("Budget summary retrieved.", ref("BudgetSummary")) }, { auth: true, notFound: true, validation: true }) }),
+    get: operation({
+      tags: ["Budgets"],
+      summary: "Get budget summary",
+      description: "Returns budget usage, remaining amounts, and overspending status.",
+      operationId: "getBudgetSummary",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId")],
+      responses: responseSet(
+        { "200": successResponse("Budget summary retrieved.", ref("BudgetSummary")) },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/workspaces/{workspaceId}/budgets/{budgetId}": {
-    get: operation({ tags: ["Budgets"], summary: "Get budget", description: "Returns one workspace budget.", operationId: "getBudget", security: bearerSecurity, parameters: [parameterRef("workspaceId"), parameterRef("budgetId")], responses: responseSet({ "200": successResponse("Budget retrieved.", ref("Budget")) }, { auth: true, notFound: true, validation: true }) }),
-    patch: operation({ tags: ["Budgets"], summary: "Update budget", description: "Updates a workspace budget.", operationId: "updateBudget", security: bearerSecurity, parameters: [parameterRef("workspaceId"), parameterRef("budgetId")], requestBody: requestBody(ref("UpdateBudgetRequest")), responses: responseSet({ "200": successResponse("Budget updated.", ref("Budget")) }, { auth: true, conflict: true, notFound: true, validation: true }) }),
-    delete: operation({ tags: ["Budgets"], summary: "Archive budget", description: "Archives a workspace budget.", operationId: "archiveBudget", security: bearerSecurity, parameters: [parameterRef("workspaceId"), parameterRef("budgetId")], responses: responseSet({ "200": successResponse("Budget archived.", ref("Budget")) }, { auth: true, notFound: true, validation: true }) }),
+    get: operation({
+      tags: ["Budgets"],
+      summary: "Get budget",
+      description: "Returns one workspace budget.",
+      operationId: "getBudget",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), parameterRef("budgetId")],
+      responses: responseSet(
+        { "200": successResponse("Budget retrieved.", ref("Budget")) },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
+    patch: operation({
+      tags: ["Budgets"],
+      summary: "Update budget",
+      description: "Updates a workspace budget.",
+      operationId: "updateBudget",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), parameterRef("budgetId")],
+      requestBody: requestBody(ref("UpdateBudgetRequest")),
+      responses: responseSet(
+        { "200": successResponse("Budget updated.", ref("Budget")) },
+        { auth: true, conflict: true, notFound: true, validation: true },
+      ),
+    }),
+    delete: operation({
+      tags: ["Budgets"],
+      summary: "Archive budget",
+      description: "Archives a workspace budget.",
+      operationId: "archiveBudget",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), parameterRef("budgetId")],
+      responses: responseSet(
+        { "200": successResponse("Budget archived.", ref("Budget")) },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/workspaces/{workspaceId}/goals": {
-    get: operation({ tags: ["Goals"], summary: "List goals", description: "Lists workspace savings and debt goals.", operationId: "listGoals", security: bearerSecurity, parameters: [parameterRef("workspaceId")], responses: responseSet({ "200": successResponse("Goals retrieved.", { items: ref("Goal"), type: "array" }) }, { auth: true, notFound: true, validation: true }) }),
-    post: operation({ tags: ["Goals"], summary: "Create goal", description: "Creates a savings or debt repayment goal.", operationId: "createGoal", security: bearerSecurity, parameters: [parameterRef("workspaceId")], requestBody: requestBody(ref("CreateGoalRequest")), responses: responseSet({ "201": successResponse("Goal created.", ref("Goal")) }, { auth: true, conflict: true, notFound: true, validation: true }) }),
+    get: operation({
+      tags: ["Goals"],
+      summary: "List goals",
+      description: "Lists workspace savings and debt goals.",
+      operationId: "listGoals",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId")],
+      responses: responseSet(
+        { "200": successResponse("Goals retrieved.", { items: ref("Goal"), type: "array" }) },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
+    post: operation({
+      tags: ["Goals"],
+      summary: "Create goal",
+      description: "Creates a savings or debt repayment goal.",
+      operationId: "createGoal",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId")],
+      requestBody: requestBody(ref("CreateGoalRequest")),
+      responses: responseSet(
+        { "201": successResponse("Goal created.", ref("Goal")) },
+        { auth: true, conflict: true, notFound: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/workspaces/{workspaceId}/goals/{goalId}": {
-    get: operation({ tags: ["Goals"], summary: "Get goal", description: "Returns one workspace goal.", operationId: "getGoal", security: bearerSecurity, parameters: [parameterRef("workspaceId"), parameterRef("goalId")], responses: responseSet({ "200": successResponse("Goal retrieved.", ref("Goal")) }, { auth: true, notFound: true, validation: true }) }),
-    patch: operation({ tags: ["Goals"], summary: "Update goal", description: "Updates goal fields or status.", operationId: "updateGoal", security: bearerSecurity, parameters: [parameterRef("workspaceId"), parameterRef("goalId")], requestBody: requestBody(ref("UpdateGoalRequest")), responses: responseSet({ "200": successResponse("Goal updated.", ref("Goal")) }, { auth: true, conflict: true, notFound: true, validation: true }) }),
-    delete: operation({ tags: ["Goals"], summary: "Archive goal", description: "Archives a workspace goal.", operationId: "archiveGoal", security: bearerSecurity, parameters: [parameterRef("workspaceId"), parameterRef("goalId")], responses: responseSet({ "200": successResponse("Goal archived.", ref("Goal")) }, { auth: true, notFound: true, validation: true }) }),
+    get: operation({
+      tags: ["Goals"],
+      summary: "Get goal",
+      description: "Returns one workspace goal.",
+      operationId: "getGoal",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), parameterRef("goalId")],
+      responses: responseSet(
+        { "200": successResponse("Goal retrieved.", ref("Goal")) },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
+    patch: operation({
+      tags: ["Goals"],
+      summary: "Update goal",
+      description: "Updates goal fields or status.",
+      operationId: "updateGoal",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), parameterRef("goalId")],
+      requestBody: requestBody(ref("UpdateGoalRequest")),
+      responses: responseSet(
+        { "200": successResponse("Goal updated.", ref("Goal")) },
+        { auth: true, conflict: true, notFound: true, validation: true },
+      ),
+    }),
+    delete: operation({
+      tags: ["Goals"],
+      summary: "Archive goal",
+      description: "Archives a workspace goal.",
+      operationId: "archiveGoal",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), parameterRef("goalId")],
+      responses: responseSet(
+        { "200": successResponse("Goal archived.", ref("Goal")) },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/workspaces/{workspaceId}/goals/{goalId}/contributions": {
-    post: operation({ tags: ["Goals"], summary: "Create goal contribution", description: "Adds a contribution to a goal.", operationId: "createGoalContribution", security: bearerSecurity, parameters: [parameterRef("workspaceId"), parameterRef("goalId")], requestBody: requestBody(ref("CreateContributionRequest")), responses: responseSet({ "201": successResponse("Goal contribution created.", ref("GoalContribution")) }, { auth: true, conflict: true, notFound: true, validation: true }) }),
+    post: operation({
+      tags: ["Goals"],
+      summary: "Create goal contribution",
+      description: "Adds a contribution to a goal.",
+      operationId: "createGoalContribution",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), parameterRef("goalId")],
+      requestBody: requestBody(ref("CreateContributionRequest")),
+      responses: responseSet(
+        { "201": successResponse("Goal contribution created.", ref("GoalContribution")) },
+        { auth: true, conflict: true, notFound: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/workspaces/{workspaceId}/goals/{goalId}/contributions/{contributionId}": {
-    delete: operation({ tags: ["Goals"], summary: "Delete goal contribution", description: "Soft-deletes a goal contribution.", operationId: "deleteGoalContribution", security: bearerSecurity, parameters: [parameterRef("workspaceId"), parameterRef("goalId"), parameterRef("contributionId")], responses: responseSet({ "200": successResponse("Goal contribution deleted.", emptyStatus) }, { auth: true, notFound: true, validation: true }) }),
+    delete: operation({
+      tags: ["Goals"],
+      summary: "Delete goal contribution",
+      description: "Soft-deletes a goal contribution.",
+      operationId: "deleteGoalContribution",
+      security: bearerSecurity,
+      parameters: [
+        parameterRef("workspaceId"),
+        parameterRef("goalId"),
+        parameterRef("contributionId"),
+      ],
+      responses: responseSet(
+        { "200": successResponse("Goal contribution deleted.", emptyStatus) },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/workspaces/{workspaceId}/bills": {
-    get: operation({ tags: ["Bills"], summary: "List bills", description: "Lists workspace bills.", operationId: "listBills", security: bearerSecurity, parameters: [parameterRef("workspaceId")], responses: responseSet({ "200": successResponse("Bills retrieved.", { items: ref("Bill"), type: "array" }) }, { auth: true, notFound: true, validation: true }) }),
-    post: operation({ tags: ["Bills"], summary: "Create bill", description: "Creates a bill with due date, amount, account, and optional recurrence.", operationId: "createBill", security: bearerSecurity, parameters: [parameterRef("workspaceId")], requestBody: requestBody(ref("CreateBillRequest")), responses: responseSet({ "201": successResponse("Bill created.", ref("Bill")) }, { auth: true, conflict: true, notFound: true, validation: true }) }),
+    get: operation({
+      tags: ["Bills"],
+      summary: "List bills",
+      description: "Lists workspace bills.",
+      operationId: "listBills",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId")],
+      responses: responseSet(
+        { "200": successResponse("Bills retrieved.", { items: ref("Bill"), type: "array" }) },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
+    post: operation({
+      tags: ["Bills"],
+      summary: "Create bill",
+      description: "Creates a bill with due date, amount, account, and optional recurrence.",
+      operationId: "createBill",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId")],
+      requestBody: requestBody(ref("CreateBillRequest")),
+      responses: responseSet(
+        { "201": successResponse("Bill created.", ref("Bill")) },
+        { auth: true, conflict: true, notFound: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/workspaces/{workspaceId}/bills/{billId}": {
-    get: operation({ tags: ["Bills"], summary: "Get bill", description: "Returns one workspace bill.", operationId: "getBill", security: bearerSecurity, parameters: [parameterRef("workspaceId"), parameterRef("billId")], responses: responseSet({ "200": successResponse("Bill retrieved.", ref("Bill")) }, { auth: true, notFound: true, validation: true }) }),
-    patch: operation({ tags: ["Bills"], summary: "Update bill", description: "Updates bill fields or status.", operationId: "updateBill", security: bearerSecurity, parameters: [parameterRef("workspaceId"), parameterRef("billId")], requestBody: requestBody(ref("UpdateBillRequest")), responses: responseSet({ "200": successResponse("Bill updated.", ref("Bill")) }, { auth: true, conflict: true, notFound: true, validation: true }) }),
-    delete: operation({ tags: ["Bills"], summary: "Archive bill", description: "Archives a workspace bill.", operationId: "archiveBill", security: bearerSecurity, parameters: [parameterRef("workspaceId"), parameterRef("billId")], responses: responseSet({ "200": successResponse("Bill archived.", ref("Bill")) }, { auth: true, notFound: true, validation: true }) }),
+    get: operation({
+      tags: ["Bills"],
+      summary: "Get bill",
+      description: "Returns one workspace bill.",
+      operationId: "getBill",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), parameterRef("billId")],
+      responses: responseSet(
+        { "200": successResponse("Bill retrieved.", ref("Bill")) },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
+    patch: operation({
+      tags: ["Bills"],
+      summary: "Update bill",
+      description: "Updates bill fields or status.",
+      operationId: "updateBill",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), parameterRef("billId")],
+      requestBody: requestBody(ref("UpdateBillRequest")),
+      responses: responseSet(
+        { "200": successResponse("Bill updated.", ref("Bill")) },
+        { auth: true, conflict: true, notFound: true, validation: true },
+      ),
+    }),
+    delete: operation({
+      tags: ["Bills"],
+      summary: "Archive bill",
+      description: "Archives a workspace bill.",
+      operationId: "archiveBill",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), parameterRef("billId")],
+      responses: responseSet(
+        { "200": successResponse("Bill archived.", ref("Bill")) },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/workspaces/{workspaceId}/bills/{billId}/mark-paid": {
-    post: operation({ tags: ["Bills"], summary: "Mark bill paid", description: "Marks a bill as paid and links payment behavior implemented by the service.", operationId: "markBillPaid", security: bearerSecurity, parameters: [parameterRef("workspaceId"), parameterRef("billId")], responses: responseSet({ "200": successResponse("Bill marked paid.", ref("Bill")) }, { auth: true, conflict: true, notFound: true, validation: true }) }),
+    post: operation({
+      tags: ["Bills"],
+      summary: "Mark bill paid",
+      description: "Marks a bill as paid and links payment behavior implemented by the service.",
+      operationId: "markBillPaid",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), parameterRef("billId")],
+      responses: responseSet(
+        { "200": successResponse("Bill marked paid.", ref("Bill")) },
+        { auth: true, conflict: true, notFound: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/workspaces/{workspaceId}/recurring-transactions": {
-    get: operation({ tags: ["Recurring Transactions"], summary: "List recurring transactions", description: "Lists recurring transaction templates for a workspace.", operationId: "listRecurringTransactions", security: bearerSecurity, parameters: [parameterRef("workspaceId")], responses: responseSet({ "200": successResponse("Recurring transactions retrieved.", { items: ref("RecurringTransaction"), type: "array" }) }, { auth: true, notFound: true, validation: true }) }),
-    post: operation({ tags: ["Recurring Transactions"], summary: "Create recurring transaction", description: "Creates an income, expense, or transfer recurrence template.", operationId: "createRecurringTransaction", security: bearerSecurity, parameters: [parameterRef("workspaceId")], requestBody: requestBody(ref("CreateRecurringTransactionRequest")), responses: responseSet({ "201": successResponse("Recurring transaction created.", ref("RecurringTransaction")) }, { auth: true, conflict: true, notFound: true, validation: true }) }),
+    get: operation({
+      tags: ["Recurring Transactions"],
+      summary: "List recurring transactions",
+      description: "Lists recurring transaction templates for a workspace.",
+      operationId: "listRecurringTransactions",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId")],
+      responses: responseSet(
+        {
+          "200": successResponse("Recurring transactions retrieved.", {
+            items: ref("RecurringTransaction"),
+            type: "array",
+          }),
+        },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
+    post: operation({
+      tags: ["Recurring Transactions"],
+      summary: "Create recurring transaction",
+      description: "Creates an income, expense, or transfer recurrence template.",
+      operationId: "createRecurringTransaction",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId")],
+      requestBody: requestBody(ref("CreateRecurringTransactionRequest")),
+      responses: responseSet(
+        { "201": successResponse("Recurring transaction created.", ref("RecurringTransaction")) },
+        { auth: true, conflict: true, notFound: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/workspaces/{workspaceId}/recurring-transactions/{recurringTransactionId}": {
-    get: operation({ tags: ["Recurring Transactions"], summary: "Get recurring transaction", description: "Returns one recurrence template.", operationId: "getRecurringTransaction", security: bearerSecurity, parameters: [parameterRef("workspaceId"), parameterRef("recurringTransactionId")], responses: responseSet({ "200": successResponse("Recurring transaction retrieved.", ref("RecurringTransaction")) }, { auth: true, notFound: true, validation: true }) }),
-    patch: operation({ tags: ["Recurring Transactions"], summary: "Update recurring transaction", description: "Updates a recurrence template.", operationId: "updateRecurringTransaction", security: bearerSecurity, parameters: [parameterRef("workspaceId"), parameterRef("recurringTransactionId")], requestBody: requestBody(ref("UpdateRecurringTransactionRequest")), responses: responseSet({ "200": successResponse("Recurring transaction updated.", ref("RecurringTransaction")) }, { auth: true, conflict: true, notFound: true, validation: true }) }),
-    delete: operation({ tags: ["Recurring Transactions"], summary: "Archive recurring transaction", description: "Archives a recurrence template.", operationId: "archiveRecurringTransaction", security: bearerSecurity, parameters: [parameterRef("workspaceId"), parameterRef("recurringTransactionId")], responses: responseSet({ "200": successResponse("Recurring transaction archived.", ref("RecurringTransaction")) }, { auth: true, notFound: true, validation: true }) }),
+    get: operation({
+      tags: ["Recurring Transactions"],
+      summary: "Get recurring transaction",
+      description: "Returns one recurrence template.",
+      operationId: "getRecurringTransaction",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), parameterRef("recurringTransactionId")],
+      responses: responseSet(
+        { "200": successResponse("Recurring transaction retrieved.", ref("RecurringTransaction")) },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
+    patch: operation({
+      tags: ["Recurring Transactions"],
+      summary: "Update recurring transaction",
+      description: "Updates a recurrence template.",
+      operationId: "updateRecurringTransaction",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), parameterRef("recurringTransactionId")],
+      requestBody: requestBody(ref("UpdateRecurringTransactionRequest")),
+      responses: responseSet(
+        { "200": successResponse("Recurring transaction updated.", ref("RecurringTransaction")) },
+        { auth: true, conflict: true, notFound: true, validation: true },
+      ),
+    }),
+    delete: operation({
+      tags: ["Recurring Transactions"],
+      summary: "Archive recurring transaction",
+      description: "Archives a recurrence template.",
+      operationId: "archiveRecurringTransaction",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), parameterRef("recurringTransactionId")],
+      responses: responseSet(
+        { "200": successResponse("Recurring transaction archived.", ref("RecurringTransaction")) },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/workspaces/{workspaceId}/recurring-transactions/{recurringTransactionId}/pause": {
-    post: operation({ tags: ["Recurring Transactions"], summary: "Pause recurring transaction", description: "Pauses a recurrence template.", operationId: "pauseRecurringTransaction", security: bearerSecurity, parameters: [parameterRef("workspaceId"), parameterRef("recurringTransactionId")], responses: responseSet({ "200": successResponse("Recurring transaction paused.", ref("RecurringTransaction")) }, { auth: true, notFound: true, validation: true }) }),
+    post: operation({
+      tags: ["Recurring Transactions"],
+      summary: "Pause recurring transaction",
+      description: "Pauses a recurrence template.",
+      operationId: "pauseRecurringTransaction",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), parameterRef("recurringTransactionId")],
+      responses: responseSet(
+        { "200": successResponse("Recurring transaction paused.", ref("RecurringTransaction")) },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/workspaces/{workspaceId}/recurring-transactions/{recurringTransactionId}/resume": {
-    post: operation({ tags: ["Recurring Transactions"], summary: "Resume recurring transaction", description: "Resumes a paused recurrence template.", operationId: "resumeRecurringTransaction", security: bearerSecurity, parameters: [parameterRef("workspaceId"), parameterRef("recurringTransactionId")], responses: responseSet({ "200": successResponse("Recurring transaction resumed.", ref("RecurringTransaction")) }, { auth: true, notFound: true, validation: true }) }),
+    post: operation({
+      tags: ["Recurring Transactions"],
+      summary: "Resume recurring transaction",
+      description: "Resumes a paused recurrence template.",
+      operationId: "resumeRecurringTransaction",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), parameterRef("recurringTransactionId")],
+      responses: responseSet(
+        { "200": successResponse("Recurring transaction resumed.", ref("RecurringTransaction")) },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/workspaces/{workspaceId}/reports/summary": {
-    get: operation({ tags: ["Reports"], summary: "Get report summary", description: "Returns income, expense, and net savings totals for a report period.", operationId: "getReportSummary", security: bearerSecurity, parameters: [parameterRef("workspaceId"), ...reportFilters], responses: responseSet({ "200": successResponse("Report summary retrieved.", ref("ReportSummary")) }, { auth: true, notFound: true, validation: true }) }),
+    get: operation({
+      tags: ["Reports"],
+      summary: "Get report summary",
+      description: "Returns income, expense, and net savings totals for a report period.",
+      operationId: "getReportSummary",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), ...reportFilters],
+      responses: responseSet(
+        { "200": successResponse("Report summary retrieved.", ref("ReportSummary")) },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/workspaces/{workspaceId}/reports/categories": {
-    get: operation({ tags: ["Reports"], summary: "Get category report", description: "Returns expense category breakdown for a report period.", operationId: "getReportCategories", security: bearerSecurity, parameters: [parameterRef("workspaceId"), ...reportFilters], responses: responseSet({ "200": successResponse("Category report retrieved.", ref("CategoryReport")) }, { auth: true, notFound: true, validation: true }) }),
+    get: operation({
+      tags: ["Reports"],
+      summary: "Get category report",
+      description: "Returns expense category breakdown for a report period.",
+      operationId: "getReportCategories",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), ...reportFilters],
+      responses: responseSet(
+        { "200": successResponse("Category report retrieved.", ref("CategoryReport")) },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/workspaces/{workspaceId}/reports/cash-flow": {
-    get: operation({ tags: ["Reports"], summary: "Get cash-flow report", description: "Returns cash-flow points for a report period.", operationId: "getReportCashFlow", security: bearerSecurity, parameters: [parameterRef("workspaceId"), ...reportFilters], responses: responseSet({ "200": successResponse("Cash-flow report retrieved.", ref("CashFlowReport")) }, { auth: true, notFound: true, validation: true }) }),
+    get: operation({
+      tags: ["Reports"],
+      summary: "Get cash-flow report",
+      description: "Returns cash-flow points for a report period.",
+      operationId: "getReportCashFlow",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), ...reportFilters],
+      responses: responseSet(
+        { "200": successResponse("Cash-flow report retrieved.", ref("CashFlowReport")) },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/workspaces/{workspaceId}/reports/exports": {
-    post: operation({ tags: ["Reports"], summary: "Create report export", description: "Generates a CSV report export.", operationId: "createReportExport", security: bearerSecurity, parameters: [parameterRef("workspaceId")], requestBody: requestBody(ref("CreateReportExportRequest")), responses: responseSet({ "201": successResponse("Report export created.", ref("ReportExport")) }, { auth: true, conflict: true, notFound: true, validation: true }) }),
+    post: operation({
+      tags: ["Reports"],
+      summary: "Create report export",
+      description: "Generates a CSV report export.",
+      operationId: "createReportExport",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId")],
+      requestBody: requestBody(ref("CreateReportExportRequest")),
+      responses: responseSet(
+        { "201": successResponse("Report export created.", ref("ReportExport")) },
+        { auth: true, conflict: true, notFound: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/workspaces/{workspaceId}/reports/exports/{exportId}": {
-    get: operation({ tags: ["Reports"], summary: "Get report export", description: "Returns export status and metadata.", operationId: "getReportExport", security: bearerSecurity, parameters: [parameterRef("workspaceId"), parameterRef("exportId")], responses: responseSet({ "200": successResponse("Report export retrieved.", ref("ReportExport")) }, { auth: true, notFound: true, validation: true }) }),
+    get: operation({
+      tags: ["Reports"],
+      summary: "Get report export",
+      description: "Returns export status and metadata.",
+      operationId: "getReportExport",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), parameterRef("exportId")],
+      responses: responseSet(
+        { "200": successResponse("Report export retrieved.", ref("ReportExport")) },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/workspaces/{workspaceId}/reports/exports/{exportId}/download": {
-    get: operation({ tags: ["Reports"], summary: "Download report export", description: "Downloads a generated CSV report export after membership authorization.", operationId: "downloadReportExport", security: bearerSecurity, parameters: [parameterRef("workspaceId"), parameterRef("exportId")], responses: responseSet({ "200": binaryResponse("CSV report export.", "text/csv") }, { auth: true, notFound: true, validation: true }) }),
+    get: operation({
+      tags: ["Reports"],
+      summary: "Download report export",
+      description: "Downloads a generated CSV report export after membership authorization.",
+      operationId: "downloadReportExport",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), parameterRef("exportId")],
+      responses: responseSet(
+        { "200": binaryResponse("CSV report export.", "text/csv") },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
+  },
+  "/api/v1/workspaces/{workspaceId}/flow/chat": {
+    post: operation({
+      tags: ["Flow"],
+      summary: "Chat with Flow",
+      description:
+        "Runs a protected read-only Flow assistant turn through the configured local model and allowlisted MCP-style tools. Flow can search transactions and summarize reports, but it does not create, update, or delete financial records.",
+      operationId: "chatWithFlow",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId")],
+      requestBody: requestBody(ref("FlowChatRequest")),
+      responses: responseSet(
+        { "200": successResponse("Flow response generated.", ref("FlowChatResponse")) },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/notifications": {
-    get: operation({ tags: ["Notifications"], summary: "List notifications", description: "Lists notifications for the authenticated user.", operationId: "listNotifications", security: bearerSecurity, responses: responseSet({ "200": successResponse("Notifications retrieved.", { items: ref("Notification"), type: "array" }) }, { auth: true }) }),
+    get: operation({
+      tags: ["Notifications"],
+      summary: "List notifications",
+      description: "Lists notifications for the authenticated user.",
+      operationId: "listNotifications",
+      security: bearerSecurity,
+      responses: responseSet(
+        {
+          "200": successResponse("Notifications retrieved.", {
+            items: ref("Notification"),
+            type: "array",
+          }),
+        },
+        { auth: true },
+      ),
+    }),
   },
   "/api/v1/notifications/{notificationId}/read": {
-    patch: operation({ tags: ["Notifications"], summary: "Mark notification read", description: "Marks one notification as read.", operationId: "markNotificationRead", security: bearerSecurity, parameters: [parameterRef("notificationId")], responses: responseSet({ "200": successResponse("Notification marked read.", ref("Notification")) }, { auth: true, notFound: true, validation: true }) }),
+    patch: operation({
+      tags: ["Notifications"],
+      summary: "Mark notification read",
+      description: "Marks one notification as read.",
+      operationId: "markNotificationRead",
+      security: bearerSecurity,
+      parameters: [parameterRef("notificationId")],
+      responses: responseSet(
+        { "200": successResponse("Notification marked read.", ref("Notification")) },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/notifications/read-all": {
-    post: operation({ tags: ["Notifications"], summary: "Mark all notifications read", description: "Marks all notifications for the authenticated user as read.", operationId: "markAllNotificationsRead", security: bearerSecurity, responses: responseSet({ "200": successResponse("Notifications marked read.", emptyStatus) }, { auth: true }) }),
+    post: operation({
+      tags: ["Notifications"],
+      summary: "Mark all notifications read",
+      description: "Marks all notifications for the authenticated user as read.",
+      operationId: "markAllNotificationsRead",
+      security: bearerSecurity,
+      responses: responseSet(
+        { "200": successResponse("Notifications marked read.", emptyStatus) },
+        { auth: true },
+      ),
+    }),
   },
   "/api/v1/users/me/notification-preferences": {
-    get: operation({ tags: ["Notifications"], summary: "Get notification preferences", description: "Returns notification preferences for the authenticated user.", operationId: "getNotificationPreferences", security: bearerSecurity, responses: responseSet({ "200": successResponse("Notification preferences retrieved.", ref("NotificationPreferences")) }, { auth: true }) }),
-    patch: operation({ tags: ["Notifications"], summary: "Update notification preferences", description: "Updates notification preferences for the authenticated user.", operationId: "updateNotificationPreferences", security: bearerSecurity, requestBody: requestBody(ref("UpdateNotificationPreferencesRequest")), responses: responseSet({ "200": successResponse("Notification preferences updated.", ref("NotificationPreferences")) }, { auth: true, validation: true }) }),
+    get: operation({
+      tags: ["Notifications"],
+      summary: "Get notification preferences",
+      description: "Returns notification preferences for the authenticated user.",
+      operationId: "getNotificationPreferences",
+      security: bearerSecurity,
+      responses: responseSet(
+        {
+          "200": successResponse(
+            "Notification preferences retrieved.",
+            ref("NotificationPreferences"),
+          ),
+        },
+        { auth: true },
+      ),
+    }),
+    patch: operation({
+      tags: ["Notifications"],
+      summary: "Update notification preferences",
+      description: "Updates notification preferences for the authenticated user.",
+      operationId: "updateNotificationPreferences",
+      security: bearerSecurity,
+      requestBody: requestBody(ref("UpdateNotificationPreferencesRequest")),
+      responses: responseSet(
+        {
+          "200": successResponse(
+            "Notification preferences updated.",
+            ref("NotificationPreferences"),
+          ),
+        },
+        { auth: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/flow-launch-subscriptions": {
-    post: operation({ tags: ["Notifications"], summary: "Subscribe to Flow launch", description: "Creates a consented Flow launch notification subscription. This endpoint is public.", operationId: "createFlowLaunchSubscription", requestBody: requestBody(ref("FlowLaunchSubscriptionRequest")), responses: responseSet({ "201": successResponse("Flow launch subscription created.", ref("FlowLaunchSubscription")) }, { conflict: true, validation: true }) }),
+    post: operation({
+      tags: ["Notifications"],
+      summary: "Subscribe to Flow launch",
+      description:
+        "Creates a consented Flow launch notification subscription. This endpoint is public.",
+      operationId: "createFlowLaunchSubscription",
+      requestBody: requestBody(ref("FlowLaunchSubscriptionRequest")),
+      responses: responseSet(
+        {
+          "201": successResponse(
+            "Flow launch subscription created.",
+            ref("FlowLaunchSubscription"),
+          ),
+        },
+        { conflict: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/flow-launch-subscriptions/{token}": {
-    delete: operation({ tags: ["Notifications"], summary: "Unsubscribe from Flow launch", description: "Unsubscribes from Flow launch notifications using the opaque unsubscribe token.", operationId: "unsubscribeFlowLaunch", parameters: [parameterRef("token")], responses: responseSet({ "200": successResponse("Flow launch subscription removed.", emptyStatus) }, { notFound: true, validation: true }) }),
+    delete: operation({
+      tags: ["Notifications"],
+      summary: "Unsubscribe from Flow launch",
+      description:
+        "Unsubscribes from Flow launch notifications using the opaque unsubscribe token.",
+      operationId: "unsubscribeFlowLaunch",
+      parameters: [parameterRef("token")],
+      responses: responseSet(
+        { "200": successResponse("Flow launch subscription removed.", emptyStatus) },
+        { notFound: true, validation: true },
+      ),
+    }),
   },
   "/api/v1/feedback": {
     post: operation({
@@ -939,7 +1755,10 @@ const paths = {
       description: "Creates anonymous public feedback. Guest finance data must not be included.",
       operationId: "createFeedback",
       requestBody: requestBody(ref("CreateFeedbackRequest")),
-      responses: responseSet({ "201": successResponse("Feedback received.", ref("Feedback")) }, { rateLimit: true, validation: true }),
+      responses: responseSet(
+        { "201": successResponse("Feedback received.", ref("Feedback")) },
+        { rateLimit: true, validation: true },
+      ),
     }),
   },
 };
@@ -956,7 +1775,11 @@ export const openApiDocument = {
   tags: [
     { name: "Health", description: "Operational health checks." },
     { name: "OpenAPI", description: "API contract." },
-    { name: "Auth", description: "Registration, login, session rotation, logout, verification, and password recovery." },
+    {
+      name: "Auth",
+      description:
+        "Registration, login, session rotation, logout, verification, and password recovery.",
+    },
     { name: "Users", description: "Current user profile, sessions, and guest migration." },
     { name: "Guest Migrations", description: "Explicit guest-to-account data migration." },
     { name: "Workspaces", description: "Personal and family workspace lifecycle." },
@@ -969,6 +1792,7 @@ export const openApiDocument = {
     { name: "Bills", description: "Bills, due dates, recurrence, and paid status." },
     { name: "Recurring Transactions", description: "Recurring transaction templates." },
     { name: "Reports", description: "Summary, category, cash-flow, and CSV export reports." },
+    { name: "Flow", description: "Protected AI assistant chat and MCP-style finance tools." },
     { name: "Notifications", description: "Notifications, preferences, and Flow launch consent." },
     { name: "Feedback", description: "Public feedback submission." },
   ],
@@ -986,21 +1810,66 @@ export const openApiDocument = {
       workspaceId: { in: "path", name: "workspaceId", required: true, schema: { type: "string" } },
       accountId: { in: "path", name: "accountId", required: true, schema: { type: "string" } },
       categoryId: { in: "path", name: "categoryId", required: true, schema: { type: "string" } },
-      transactionId: { in: "path", name: "transactionId", required: true, schema: { type: "string" } },
+      transactionId: {
+        in: "path",
+        name: "transactionId",
+        required: true,
+        schema: { type: "string" },
+      },
       budgetId: { in: "path", name: "budgetId", required: true, schema: { type: "string" } },
       goalId: { in: "path", name: "goalId", required: true, schema: { type: "string" } },
-      contributionId: { in: "path", name: "contributionId", required: true, schema: { type: "string" } },
+      contributionId: {
+        in: "path",
+        name: "contributionId",
+        required: true,
+        schema: { type: "string" },
+      },
       billId: { in: "path", name: "billId", required: true, schema: { type: "string" } },
-      recurringTransactionId: { in: "path", name: "recurringTransactionId", required: true, schema: { type: "string" } },
+      recurringTransactionId: {
+        in: "path",
+        name: "recurringTransactionId",
+        required: true,
+        schema: { type: "string" },
+      },
       exportId: { in: "path", name: "exportId", required: true, schema: { type: "string" } },
       sessionId: { in: "path", name: "sessionId", required: true, schema: { type: "string" } },
-      notificationId: { in: "path", name: "notificationId", required: true, schema: { type: "string" } },
+      notificationId: {
+        in: "path",
+        name: "notificationId",
+        required: true,
+        schema: { type: "string" },
+      },
       userId: { in: "path", name: "userId", required: true, schema: { type: "string" } },
-      token: { in: "path", name: "token", required: true, schema: { maxLength: 255, minLength: 20, type: "string" } },
-      idempotencyKey: { in: "header", name: "Idempotency-Key", required: true, schema: { maxLength: 200, minLength: 1, type: "string" } },
-      transactionTypeQuery: { in: "query", name: "type", required: false, schema: { enum: ["income", "expense", "transfer"], type: "string" } },
-      accountIdQuery: { in: "query", name: "accountId", required: false, schema: { type: "string" } },
-      categoryIdQuery: { in: "query", name: "categoryId", required: false, schema: { type: "string" } },
+      token: {
+        in: "path",
+        name: "token",
+        required: true,
+        schema: { maxLength: 255, minLength: 20, type: "string" },
+      },
+      idempotencyKey: {
+        in: "header",
+        name: "Idempotency-Key",
+        required: true,
+        schema: { maxLength: 200, minLength: 1, type: "string" },
+      },
+      transactionTypeQuery: {
+        in: "query",
+        name: "type",
+        required: false,
+        schema: { enum: ["income", "expense", "transfer"], type: "string" },
+      },
+      accountIdQuery: {
+        in: "query",
+        name: "accountId",
+        required: false,
+        schema: { type: "string" },
+      },
+      categoryIdQuery: {
+        in: "query",
+        name: "categoryId",
+        required: false,
+        schema: { type: "string" },
+      },
       fromQuery: { in: "query", name: "from", required: false, schema: dateOnly },
       toQuery: { in: "query", name: "to", required: false, schema: dateOnly },
     },
@@ -1069,7 +1938,14 @@ export const openApiDocument = {
       },
       PaginationMeta: {
         type: "object",
-        required: ["page", "pageSize", "totalItems", "totalPages", "hasNextPage", "hasPreviousPage"],
+        required: [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages",
+          "hasNextPage",
+          "hasPreviousPage",
+        ],
         properties: {
           page: { minimum: 1, type: "integer" },
           pageSize: { maximum: 100, minimum: 1, type: "integer" },
@@ -1079,9 +1955,21 @@ export const openApiDocument = {
           hasPreviousPage: { type: "boolean" },
         },
       },
+      FlowChatRequest: flowChatRequest,
+      FlowChatResponse: flowChatResponse,
       User: {
         type: "object",
-        required: ["id", "email", "displayName", "locale", "preferredCurrency", "theme", "timezone", "createdAt", "updatedAt"],
+        required: [
+          "id",
+          "email",
+          "displayName",
+          "locale",
+          "preferredCurrency",
+          "theme",
+          "timezone",
+          "createdAt",
+          "updatedAt",
+        ],
         properties: {
           id,
           email: { format: "email", type: "string" },
@@ -1133,11 +2021,24 @@ export const openApiDocument = {
       },
       Account: {
         type: "object",
-        required: ["id", "name", "type", "openingBalance", "currentBalance", "currency", "isArchived", "createdAt", "updatedAt"],
+        required: [
+          "id",
+          "name",
+          "type",
+          "openingBalance",
+          "currentBalance",
+          "currency",
+          "isArchived",
+          "createdAt",
+          "updatedAt",
+        ],
         properties: {
           id,
           name: { type: "string" },
-          type: { enum: ["cash", "bank", "credit_card", "loan", "wallet", "other"], type: "string" },
+          type: {
+            enum: ["cash", "bank", "credit_card", "loan", "wallet", "other"],
+            type: "string",
+          },
           openingBalance: { type: "string" },
           currentBalance: { type: "string" },
           currency: { pattern: "^[A-Z]{3}$", type: "string" },
@@ -1176,7 +2077,17 @@ export const openApiDocument = {
       },
       Transaction: {
         type: "object",
-        required: ["id", "workspaceId", "type", "amount", "currency", "accountId", "transactionDate", "createdAt", "updatedAt"],
+        required: [
+          "id",
+          "workspaceId",
+          "type",
+          "amount",
+          "currency",
+          "accountId",
+          "transactionDate",
+          "createdAt",
+          "updatedAt",
+        ],
         properties: {
           id,
           workspaceId: { type: "string" },
@@ -1289,7 +2200,8 @@ export const openApiDocument = {
       },
       Attachment: {
         type: "object",
-        description: "Reusable schema reserved for attachment APIs. Attachment endpoints are not implemented in this backend yet.",
+        description:
+          "Reusable schema reserved for attachment APIs. Attachment endpoints are not implemented in this backend yet.",
         properties: {
           id,
           workspaceId: { type: "string" },
@@ -1343,7 +2255,8 @@ export const openApiDocument = {
       },
       AuditLog: {
         type: "object",
-        description: "Reusable schema for audit records. Public audit-log APIs are not implemented in this backend yet.",
+        description:
+          "Reusable schema for audit records. Public audit-log APIs are not implemented in this backend yet.",
         properties: {
           id,
           actorUserId: { nullable: true, type: "string" },
@@ -1361,7 +2274,14 @@ export const openApiDocument = {
         properties: {
           currency: { pattern: "^[A-Z]{3}$", type: "string" },
           period: ref("ReportPeriod"),
-          totals: { type: "object", properties: { incomeMinor: { type: "string" }, expenseMinor: { type: "string" }, netSavingsMinor: { type: "string" } } },
+          totals: {
+            type: "object",
+            properties: {
+              incomeMinor: { type: "string" },
+              expenseMinor: { type: "string" },
+              netSavingsMinor: { type: "string" },
+            },
+          },
           recentTransactions: { items: ref("Transaction"), type: "array" },
         },
       },
@@ -1370,7 +2290,18 @@ export const openApiDocument = {
         properties: {
           currency: { pattern: "^[A-Z]{3}$", type: "string" },
           period: ref("ReportPeriod"),
-          categories: { items: { type: "object", properties: { categoryId: { type: "string" }, categoryName: { type: "string" }, amountMinor: { type: "string" }, percentage: { type: "number" } } }, type: "array" },
+          categories: {
+            items: {
+              type: "object",
+              properties: {
+                categoryId: { type: "string" },
+                categoryName: { type: "string" },
+                amountMinor: { type: "string" },
+                percentage: { type: "number" },
+              },
+            },
+            type: "array",
+          },
         },
       },
       CashFlowReport: {
@@ -1378,7 +2309,18 @@ export const openApiDocument = {
         properties: {
           currency: { pattern: "^[A-Z]{3}$", type: "string" },
           period: ref("ReportPeriod"),
-          points: { items: { type: "object", properties: { date: dateOnly, incomeMinor: { type: "string" }, expenseMinor: { type: "string" }, netMinor: { type: "string" } } }, type: "array" },
+          points: {
+            items: {
+              type: "object",
+              properties: {
+                date: dateOnly,
+                incomeMinor: { type: "string" },
+                expenseMinor: { type: "string" },
+                netMinor: { type: "string" },
+              },
+            },
+            type: "array",
+          },
         },
       },
       ReportPeriod: {
@@ -1422,23 +2364,103 @@ export const openApiDocument = {
           email: { format: "email", type: "string" },
           locale: { example: "en-IN", type: "string" },
           password: { minLength: 12, type: "string", writeOnly: true },
-          preferredCurrency: { enum: ["USD", "EUR", "GBP", "INR", "CAD", "AUD", "SGD"], type: "string" },
+          preferredCurrency: {
+            enum: ["USD", "EUR", "GBP", "INR", "CAD", "AUD", "SGD"],
+            type: "string",
+          },
           theme: { default: "system", enum: ["system", "light", "dark"], type: "string" },
           timezone: { example: "Asia/Kolkata", type: "string" },
         },
       },
-      RegisterResult: { type: "object", properties: { status: { example: "pending_verification", type: "string" }, debugToken: { description: "Only returned outside production.", type: "string" } } },
-      LoginRequest: { type: "object", required: ["email", "password"], properties: { deviceName: { maxLength: 80, minLength: 1, type: "string" }, email: { format: "email", type: "string" }, password: { type: "string", writeOnly: true } } },
-      AuthSession: { type: "object", required: ["accessToken", "user", "workspaces"], properties: { accessToken: { type: "string" }, user: ref("User"), workspaces: { items: ref("Workspace"), type: "array" } } },
-      VerifyEmailResult: { type: "object", required: ["accessToken", "user", "workspace"], properties: { accessToken: { type: "string" }, user: ref("User"), workspace: ref("Workspace") } },
-      RefreshResult: { type: "object", required: ["accessToken"], properties: { accessToken: { type: "string" } } },
-      TokenRequest: { type: "object", required: ["token"], properties: { token: { maxLength: 255, minLength: 20, type: "string" } } },
-      EmailRequest: { type: "object", required: ["email"], properties: { email: { format: "email", type: "string" } } },
-      DebugTokenResult: { type: "object", properties: { status: { type: "string" }, debugToken: { description: "Only returned outside production.", type: "string" } } },
-      ResetPasswordRequest: { type: "object", required: ["password", "token"], properties: { password: { minLength: 12, type: "string", writeOnly: true }, token: { maxLength: 255, minLength: 20, type: "string" } } },
-      UpdateUserRequest: { type: "object", minProperties: 1, properties: { displayName: { maxLength: 80, minLength: 1, type: "string" }, locale: { type: "string" }, preferredCurrency: { enum: ["USD", "EUR", "GBP", "INR", "CAD", "AUD", "SGD"], type: "string" }, theme: { enum: ["system", "light", "dark"], type: "string" }, timezone: { type: "string" } } },
+      RegisterResult: {
+        type: "object",
+        properties: {
+          status: { example: "pending_verification", type: "string" },
+          debugToken: { description: "Only returned outside production.", type: "string" },
+        },
+      },
+      LoginRequest: {
+        type: "object",
+        required: ["email", "password"],
+        properties: {
+          deviceName: { maxLength: 80, minLength: 1, type: "string" },
+          email: { format: "email", type: "string" },
+          password: { type: "string", writeOnly: true },
+        },
+      },
+      AuthSession: {
+        type: "object",
+        required: ["accessToken", "user", "workspaces"],
+        properties: {
+          accessToken: { type: "string" },
+          user: ref("User"),
+          workspaces: { items: ref("Workspace"), type: "array" },
+        },
+      },
+      VerifyEmailResult: {
+        type: "object",
+        required: ["accessToken", "user", "workspace"],
+        properties: {
+          accessToken: { type: "string" },
+          user: ref("User"),
+          workspace: ref("Workspace"),
+        },
+      },
+      RefreshResult: {
+        type: "object",
+        required: ["accessToken"],
+        properties: { accessToken: { type: "string" } },
+      },
+      TokenRequest: {
+        type: "object",
+        required: ["token"],
+        properties: { token: { maxLength: 255, minLength: 20, type: "string" } },
+      },
+      EmailRequest: {
+        type: "object",
+        required: ["email"],
+        properties: { email: { format: "email", type: "string" } },
+      },
+      DebugTokenResult: {
+        type: "object",
+        properties: {
+          status: { type: "string" },
+          debugToken: { description: "Only returned outside production.", type: "string" },
+        },
+      },
+      ResetPasswordRequest: {
+        type: "object",
+        required: ["password", "token"],
+        properties: {
+          password: { minLength: 12, type: "string", writeOnly: true },
+          token: { maxLength: 255, minLength: 20, type: "string" },
+        },
+      },
+      UpdateUserRequest: {
+        type: "object",
+        minProperties: 1,
+        properties: {
+          displayName: { maxLength: 80, minLength: 1, type: "string" },
+          locale: { type: "string" },
+          preferredCurrency: {
+            enum: ["USD", "EUR", "GBP", "INR", "CAD", "AUD", "SGD"],
+            type: "string",
+          },
+          theme: { enum: ["system", "light", "dark"], type: "string" },
+          timezone: { type: "string" },
+        },
+      },
       GuestMigrationPayload: guestMigrationPayload,
-      GuestMigrationCommitRequest: { allOf: [guestMigrationPayload, { type: "object", required: ["confirm"], properties: { confirm: { enum: [true], type: "boolean" } } }] },
+      GuestMigrationCommitRequest: {
+        allOf: [
+          guestMigrationPayload,
+          {
+            type: "object",
+            required: ["confirm"],
+            properties: { confirm: { enum: [true], type: "boolean" } },
+          },
+        ],
+      },
       GuestMigrationPreview: {
         type: "object",
         properties: {
@@ -1462,11 +2484,73 @@ export const openApiDocument = {
           note: { type: "string" },
         },
       },
-      GuestMigrationPreviewSummary: { type: "object", properties: { totalTransactions: { type: "integer" }, importableTransactions: { type: "integer" }, duplicateTransactions: { type: "integer" }, skippedDeletedTransactions: { type: "integer" }, incomeMinor: { type: "string" }, expenseMinor: { type: "string" }, balanceMinor: { type: "string" } } },
-      GuestMigrationCommit: { type: "object", properties: { clientMigrationId: { type: "string" }, migrationId: { type: "string" }, workspaceId: { type: "string" }, summary: { allOf: [ref("GuestMigrationPreviewSummary"), { type: "object", properties: { importedTransactions: { type: "integer" } } }] }, idMapping: { type: "object", properties: { transactions: { items: { type: "object", properties: { clientId: { type: "string" }, serverId: { type: "string" }, status: { enum: ["imported", "duplicate"], type: "string" } } }, type: "array" } } }, verification: { type: "object", properties: { verified: { type: "boolean" } } } } },
-      CreateWorkspaceRequest: { type: "object", required: ["name", "reportingCurrency", "timezone", "type"], properties: { name: { maxLength: 80, minLength: 1, type: "string" }, reportingCurrency: { pattern: "^[A-Z]{3}$", type: "string" }, timezone: { type: "string" }, type: { enum: ["personal", "family"], type: "string" } } },
-      UpdateWorkspaceRequest: { type: "object", minProperties: 1, properties: { name: { maxLength: 80, minLength: 1, type: "string" }, reportingCurrency: { pattern: "^[A-Z]{3}$", type: "string" }, timezone: { type: "string" } } },
-      CreateWorkspaceInvitationRequest: { type: "object", required: ["email"], properties: { email: { format: "email", type: "string" } } },
+      GuestMigrationPreviewSummary: {
+        type: "object",
+        properties: {
+          totalTransactions: { type: "integer" },
+          importableTransactions: { type: "integer" },
+          duplicateTransactions: { type: "integer" },
+          skippedDeletedTransactions: { type: "integer" },
+          incomeMinor: { type: "string" },
+          expenseMinor: { type: "string" },
+          balanceMinor: { type: "string" },
+        },
+      },
+      GuestMigrationCommit: {
+        type: "object",
+        properties: {
+          clientMigrationId: { type: "string" },
+          migrationId: { type: "string" },
+          workspaceId: { type: "string" },
+          summary: {
+            allOf: [
+              ref("GuestMigrationPreviewSummary"),
+              { type: "object", properties: { importedTransactions: { type: "integer" } } },
+            ],
+          },
+          idMapping: {
+            type: "object",
+            properties: {
+              transactions: {
+                items: {
+                  type: "object",
+                  properties: {
+                    clientId: { type: "string" },
+                    serverId: { type: "string" },
+                    status: { enum: ["imported", "duplicate"], type: "string" },
+                  },
+                },
+                type: "array",
+              },
+            },
+          },
+          verification: { type: "object", properties: { verified: { type: "boolean" } } },
+        },
+      },
+      CreateWorkspaceRequest: {
+        type: "object",
+        required: ["name", "reportingCurrency", "timezone", "type"],
+        properties: {
+          name: { maxLength: 80, minLength: 1, type: "string" },
+          reportingCurrency: { pattern: "^[A-Z]{3}$", type: "string" },
+          timezone: { type: "string" },
+          type: { enum: ["personal", "family"], type: "string" },
+        },
+      },
+      UpdateWorkspaceRequest: {
+        type: "object",
+        minProperties: 1,
+        properties: {
+          name: { maxLength: 80, minLength: 1, type: "string" },
+          reportingCurrency: { pattern: "^[A-Z]{3}$", type: "string" },
+          timezone: { type: "string" },
+        },
+      },
+      CreateWorkspaceInvitationRequest: {
+        type: "object",
+        required: ["email"],
+        properties: { email: { format: "email", type: "string" } },
+      },
       CreateAccountRequest: createAccountRequest,
       UpdateAccountRequest: updateAccountRequest,
       CreateCategoryRequest: createCategoryRequest,
@@ -1483,10 +2567,41 @@ export const openApiDocument = {
       CreateRecurringTransactionRequest: createRecurringTransactionRequest,
       UpdateRecurringTransactionRequest: updateRecurringTransactionRequest,
       CreateReportExportRequest: createReportExportRequest,
-      UpdateNotificationPreferencesRequest: { type: "object", minProperties: 1, properties: { billRemindersEnabled: { type: "boolean" }, budgetAlertsEnabled: { type: "boolean" }, emailEnabled: { type: "boolean" }, flowLaunchEnabled: { type: "boolean" }, goalUpdatesEnabled: { type: "boolean" }, inAppEnabled: { type: "boolean" }, timezone: { type: "string" } } },
-      FlowLaunchSubscriptionRequest: { type: "object", required: ["email"], properties: { email: { format: "email", type: "string" } } },
-      FlowLaunchSubscription: { type: "object", properties: { id, email: { format: "email", type: "string" }, consentedAt: timestamp, unsubscribedAt: { nullable: true, ...timestamp } } },
-      CreateFeedbackRequest: { type: "object", required: ["category", "description"], properties: { category: { enum: ["suggestion", "issue", "general"], type: "string" }, description: { maxLength: 1000, minLength: 10, type: "string" } } },
+      UpdateNotificationPreferencesRequest: {
+        type: "object",
+        minProperties: 1,
+        properties: {
+          billRemindersEnabled: { type: "boolean" },
+          budgetAlertsEnabled: { type: "boolean" },
+          emailEnabled: { type: "boolean" },
+          flowLaunchEnabled: { type: "boolean" },
+          goalUpdatesEnabled: { type: "boolean" },
+          inAppEnabled: { type: "boolean" },
+          timezone: { type: "string" },
+        },
+      },
+      FlowLaunchSubscriptionRequest: {
+        type: "object",
+        required: ["email"],
+        properties: { email: { format: "email", type: "string" } },
+      },
+      FlowLaunchSubscription: {
+        type: "object",
+        properties: {
+          id,
+          email: { format: "email", type: "string" },
+          consentedAt: timestamp,
+          unsubscribedAt: { nullable: true, ...timestamp },
+        },
+      },
+      CreateFeedbackRequest: {
+        type: "object",
+        required: ["category", "description"],
+        properties: {
+          category: { enum: ["suggestion", "issue", "general"], type: "string" },
+          description: { maxLength: 1000, minLength: 10, type: "string" },
+        },
+      },
     },
   },
 } as const;

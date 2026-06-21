@@ -6,9 +6,22 @@ describe("parseFrontendEnvironment", () => {
   it("accepts a valid API URL", () => {
     expect(
       parseFrontendEnvironment({
+        FLOW_AI_ENABLED: "true",
         NIDHIFLOW_API_BASE_URL: "http://localhost:3000",
       }),
     ).toEqual({
+      FLOW_AI_ENABLED: true,
+      NIDHIFLOW_API_BASE_URL: "http://localhost:3000",
+    });
+  });
+
+  it("defaults Flow AI to disabled", () => {
+    expect(
+      parseFrontendEnvironment({
+        NIDHIFLOW_API_BASE_URL: "http://localhost:3000",
+      }),
+    ).toEqual({
+      FLOW_AI_ENABLED: false,
       NIDHIFLOW_API_BASE_URL: "http://localhost:3000",
     });
   });

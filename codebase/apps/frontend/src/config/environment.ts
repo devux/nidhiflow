@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 const frontendEnvironmentSchema = z.object({
+  FLOW_AI_ENABLED: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
   NIDHIFLOW_API_BASE_URL: z.string().url(),
 });
 
@@ -19,5 +23,6 @@ export function parseFrontendEnvironment(
 }
 
 export const environment = parseFrontendEnvironment({
+  FLOW_AI_ENABLED: process.env.FLOW_AI_ENABLED,
   NIDHIFLOW_API_BASE_URL: process.env.NIDHIFLOW_API_BASE_URL,
 });
