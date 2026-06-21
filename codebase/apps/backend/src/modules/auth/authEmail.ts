@@ -1,5 +1,6 @@
 import type { Environment } from "../../app/config/environment.js";
 import { AppError } from "../../shared/errors/appError.js";
+import nodemailer from "nodemailer";
 
 interface AuthEmailInput {
   displayName: string;
@@ -70,17 +71,60 @@ async function sendWithResend(
   }
 }
 
+async function sendWithSmtp(
+  environment: Environment,
+  email: { html: string; subject: string; text: string; to: string },
+) {
+  const transporter = nodemailer.createTransport({
+    auth: {
+      pass: environment.EMAIL_PASSWORD,
+      user: environment.EMAIL_USER,
+    },
+    host: environment.EMAIL_HOST,
+    port: environment.EMAIL_PORT,
+    secure: environment.EMAIL_PORT === 465,
+  });
+
+  try {
+    await transporter.sendMail({
+      from: environment.EMAIL_FROM,
+      html: email.html,
+      subject: email.subject,
+      text: email.text,
+      to: email.to,
+    });
+  } catch {
+    throw new AppError({
+      code: "EMAIL_DELIVERY_FAILED",
+      message: "Email could not be sent right now. Please try again.",
+      status: 502,
+    });
+  }
+}
+
+async function sendEmail(
+  environment: Environment,
+  email: { html: string; subject: string; text: string; to: string },
+) {
+  if (environment.EMAIL_DELIVERY_PROVIDER === "none") {
+    return;
+  }
+
+  if (environment.EMAIL_DELIVERY_PROVIDER === "gmail") {
+    await sendWithSmtp(environment, email);
+    return;
+  }
+
+  await sendWithResend(environment, email);
+}
+
 export class AuthEmailService {
   constructor(private readonly environment: Environment) {}
 
   async sendVerificationEmail(input: AuthEmailInput) {
-    if (this.environment.EMAIL_DELIVERY_PROVIDER === "none") {
-      return;
-    }
-
     const verificationUrl = buildVerificationUrl(this.environment, input.token);
 
-    await sendWithResend(this.environment, {
+    await sendEmail(this.environment, {
       html: buildEmailHtml({
         body: `Hi ${input.displayName}, use this link to verify your NidhiFlow account.`,
         ctaLabel: "Verify email",
@@ -94,13 +138,9 @@ export class AuthEmailService {
   }
 
   async sendPasswordResetEmail(input: AuthEmailInput) {
-    if (this.environment.EMAIL_DELIVERY_PROVIDER === "none") {
-      return;
-    }
-
     const resetUrl = buildResetUrl(this.environment, input.token);
 
-    await sendWithResend(this.environment, {
+    await sendEmail(this.environment, {
       html: buildEmailHtml({
         body: `Hi ${input.displayName}, use this link to reset your NidhiFlow password.`,
         ctaLabel: "Reset password",

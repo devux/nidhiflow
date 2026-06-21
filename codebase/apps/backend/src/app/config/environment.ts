@@ -20,8 +20,12 @@ const environmentSchema = z
     FLOW_MODEL: z.string().trim().min(1).default("llama3.2:3b"),
     OLLAMA_BASE_URL: z.string().url().default("http://127.0.0.1:11434"),
     APP_PUBLIC_URL: z.string().url().default("http://localhost:5173"),
-    EMAIL_DELIVERY_PROVIDER: z.enum(["none", "resend"]).default("none"),
+    EMAIL_DELIVERY_PROVIDER: z.enum(["none", "resend", "gmail"]).default("none"),
     EMAIL_FROM: z.string().trim().min(3).optional(),
+    EMAIL_HOST: z.string().trim().min(1).optional(),
+    EMAIL_PASSWORD: z.string().trim().min(1).optional(),
+    EMAIL_PORT: z.coerce.number().int().min(1).max(65_535).optional(),
+    EMAIL_USER: z.string().trim().min(1).optional(),
     RESEND_API_KEY: z.string().trim().min(1).optional(),
     JWT_ACCESS_SECRET: z.string().min(32).optional(),
     JWT_ACCESS_ISSUER: z.string().min(1).default("nidhiflow.local"),
@@ -50,11 +54,7 @@ const environmentSchema = z
       }),
   })
   .superRefine((value, context) => {
-    if (value.EMAIL_DELIVERY_PROVIDER !== "resend") {
-      return;
-    }
-
-    if (!value.RESEND_API_KEY) {
+    if (value.EMAIL_DELIVERY_PROVIDER === "resend" && !value.RESEND_API_KEY) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         message: "RESEND_API_KEY is required when EMAIL_DELIVERY_PROVIDER=resend.",
@@ -62,12 +62,24 @@ const environmentSchema = z
       });
     }
 
-    if (!value.EMAIL_FROM) {
+    if (value.EMAIL_DELIVERY_PROVIDER !== "none" && !value.EMAIL_FROM) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "EMAIL_FROM is required when EMAIL_DELIVERY_PROVIDER=resend.",
+        message: "EMAIL_FROM is required when email delivery is enabled.",
         path: ["EMAIL_FROM"],
       });
+    }
+
+    if (value.EMAIL_DELIVERY_PROVIDER === "gmail") {
+      for (const key of ["EMAIL_HOST", "EMAIL_PASSWORD", "EMAIL_PORT", "EMAIL_USER"] as const) {
+        if (!value[key]) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `${key} is required when EMAIL_DELIVERY_PROVIDER=gmail.`,
+            path: [key],
+          });
+        }
+      }
     }
   });
 
@@ -75,11 +87,20 @@ export type Environment = z.infer<typeof environmentSchema> & {
   JWT_ACCESS_SECRET: string;
 };
 
+function formatEnvironmentIssuePaths(error: z.ZodError) {
+  const paths = error.issues.map((issue) => issue.path.join(".") || "environment");
+  const uniquePaths = [...new Set(paths)];
+
+  return uniquePaths.sort().join(", ");
+}
+
 export function parseEnvironment(environment: NodeJS.ProcessEnv): Environment {
   const result = environmentSchema.safeParse(environment);
 
   if (!result.success) {
-    throw new Error("Invalid backend environment configuration.");
+    throw new Error(
+      `Invalid backend environment configuration: ${formatEnvironmentIssuePaths(result.error)}.`,
+    );
   }
 
   if (result.data.JWT_ACCESS_SECRET) {
@@ -87,7 +108,7 @@ export function parseEnvironment(environment: NodeJS.ProcessEnv): Environment {
   }
 
   if (result.data.APP_ENV === "staging" || result.data.APP_ENV === "production") {
-    throw new Error("Invalid backend environment configuration.");
+    throw new Error("Invalid backend environment configuration: JWT_ACCESS_SECRET.");
   }
 
   return {

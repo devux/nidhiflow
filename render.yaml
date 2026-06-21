@@ -26,8 +26,14 @@ services:
       - key: APP_PUBLIC_URL
         value: https://nidhiflow.vercel.app
       - key: EMAIL_DELIVERY_PROVIDER
-        value: resend
+        value: gmail
       - key: EMAIL_FROM
         sync: false
-      - key: RESEND_API_KEY
+      - key: EMAIL_HOST
+        value: smtp.gmail.com
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASSWORD
         sync: false
