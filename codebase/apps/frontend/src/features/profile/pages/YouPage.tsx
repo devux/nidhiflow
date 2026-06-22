@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 
 import { useAuth } from "../../../app/providers/AuthProvider";
+import { trackApiRequest } from "../../../app/providers/apiLoadingState";
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
 import { environment } from "../../../config/environment";
 import {
@@ -102,14 +103,16 @@ export function YouPage() {
     setFeedbackState("sending");
 
     try {
-      const response = await fetch(`${environment.NIDHIFLOW_API_BASE_URL}/api/v1/feedback`, {
-        body: JSON.stringify({
-          category: feedbackCategory,
-          description: feedbackDescription,
+      const response = await trackApiRequest(async () =>
+        fetch(`${environment.NIDHIFLOW_API_BASE_URL}/api/v1/feedback`, {
+          body: JSON.stringify({
+            category: feedbackCategory,
+            description: feedbackDescription,
+          }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
         }),
-        headers: { "Content-Type": "application/json" },
-        method: "POST",
-      });
+      );
 
       if (!response.ok) {
         throw new Error("Feedback failed");

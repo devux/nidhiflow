@@ -1,4 +1,5 @@
 import { environment } from "../../config/environment";
+import { trackApiRequest } from "../../app/providers/apiLoadingState";
 import type { SupportedCurrency } from "../../domain/preferences/guestPreferences";
 
 export interface AuthUser {
@@ -56,16 +57,18 @@ async function apiRequest<Data>(
   path: string,
   options: RequestInit = {},
 ): Promise<ApiEnvelope<Data>> {
-  const response = await fetch(`${environment.NIDHIFLOW_API_BASE_URL}/api/v1${path}`, {
-    ...options,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
+  return trackApiRequest(async () => {
+    const response = await fetch(`${environment.NIDHIFLOW_API_BASE_URL}/api/v1${path}`, {
+      ...options,
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+    });
 
-  return parseResponse<Data>(response);
+    return parseResponse<Data>(response);
+  });
 }
 
 export async function registerAccount(input: {

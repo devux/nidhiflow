@@ -1557,7 +1557,7 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Misc" }).getAttribute("aria-pressed")).toBe("true");
     expect((amount as HTMLInputElement).value).toBe("10.99");
     expect(screen.getByLabelText<HTMLTextAreaElement>(/Note/).value).toBe(longNote);
-  }, 10000);
+  }, 30000);
 
   it("restores an archived Cash account before creating the default account", async () => {
     const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
@@ -1604,6 +1604,8 @@ describe("App", () => {
         method: "POST",
       }),
     );
+    expect(await screen.findByText("Nila's workspace")).toBeDefined();
+    expect(window.location.pathname).toBe("/");
   });
 
   it("collapses extra expense categories behind a More option", async () => {

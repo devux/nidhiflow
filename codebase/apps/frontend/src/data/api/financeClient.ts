@@ -1,4 +1,5 @@
 import { environment } from "../../config/environment";
+import { trackApiRequest } from "../../app/providers/apiLoadingState";
 import { refreshAccessToken } from "./authClient";
 import type { SupportedCurrency } from "../../domain/preferences/guestPreferences";
 import type {
@@ -106,17 +107,19 @@ async function sendApiRequest<Data>(
   accessToken: string,
   options: RequestInit,
 ): Promise<ApiEnvelope<Data>> {
-  const response = await fetch(`${environment.NIDHIFLOW_API_BASE_URL}/api/v1${path}`, {
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken}`,
-      ...options.headers,
-    },
-    ...options,
-  });
+  return trackApiRequest(async () => {
+    const response = await fetch(`${environment.NIDHIFLOW_API_BASE_URL}/api/v1${path}`, {
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+        ...options.headers,
+      },
+      ...options,
+    });
 
-  return parseResponse<Data>(response);
+    return parseResponse<Data>(response);
+  });
 }
 
 async function apiRequest<Data>(

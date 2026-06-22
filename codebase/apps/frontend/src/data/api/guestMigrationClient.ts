@@ -1,4 +1,5 @@
 import { environment } from "../../config/environment";
+import { trackApiRequest } from "../../app/providers/apiLoadingState";
 import type { GuestMigrationPayload } from "../migrations/createGuestMigrationPayload";
 
 interface ApiEnvelope<Data> {
@@ -31,22 +32,24 @@ export async function commitGuestMigration(input: {
   idempotencyKey: string;
   payload: GuestMigrationPayload;
 }): Promise<GuestMigrationResult> {
-  const response = await fetch(
-    `${environment.NIDHIFLOW_API_BASE_URL}/api/v1/users/me/guest-migrations`,
-    {
-      body: JSON.stringify({
-        ...input.payload,
-        confirm: true,
-      }),
-      credentials: "include",
-      headers: {
-        Authorization: `Bearer ${input.accessToken}`,
-        "Content-Type": "application/json",
-        "Idempotency-Key": input.idempotencyKey,
+  return trackApiRequest(async () => {
+    const response = await fetch(
+      `${environment.NIDHIFLOW_API_BASE_URL}/api/v1/users/me/guest-migrations`,
+      {
+        body: JSON.stringify({
+          ...input.payload,
+          confirm: true,
+        }),
+        credentials: "include",
+        headers: {
+          Authorization: `Bearer ${input.accessToken}`,
+          "Content-Type": "application/json",
+          "Idempotency-Key": input.idempotencyKey,
+        },
+        method: "POST",
       },
-      method: "POST",
-    },
-  );
-  const result = await parseResponse<GuestMigrationResult>(response);
-  return result.data;
+    );
+    const result = await parseResponse<GuestMigrationResult>(response);
+    return result.data;
+  });
 }

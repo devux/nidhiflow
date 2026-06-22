@@ -1,4 +1,5 @@
 import { environment } from "../../config/environment";
+import { trackApiRequest } from "../../app/providers/apiLoadingState";
 import { ApiRequestError, refreshAccessToken } from "./authClient";
 
 interface ApiEnvelope<Data> {
@@ -59,20 +60,22 @@ async function sendFlowRequest(
   accessToken: string,
   messages: FlowChatMessage[],
 ) {
-  const response = await fetch(
-    `${environment.NIDHIFLOW_API_BASE_URL}/api/v1/workspaces/${workspaceId}/flow/chat`,
-    {
-      body: JSON.stringify({ messages }),
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
+  return trackApiRequest(async () => {
+    const response = await fetch(
+      `${environment.NIDHIFLOW_API_BASE_URL}/api/v1/workspaces/${workspaceId}/flow/chat`,
+      {
+        body: JSON.stringify({ messages }),
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        method: "POST",
       },
-      method: "POST",
-    },
-  );
+    );
 
-  return parseResponse<FlowChatResponse>(response);
+    return parseResponse<FlowChatResponse>(response);
+  });
 }
 
 export async function chatWithFlow(input: {

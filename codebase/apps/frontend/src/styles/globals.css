@@ -117,6 +117,11 @@ p {
   padding-bottom: calc(var(--navigation-height) + var(--space-8) + env(safe-area-inset-bottom));
 }
 
+.app-shell__content[inert] {
+  pointer-events: none;
+  user-select: none;
+}
+
 .guest-reminder {
   position: fixed;
   z-index: 40;
@@ -755,11 +760,11 @@ p {
 .type-choice button,
 .category-grid button {
   display: flex;
-  min-height: 3rem;
+  min-height: 2.75rem;
   align-items: center;
   justify-content: center;
-  gap: var(--space-1);
-  padding: var(--space-2);
+  gap: 0;
+  padding: var(--space-1) var(--space-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-control);
   color: var(--color-text-secondary);
@@ -778,7 +783,7 @@ p {
 .amount-card {
   display: grid;
   justify-items: center;
-  padding: 0;
+  padding: var(--space-1) 0 0;
   border: 0;
   background: transparent;
   box-shadow: none;
@@ -794,6 +799,12 @@ p {
   align-items: center;
   justify-content: center;
   gap: 0.35rem;
+}
+
+.amount-input input::placeholder {
+  color: var(--color-brand-strong);
+  opacity: 0.5;
+  text-align: center;
 }
 
 .amount-input span {
@@ -846,9 +857,9 @@ p {
 .category-grid button {
   width: 100%;
   min-width: 0;
-  min-height: 4.5rem;
+  min-height: 3.8rem;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 0;
   border-radius: 0.7rem;
   color: var(--color-text-primary);
   font-size: 0.67rem;
@@ -865,11 +876,6 @@ p {
 .category-grid button span {
   max-width: 100%;
   overflow-wrap: anywhere;
-}
-
-.category-grid button svg {
-  width: 0.95rem;
-  height: 0.95rem;
 }
 
 .category-grid button.is-selected {
@@ -926,7 +932,7 @@ p {
 }
 
 .form-fields textarea {
-  min-height: 4.75rem;
+  min-height: 4.35rem;
   resize: vertical;
 }
 
@@ -943,6 +949,14 @@ p {
   padding-right: var(--space-3);
   font-size: 0.75rem;
   font-weight: 900;
+}
+
+.transaction-details-card {
+  gap: var(--space-2);
+}
+
+.transaction-category-section {
+  margin-bottom: var(--space-3);
 }
 
 .transaction-submit {
@@ -2031,7 +2045,16 @@ p {
   display: grid;
   min-height: 100vh;
   padding: var(--space-5);
+  gap: var(--space-4);
   place-items: center;
+}
+
+.state-screen--overlay {
+  position: fixed;
+  z-index: 70;
+  inset: 0;
+  background: rgb(248 250 252 / 72%);
+  backdrop-filter: blur(0.18rem);
 }
 
 .state-screen__content,
@@ -2079,6 +2102,15 @@ p {
   border-radius: var(--radius-card);
 }
 
+.loading-spinner {
+  width: 3rem;
+  height: 3rem;
+  border: 0.28rem solid var(--color-brand-soft);
+  border-top-color: var(--color-brand-strong);
+  border-radius: 50%;
+  animation: loading-spin 0.9s linear infinite;
+}
+
 @keyframes skeleton-pulse {
   from {
     background-position: 200% 0;
@@ -2086,6 +2118,12 @@ p {
 
   to {
     background-position: -200% 0;
+  }
+}
+
+@keyframes loading-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 

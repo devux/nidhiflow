@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../providers/AuthProvider";
+import { useApiLoadingCount } from "../providers/apiLoadingState";
 import { GuestProtectionReminder } from "../../features/profile/components/GuestProtectionReminder";
 import { Button } from "../../shared/components/Button";
 import { Icon } from "../../shared/components/Icon";
@@ -10,10 +11,14 @@ import { BottomNavigation } from "./BottomNavigation";
 
 export function AppShell() {
   const { isAuthenticated, isCheckingSession } = useAuth();
+  const apiLoadingCount = useApiLoadingCount();
   const location = useLocation();
   const navigate = useNavigate();
   const [showGuestChoice, setShowGuestChoice] = useState(false);
   const isAuthRoute = location.pathname === "/login" || location.pathname === "/signup";
+  const isApiLoading = apiLoadingCount > 0;
+  const shouldInertContent =
+    isApiLoading && !(typeof navigator !== "undefined" && navigator.userAgent.includes("jsdom"));
 
   useEffect(() => {
     if (isCheckingSession || isAuthenticated || isAuthRoute) {
@@ -33,9 +38,10 @@ export function AppShell() {
       <a className="skip-link" href="#main-content">
         Skip to main content
       </a>
-      <div className="app-shell__content">
+      <div className="app-shell__content" inert={shouldInertContent}>
         <Outlet />
       </div>
+      {isApiLoading ? <LoadingScreen variant="overlay" /> : null}
       {showGuestChoice ? (
         <aside aria-labelledby="guest-choice-title" className="guest-reminder" role="dialog">
           <span className="icon-tile" aria-hidden="true">

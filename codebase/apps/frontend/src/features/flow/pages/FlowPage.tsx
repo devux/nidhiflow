@@ -2,6 +2,7 @@ import { useMemo, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 
 import { useAuth } from "../../../app/providers/AuthProvider";
+import { trackApiRequest } from "../../../app/providers/apiLoadingState";
 import { environment } from "../../../config/environment";
 import {
   chatWithFlow,
@@ -192,13 +193,12 @@ export function FlowPage() {
     setSubscribeState("saving");
 
     try {
-      const response = await fetch(
-        `${environment.NIDHIFLOW_API_BASE_URL}/api/v1/flow-launch-subscriptions`,
-        {
+      const response = await trackApiRequest(async () =>
+        fetch(`${environment.NIDHIFLOW_API_BASE_URL}/api/v1/flow-launch-subscriptions`, {
           body: JSON.stringify({ email }),
           headers: { "Content-Type": "application/json" },
           method: "POST",
-        },
+        }),
       );
 
       if (!response.ok) {

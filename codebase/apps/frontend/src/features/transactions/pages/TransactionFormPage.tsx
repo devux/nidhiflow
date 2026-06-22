@@ -20,7 +20,7 @@ import {
   type TransactionFormValues,
 } from "../schemas/transactionFormSchema";
 
-const COLLAPSED_CATEGORY_COUNT = 8;
+const COLLAPSED_CATEGORY_COUNT = 7;
 const DEFAULT_EXPENSE_CATEGORY = "Misc";
 const expenseFormCategories = [
   DEFAULT_EXPENSE_CATEGORY,
@@ -143,8 +143,8 @@ export function TransactionFormPage() {
         <Card>
           <h1>Transaction not found</h1>
           <p>It may have already been removed from this device.</p>
-          <Link className="button button--secondary" to="/activity">
-            Return to Activity
+          <Link className="button button--secondary" to="/">
+            Return to Home
           </Link>
         </Card>
       </main>
@@ -219,7 +219,7 @@ export function TransactionFormPage() {
       } else {
         await createTransaction(validation.input);
       }
-      void navigate("/activity", { replace: true });
+      void navigate("/", { replace: true });
     } catch {
       setSaveError(true);
       setIsSaving(false);
@@ -233,7 +233,7 @@ export function TransactionFormPage() {
 
     try {
       await removeTransaction(existing.id);
-      void navigate("/activity", { replace: true });
+      void navigate("/", { replace: true });
     } catch {
       setSaveError(true);
       setIsSaving(false);
@@ -243,7 +243,7 @@ export function TransactionFormPage() {
   return (
     <main className="page focused-page transaction-entry-page" id="main-content">
       <header className="focused-header transaction-entry-header">
-        <Link aria-label="Cancel and return to Activity" className="icon-button" to="/activity">
+        <Link aria-label="Cancel and return to Home" className="icon-button" to="/">
           <Icon name="back" />
         </Link>
         <h1>{title}</h1>
@@ -267,7 +267,6 @@ export function TransactionFormPage() {
                 onClick={() => updateValue("category", category)}
                 type="button"
               >
-                <Icon name={values.type} size={18} />
                 <span>{category}</span>
               </button>
             ))}
@@ -278,7 +277,6 @@ export function TransactionFormPage() {
                 onClick={() => setShowAllCategories(true)}
                 type="button"
               >
-                <Icon name="plus" size={18} />
                 <span>More</span>
               </button>
             ) : null}
