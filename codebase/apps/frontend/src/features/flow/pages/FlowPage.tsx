@@ -258,7 +258,7 @@ export function FlowPage() {
   if (!environment.FLOW_AI_ENABLED) {
     return (
       <main className="page page--flow" id="main-content">
-        <PageHeader eyebrow="A preview of what is next" title="Flow" />
+        <PageHeader title="Flow" />
 
         {subscribeState === "saved" ? (
           <InlineAlert title="Notifications need consent">
@@ -326,10 +326,7 @@ export function FlowPage() {
 
   return (
     <main className="page page--flow flow-chat-page" id="main-content">
-      <PageHeader
-        eyebrow={canChat ? "Phase 2 prototype" : "A preview of what is next"}
-        title="Flow"
-      />
+      <PageHeader title="Flow" />
 
       {subscribeState === "saved" ? (
         <InlineAlert title="Notifications need consent">

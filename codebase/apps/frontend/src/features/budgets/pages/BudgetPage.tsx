@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from "react";
+import Chart from "chart.js/auto";
 import { Link } from "react-router-dom";
 
 import { useAuth } from "../../../app/providers/AuthProvider";
@@ -18,7 +19,7 @@ import { expenseCategories, type ExpenseCategory } from "../../../domain/transac
 import { Button } from "../../../shared/components/Button";
 import { Card } from "../../../shared/components/Card";
 import { EmptyState } from "../../../shared/components/EmptyState";
-import { Icon } from "../../../shared/components/Icon";
+import { Icon, type IconName } from "../../../shared/components/Icon";
 import { InlineAlert } from "../../../shared/components/InlineAlert";
 import { PageHeader } from "../../../shared/components/PageHeader";
 import { SegmentedControl } from "../../../shared/components/SegmentedControl";
@@ -30,6 +31,210 @@ interface BudgetCategory {
   id: string;
   periodEnd: string;
   periodStart: string;
+}
+
+interface BudgetProgressChartProps {
+  compact?: boolean;
+  color?: string;
+  label: string;
+  progress: number;
+  trackColor?: string;
+}
+
+function BudgetProgressChart({
+  color = "#16a34a",
+  compact = false,
+  label,
+  progress,
+  trackColor = "#eaf8ee",
+}: BudgetProgressChartProps) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const chartRef = useRef<Chart | null>(null);
+  const progressValue = Math.max(0, Math.min(100, progress));
+  const remainingValue = Math.max(0, 100 - progressValue);
+
+  useEffect(() => {
+    chartRef.current?.destroy();
+    chartRef.current = null;
+
+    const canvas = canvasRef.current;
+
+    if (!canvas || globalThis.navigator?.userAgent.includes("jsdom")) {
+      return undefined;
+    }
+
+    let context: CanvasRenderingContext2D | null = null;
+
+    try {
+      context = canvas.getContext("2d");
+    } catch {
+      return undefined;
+    }
+
+    if (!context) {
+      return undefined;
+    }
+
+    const prefersReducedMotion =
+      typeof globalThis.matchMedia === "function" &&
+      globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    chartRef.current = new Chart(context, {
+      data: {
+        datasets: [
+          {
+            backgroundColor: color,
+            borderRadius: 999,
+            borderSkipped: false,
+            data: [progressValue],
+            label: "Used",
+          },
+          {
+            backgroundColor: trackColor,
+            borderRadius: 999,
+            borderSkipped: false,
+            data: [remainingValue],
+            label: "Remaining",
+          },
+        ],
+        labels: ["Budget usage"],
+      },
+      options: {
+        animation: {
+          duration: prefersReducedMotion ? 0 : 900,
+          easing: "easeOutQuart",
+        },
+        indexAxis: "y",
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const value = typeof context.parsed.x === "number" ? context.parsed.x : 0;
+                return `${context.dataset.label}: ${Math.round(value)}%`;
+              },
+            },
+          },
+        },
+        responsive: true,
+        scales: {
+          x: {
+            display: false,
+            max: 100,
+            min: 0,
+            stacked: true,
+          },
+          y: {
+            display: false,
+            stacked: true,
+          },
+        },
+      },
+      type: "bar",
+    });
+
+    return () => {
+      chartRef.current?.destroy();
+      chartRef.current = null;
+    };
+  }, [color, progressValue, remainingValue, trackColor]);
+
+  return (
+    <div
+      aria-label={label}
+      aria-valuemax={100}
+      aria-valuemin={0}
+      aria-valuenow={progressValue}
+      className={`budget-progress-chart ${compact ? "budget-progress-chart--compact" : ""}`}
+      role="progressbar"
+    >
+      <canvas aria-hidden="true" ref={canvasRef} />
+    </div>
+  );
+}
+
+interface BudgetCategoryTheme {
+  color: string;
+  icon: IconName;
+  surface: string;
+  title: string;
+}
+
+function getBudgetCategoryTheme(category: string): BudgetCategoryTheme {
+  const themes: Partial<Record<ExpenseCategory, BudgetCategoryTheme>> = {
+    Bills: {
+      color: "#ef4444",
+      icon: "report",
+      surface: "#fee2e2",
+      title: "Bills",
+    },
+    Education: {
+      color: "#6366f1",
+      icon: "education",
+      surface: "#e0e7ff",
+      title: "Education",
+    },
+    Entertainment: {
+      color: "#ec4899",
+      icon: "entertainment",
+      surface: "#fce7f3",
+      title: "Entertainment",
+    },
+    Food: {
+      color: "#16a34a",
+      icon: "food",
+      surface: "#dcfce7",
+      title: "Food & Dining",
+    },
+    Health: {
+      color: "#f43f5e",
+      icon: "health",
+      surface: "#ffe4e6",
+      title: "Health",
+    },
+    Home: {
+      color: "#2563eb",
+      icon: "home",
+      surface: "#dbeafe",
+      title: "Housing",
+    },
+    Misc: {
+      color: "#64748b",
+      icon: "misc",
+      surface: "#e2e8f0",
+      title: "Misc",
+    },
+    Shopping: {
+      color: "#7c3aed",
+      icon: "shopping",
+      surface: "#ede9fe",
+      title: "Shopping",
+    },
+    Transport: {
+      color: "#f59e0b",
+      icon: "transport",
+      surface: "#fef3c7",
+      title: "Transport",
+    },
+    Travel: {
+      color: "#0ea5e9",
+      icon: "travel",
+      surface: "#e0f2fe",
+      title: "Travel",
+    },
+  };
+
+  return (
+    themes[category as ExpenseCategory] ?? {
+      color: "#16a34a",
+      icon: "expense",
+      surface: "#dcfce7",
+      title: category,
+    }
+  );
 }
 
 function toDateValue(date: Date): string {
@@ -154,6 +359,7 @@ export function BudgetPage() {
   const [isBudgetDialogOpen, setIsBudgetDialogOpen] = useState(false);
   const [isBudgetSaving, setIsBudgetSaving] = useState(false);
   const [isQuickFillSaving, setIsQuickFillSaving] = useState(false);
+  const [openBudgetMenuId, setOpenBudgetMenuId] = useState<string | undefined>();
   const workspaceCurrency = workspaces[0]?.reportingCurrency ?? preferences.currency;
   const workspaceId = workspaces[0]?.id ?? null;
   const budgetDialogCloseRef = useRef<HTMLButtonElement>(null);
@@ -373,6 +579,7 @@ export function BudgetPage() {
           row.totalMinor === 0n
             ? 0
             : Math.min(100, Number((row.spentMinor * 100n) / row.totalMinor)),
+        remainingMinor: row.totalMinor - row.spentMinor,
       }))
       .sort((left, right) => Number(right.totalMinor - left.totalMinor));
   }, [transactions, yearlyBudgets, yearlyRange.from, yearlyRange.to]);
@@ -614,7 +821,7 @@ export function BudgetPage() {
 
   return (
     <main className="page" id="main-content">
-      <PageHeader eyebrow="Budget with clarity" title="Budget" />
+      <PageHeader title="Budget" />
       <SegmentedControl
         label="Budget section"
         onChange={updateSection}
@@ -628,24 +835,23 @@ export function BudgetPage() {
       {section === "yearly" ? (
         <>
           <Card className="monthly-card">
-            <div className="section-heading">
+            <div className="monthly-card__month-row">
+              <strong className="month-navigator__label">
+                Last 12 months
+                <span className="sr-only">Yearly budget summary</span>
+              </strong>
+            </div>
+            <div className="monthly-card__summary-row">
               <span>
-                <p className="eyebrow">Yearly budget summary</p>
                 <h2>{money(yearlyTotals.totalMinor)}</h2>
                 <small>{yearlyTotals.monthsCovered} of 12 monthly plans entered</small>
               </span>
               <strong className="percentage">{yearlyTotals.progress}%</strong>
             </div>
-            <div
-              aria-label={`Yearly budget usage: ${yearlyTotals.progress} percent`}
-              aria-valuemax={100}
-              aria-valuemin={0}
-              aria-valuenow={yearlyTotals.progress}
-              className="progress-bar"
-              role="progressbar"
-            >
-              <span style={{ width: `${yearlyTotals.progress}%` }} />
-            </div>
+            <BudgetProgressChart
+              label={`Yearly budget usage: ${yearlyTotals.progress} percent`}
+              progress={yearlyTotals.progress}
+            />
             <dl className="monthly-card__totals">
               <div>
                 <dt>Actual spending</dt>
@@ -702,16 +908,11 @@ export function BudgetPage() {
                     </span>
                     <span>{row.progress}%</span>
                   </div>
-                  <div
-                    aria-label={`${row.label} budget usage: ${row.progress} percent`}
-                    aria-valuemax={100}
-                    aria-valuemin={0}
-                    aria-valuenow={row.progress}
-                    className="progress-bar progress-bar--compact"
-                    role="progressbar"
-                  >
-                    <span style={{ width: `${row.progress}%` }} />
-                  </div>
+                  <BudgetProgressChart
+                    compact
+                    label={`${row.label} budget usage: ${row.progress} percent`}
+                    progress={row.progress}
+                  />
                 </section>
               ))}
             </div>
@@ -720,35 +921,52 @@ export function BudgetPage() {
           <Card>
             <div className="section-heading">
               <span>
-                <h2>Category analysis</h2>
+                <h2 aria-label="Category analysis">Categories</h2>
                 <small>Budget and actual spending by category</small>
               </span>
             </div>
             {yearlyCategoryRows.length > 0 ? (
-              <div className="budget-category-list">
-                {yearlyCategoryRows.map((row) => (
-                  <section aria-label={`${row.category} yearly budget`} key={row.category}>
-                    <div className="budget-category-list__header">
-                      <span>
-                        <strong>{row.category}</strong>
-                        <small>
-                          {money(row.spentMinor)} spent of {money(row.totalMinor)}
-                        </small>
-                      </span>
-                      <span>{row.progress}%</span>
-                    </div>
-                    <div
-                      aria-label={`${row.category} yearly usage: ${row.progress} percent`}
-                      aria-valuemax={100}
-                      aria-valuemin={0}
-                      aria-valuenow={row.progress}
-                      className="progress-bar progress-bar--compact"
-                      role="progressbar"
+              <div className="budget-category-list budget-category-list--compact">
+                {yearlyCategoryRows.map((row) => {
+                  const theme = getBudgetCategoryTheme(row.category);
+
+                  return (
+                    <section
+                      aria-label={`${row.category} yearly budget`}
+                      className="budget-category-card"
+                      key={row.category}
+                      style={
+                        {
+                          "--budget-category-color": theme.color,
+                          "--budget-category-surface": theme.surface,
+                        } as CSSProperties
+                      }
                     >
-                      <span style={{ width: `${row.progress}%` }} />
-                    </div>
-                  </section>
-                ))}
+                      <div className="budget-category-row budget-category-row--readonly">
+                        <span className="budget-category-row__icon">
+                          <Icon name={theme.icon} size={24} />
+                        </span>
+                        <span className="budget-category-row__details">
+                          <strong>{theme.title}</strong>
+                          <small>
+                            {money(row.spentMinor)} spent of {money(row.totalMinor)}
+                          </small>
+                        </span>
+                        <span className="budget-category-row__meta">
+                          <strong>{row.progress}%</strong>
+                          <small>{money(row.remainingMinor)} left</small>
+                        </span>
+                      </div>
+                      <BudgetProgressChart
+                        color={theme.color}
+                        compact
+                        label={`${row.category} yearly usage: ${row.progress} percent`}
+                        progress={row.progress}
+                        trackColor="#e8eaee"
+                      />
+                    </section>
+                  );
+                })}
               </div>
             ) : (
               <EmptyState
@@ -780,12 +998,8 @@ export function BudgetPage() {
           ) : null}
 
           <Card className="monthly-card">
-            <div className="section-heading">
-              <span>
-                <p className="eyebrow">Monthly budget plan</p>
-                <h2>{money(budgetTotals.totalMinor)}</h2>
-              </span>
-              <span className="month-navigator">
+            <div className="monthly-card__month-row">
+              <div className="month-navigator">
                 <button
                   aria-label="Previous month"
                   className="icon-button icon-button--flat month-navigator__previous"
@@ -803,19 +1017,16 @@ export function BudgetPage() {
                 >
                   <Icon name="chevron" size={17} />
                 </button>
-                <strong className="percentage">{budgetTotals.progress}%</strong>
-              </span>
+              </div>
             </div>
-            <div
-              aria-label={`Budget usage: ${budgetTotals.progress} percent`}
-              aria-valuemax={100}
-              aria-valuemin={0}
-              aria-valuenow={budgetTotals.progress}
-              className="progress-bar"
-              role="progressbar"
-            >
-              <span style={{ width: `${budgetTotals.progress}%` }} />
+            <div className="monthly-card__summary-row">
+              <h2>{money(budgetTotals.totalMinor)}</h2>
+              <strong className="percentage">{budgetTotals.progress}%</strong>
             </div>
+            <BudgetProgressChart
+              label={`Budget usage: ${budgetTotals.progress} percent`}
+              progress={budgetTotals.progress}
+            />
             <dl className="monthly-card__totals">
               <div>
                 <dt>Spent</dt>
@@ -831,8 +1042,8 @@ export function BudgetPage() {
           <Card>
             <div className="section-heading">
               <span>
-                <h2>{selectedMonthLabel} categories</h2>
-                <small>{monthlyBudgets.length} categories planned</small>
+                <h2>Categories</h2>
+                <span className="sr-only">{selectedMonthLabel} categories</span>
               </span>
               <span className="budget-category-toolbar">
                 <button
@@ -851,48 +1062,103 @@ export function BudgetPage() {
               </InlineAlert>
             ) : null}
             {categoryRows.length > 0 ? (
-              <div className="budget-category-list">
-                {categoryRows.map((budget) => (
-                  <section aria-label={`${budget.category} budget`} key={budget.id}>
-                    <div className="budget-category-list__header">
-                      <span>
-                        <strong>{budget.category}</strong>
-                        <small>
-                          {money(budget.spentMinor)} spent of {money(BigInt(budget.amountMinor))}
-                        </small>
-                      </span>
-                      <span>{budget.progress}%</span>
-                    </div>
-                    <div
-                      aria-label={`${budget.category} usage: ${budget.progress} percent`}
-                      aria-valuemax={100}
-                      aria-valuemin={0}
-                      aria-valuenow={budget.progress}
-                      className="progress-bar progress-bar--compact"
-                      role="progressbar"
+              <div className="budget-category-list budget-category-list--compact">
+                {categoryRows.map((budget) => {
+                  const theme = getBudgetCategoryTheme(budget.category);
+                  const isMenuOpen = openBudgetMenuId === budget.id;
+
+                  return (
+                    <section
+                      aria-label={`${budget.category} budget`}
+                      className="budget-category-card"
+                      key={budget.id}
+                      style={
+                        {
+                          "--budget-category-color": theme.color,
+                          "--budget-category-surface": theme.surface,
+                        } as CSSProperties
+                      }
                     >
-                      <span style={{ width: `${budget.progress}%` }} />
-                    </div>
-                    <div className="budget-category-list__actions">
-                      <button
-                        aria-label={`Edit ${budget.category} budget`}
-                        className="icon-button icon-button--flat"
-                        onClick={() => editBudget(budget)}
-                        type="button"
-                      >
-                        <Icon name="edit" size={18} />
-                      </button>
-                      <button
-                        aria-label={`Delete ${budget.category} budget`}
-                        className="icon-button icon-button--flat icon-button--danger"
-                        onClick={() => deleteBudget(budget.id)}
-                        type="button"
-                      >
-                        <Icon name="delete" size={18} />
-                      </button>
-                    </div>
-                  </section>
-                ))}
+                      <div className="budget-category-row">
+                        <span className="budget-category-row__icon">
+                          <Icon name={theme.icon} size={24} />
+                        </span>
+                        <span className="budget-category-row__details">
+                          <strong>{theme.title}</strong>
+                          <small>
+                            {money(budget.spentMinor)} spent of {money(BigInt(budget.amountMinor))}
+                          </small>
+                        </span>
+                        <span className="budget-category-row__meta">
+                          <strong>{budget.progress}%</strong>
+                          <small>{money(budget.remainingMinor)} left</small>
+                        </span>
+                        <span className="budget-category-row__menu">
+                          <button
+                            aria-expanded={isMenuOpen}
+                            aria-haspopup="menu"
+                            aria-label={`More actions for ${budget.category} budget`}
+                            className="budget-category-row__menu-button"
+                            onClick={() =>
+                              setOpenBudgetMenuId((current) =>
+                                current === budget.id ? undefined : budget.id,
+                              )
+                            }
+                            type="button"
+                          >
+                            <Icon name="misc" size={18} />
+                          </button>
+                          {isMenuOpen ? (
+                            <div className="budget-category-menu" role="menu">
+                              <button
+                                onClick={() => {
+                                  setOpenBudgetMenuId(undefined);
+                                  editBudget(budget);
+                                }}
+                                role="menuitem"
+                                type="button"
+                              >
+                                <Icon name="edit" size={18} />
+                                Edit
+                              </button>
+                              <button
+                                className="budget-category-menu__danger"
+                                onClick={() => {
+                                  setOpenBudgetMenuId(undefined);
+                                  deleteBudget(budget.id);
+                                }}
+                                role="menuitem"
+                                type="button"
+                              >
+                                <Icon name="delete" size={18} />
+                                Delete
+                              </button>
+                            </div>
+                          ) : null}
+                        </span>
+                      </div>
+                      <BudgetProgressChart
+                        color={theme.color}
+                        compact
+                        label={`${budget.category} usage: ${budget.progress} percent`}
+                        progress={budget.progress}
+                        trackColor="#e8eaee"
+                      />
+                      <span className="sr-only">
+                        <button
+                          aria-label={`Edit ${budget.category} budget`}
+                          onClick={() => editBudget(budget)}
+                          type="button"
+                        />
+                        <button
+                          aria-label={`Delete ${budget.category} budget`}
+                          onClick={() => deleteBudget(budget.id)}
+                          type="button"
+                        />
+                      </span>
+                    </section>
+                  );
+                })}
               </div>
             ) : (
               <EmptyState

@@ -120,7 +120,6 @@ export function ActivityPage() {
             <Icon name="plus" />
           </Link>
         }
-        eyebrow="Your local history"
         title="Activity"
       />
       <SegmentedControl

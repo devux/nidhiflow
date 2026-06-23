@@ -140,12 +140,7 @@ export function YouPage() {
 
   return (
     <main className="page" id="main-content">
-      <PageHeader
-        eyebrow={
-          isAuthenticated ? "Account profile and preferences" : "Guest profile and preferences"
-        }
-        title="You"
-      />
+      <PageHeader title="You" />
 
       <Card className="profile-card">
         <div className="profile-card__identity">

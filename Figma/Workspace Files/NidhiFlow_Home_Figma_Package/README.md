@@ -1,12 +1,14 @@
 # NidhiFlow Home Figma Package
 
 This package contains:
+
 - NidhiFlow_Home_Figma_Spec.json
 - nidhiflow_leaf_logo.svg
 - flow_orbit_button.svg
 - goal_goa_trip.svg
 
 How to use:
+
 1. Open Figma.
 2. Drag the SVG assets into your Figma canvas.
 3. Use the JSON as the screen/component blueprint.

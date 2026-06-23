@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import Chart from "chart.js/auto";
 import { useSearchParams } from "react-router-dom";
 
 import { useAuth } from "../../../app/providers/AuthProvider";
@@ -8,11 +9,12 @@ import { formatMoney } from "../../../domain/money/money";
 import type { SupportedCurrency } from "../../../domain/preferences/guestPreferences";
 import { Card } from "../../../shared/components/Card";
 import { EmptyState } from "../../../shared/components/EmptyState";
-import { Icon } from "../../../shared/components/Icon";
 import { PageHeader } from "../../../shared/components/PageHeader";
 import { SegmentedControl } from "../../../shared/components/SegmentedControl";
 
-type ReportPeriod = "custom" | "lastMonth" | "month" | "year";
+type ReportPeriod = "custom" | "month" | "year";
+
+const categoryColors = ["#4ade80", "#fbbf24", "#8b5cf6", "#c4ccd6", "#22d3ee", "#fb7185"];
 
 function toDateValue(date: Date): string {
   return [
@@ -33,17 +35,6 @@ function getPeriodRange(period: ReportPeriod, customFrom: string, customTo: stri
     };
   }
 
-  if (period === "lastMonth") {
-    const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    const end = new Date(today.getFullYear(), today.getMonth(), 0);
-
-    return {
-      from: toDateValue(start),
-      label: "Last month",
-      to: toDateValue(end),
-    };
-  }
-
   if (period === "year") {
     return {
       from: toDateValue(new Date(today.getFullYear(), 0, 1)),
@@ -60,15 +51,15 @@ function getPeriodRange(period: ReportPeriod, customFrom: string, customTo: stri
 }
 
 export function ReportsPage() {
+  const chartCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const expenseChartRef = useRef<Chart | null>(null);
   const { workspaces } = useAuth();
   const { preferences } = useGuestPreferences();
   const { transactions } = useGuestTransactions();
   const [searchParams, setSearchParams] = useSearchParams();
   const periodParam = searchParams.get("period");
   const period: ReportPeriod =
-    periodParam === "lastMonth" || periodParam === "year" || periodParam === "custom"
-      ? periodParam
-      : "month";
+    periodParam === "year" || periodParam === "custom" ? periodParam : "month";
   const customFrom = searchParams.get("from") ?? "";
   const customTo = searchParams.get("to") ?? "";
   const reportingCurrency =
@@ -117,6 +108,10 @@ export function ReportsPage() {
     return Array.from(rows.entries())
       .map(([category, amountMinor]) => ({
         amountMinor,
+        chartValue:
+          totals.expenseMinor === 0n
+            ? 0
+            : Number((amountMinor * 10000n) / totals.expenseMinor) / 100,
         category,
         percent:
           totals.expenseMinor === 0n ? 0 : Number((amountMinor * 100n) / totals.expenseMinor),
@@ -129,6 +124,64 @@ export function ReportsPage() {
       { amountMinor: amountMinor.toString(), currency: reportingCurrency },
       preferences.locale,
     );
+
+  useEffect(() => {
+    expenseChartRef.current?.destroy();
+    expenseChartRef.current = null;
+
+    const chartCanvas = chartCanvasRef.current;
+
+    if (!chartCanvas || categoryRows.length === 0 || totals.expenseMinor === 0n) {
+      return undefined;
+    }
+
+    expenseChartRef.current = new Chart(chartCanvas, {
+      data: {
+        datasets: [
+          {
+            backgroundColor: categoryRows.map(
+              (_, index) => categoryColors[index % categoryColors.length],
+            ),
+            borderWidth: 0,
+            data: categoryRows.map((row) => row.chartValue),
+            hoverOffset: 6,
+            spacing: 2,
+          },
+        ],
+        labels: categoryRows.map((row) => row.category),
+      },
+      options: {
+        animation: {
+          animateRotate: true,
+          animateScale: true,
+          duration: 900,
+          easing: "easeOutQuart",
+        },
+        cutout: "62%",
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const row = categoryRows[context.dataIndex];
+                return row ? `${row.category}: ${money(row.amountMinor)}` : "";
+              },
+            },
+          },
+        },
+        responsive: true,
+      },
+      type: "doughnut",
+    });
+
+    return () => {
+      expenseChartRef.current?.destroy();
+      expenseChartRef.current = null;
+    };
+  }, [categoryRows, preferences.locale, reportingCurrency, totals.expenseMinor]);
 
   function setPeriod(nextPeriod: string) {
     const next = new URLSearchParams(searchParams);
@@ -150,13 +203,12 @@ export function ReportsPage() {
 
   return (
     <main className="page" id="main-content">
-      <PageHeader eyebrow="Money story" title="Reports" />
+      <PageHeader title="Reports" />
       <SegmentedControl
         label="Report period"
         onChange={setPeriod}
         options={[
           { label: "This Month", value: "month" },
-          { label: "Last Month", value: "lastMonth" },
           { label: "This Year", value: "year" },
           { label: "Custom", value: "custom" },
         ]}
@@ -184,63 +236,41 @@ export function ReportsPage() {
         </Card>
       ) : null}
 
-      <Card className="monthly-card">
-        <div className="section-heading">
+      <Card className="expense-overview-card">
+        <div className="expense-overview-card__header">
           <span>
-            <p className="eyebrow">Summary</p>
-            <h2>{money(totals.savingsMinor)}</h2>
-            <small>{range.label}</small>
+            <h2>Expense Overview</h2>
+            <small>Total Expense</small>
+            <strong>{money(totals.expenseMinor)}</strong>
           </span>
-          <span className="icon-tile">
-            <Icon name="report" />
-          </span>
-        </div>
-        <dl className="monthly-card__totals">
-          <div>
-            <dt>Income</dt>
-            <dd>{money(totals.incomeMinor)}</dd>
-          </div>
-          <div>
-            <dt>Expense</dt>
-            <dd>{money(totals.expenseMinor)}</dd>
-          </div>
-          <div>
-            <dt>Net savings</dt>
-            <dd>{money(totals.savingsMinor)}</dd>
-          </div>
-        </dl>
-      </Card>
-
-      <Card>
-        <div className="section-heading">
-          <span>
-            <h2>Expense categories</h2>
-            <small>Share of spending in this period</small>
-          </span>
+          <span className="expense-overview-card__period">{range.label}</span>
         </div>
         {categoryRows.length > 0 ? (
-          <div className="budget-category-list">
-            {categoryRows.map((row) => (
-              <section aria-label={`${row.category} report`} key={row.category}>
-                <div className="budget-category-list__header">
-                  <span>
-                    <strong>{row.category}</strong>
-                    <small>{money(row.amountMinor)}</small>
-                  </span>
-                  <span>{row.percent}%</span>
+          <div className="expense-overview-card__content">
+            <div
+              aria-label={`Expense category chart for ${range.label}`}
+              className="expense-donut-chart"
+              role="img"
+            >
+              <canvas ref={chartCanvasRef} />
+              <span>
+                <small>Total</small>
+                <strong>{money(totals.expenseMinor)}</strong>
+              </span>
+            </div>
+            <div className="expense-overview-legend">
+              {categoryRows.map((row, index) => (
+                <div className="expense-overview-legend__row" key={row.category}>
+                  <span
+                    aria-hidden="true"
+                    className="expense-overview-legend__dot"
+                    style={{ backgroundColor: categoryColors[index % categoryColors.length] }}
+                  />
+                  <strong>{row.category}</strong>
+                  <span>{money(row.amountMinor)}</span>
                 </div>
-                <div
-                  aria-label={`${row.category}: ${row.percent} percent of expenses`}
-                  aria-valuemax={100}
-                  aria-valuemin={0}
-                  aria-valuenow={row.percent}
-                  className="progress-bar progress-bar--compact"
-                  role="progressbar"
-                >
-                  <span style={{ width: `${row.percent}%` }} />
-                </div>
-              </section>
-            ))}
+              ))}
+            </div>
           </div>
         ) : (
           <EmptyState

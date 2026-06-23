@@ -12,21 +12,29 @@ export type IconName =
   | "cloud"
   | "delete"
   | "edit"
+  | "education"
+  | "entertainment"
   | "expense"
   | "feedback"
   | "flow"
+  | "food"
   | "goal"
+  | "health"
   | "home"
   | "income"
   | "lock"
+  | "misc"
   | "moon"
   | "plan"
   | "plus"
   | "report"
   | "search"
   | "shield"
+  | "shopping"
   | "sparkles"
   | "sun"
+  | "transport"
+  | "travel"
   | "user";
 
 interface IconProps extends SVGProps<SVGSVGElement> {
@@ -80,6 +88,18 @@ export function Icon({ name, size = 24, ...props }: IconProps) {
         <path d="m13.5 6.5 4 4" />
       </>
     ),
+    education: (
+      <>
+        <path d="m3 8.5 9-4 9 4-9 4-9-4Z" />
+        <path d="M7 10.5v4c0 1.8 2.2 3 5 3s5-1.2 5-3v-4" />
+      </>
+    ),
+    entertainment: (
+      <>
+        <rect x="4" y="6" width="16" height="13" rx="2.5" />
+        <path d="m8 6 2 4m3-4 2 4m3-4 2 4M4 10h16" />
+      </>
+    ),
     expense: (
       <>
         <path d="M12 3v18M5 12h14" />
@@ -98,11 +118,23 @@ export function Icon({ name, size = 24, ...props }: IconProps) {
         <ellipse cx="12" cy="12" rx="4.5" ry="10" transform="rotate(38 12 12)" />
       </>
     ),
+    food: (
+      <>
+        <path d="M7 3v8m4-8v8M7 7h4m-2 4v10" />
+        <path d="M17 3c-1.7 1.5-2.5 3.6-2.5 6.3 0 1.8 1 3 2.5 3V21" />
+      </>
+    ),
     goal: (
       <>
         <circle cx="12" cy="12" r="8.5" />
         <circle cx="12" cy="12" r="4" />
         <path d="m15 9 6-6m-1 0h1v1" />
+      </>
+    ),
+    health: (
+      <>
+        <path d="M20 8.8c0 5.2-8 10.2-8 10.2S4 14 4 8.8A4.4 4.4 0 0 1 12 6a4.4 4.4 0 0 1 8 2.8Z" />
+        <path d="M9 12h6m-3-3v6" />
       </>
     ),
     home: (
@@ -123,6 +155,7 @@ export function Icon({ name, size = 24, ...props }: IconProps) {
         <path d="M8 10V7a4 4 0 0 1 8 0v3m-4 4v3" />
       </>
     ),
+    misc: <path d="M5 12h.01M12 12h.01M19 12h.01" />,
     moon: <path d="M20 15.5A8 8 0 0 1 8.5 4 8.5 8.5 0 1 0 20 15.5Z" />,
     plan: (
       <>
@@ -148,6 +181,12 @@ export function Icon({ name, size = 24, ...props }: IconProps) {
         <path d="m8.5 12 2.2 2.2 4.8-5" />
       </>
     ),
+    shopping: (
+      <>
+        <path d="M6 8h12l-1 12H7L6 8Z" />
+        <path d="M9 8a3 3 0 0 1 6 0" />
+      </>
+    ),
     sparkles: (
       <>
         <path d="m12 2 1.3 4.7L18 8l-4.7 1.3L12 14l-1.3-4.7L6 8l4.7-1.3L12 2Z" />
@@ -158,6 +197,18 @@ export function Icon({ name, size = 24, ...props }: IconProps) {
       <>
         <circle cx="12" cy="12" r="4" />
         <path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+      </>
+    ),
+    transport: (
+      <>
+        <path d="M5 12 7 6h10l2 6v6H5v-6Z" />
+        <path d="M7 18v2m10-2v2M7 12h10M8 15h.01M16 15h.01" />
+      </>
+    ),
+    travel: (
+      <>
+        <path d="M3 13 21 5l-6 16-4-7-8-1Z" />
+        <path d="m11 14 10-9" />
       </>
     ),
     user: (

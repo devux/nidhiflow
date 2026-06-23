@@ -32,7 +32,7 @@ export function LoginPage() {
 
   return (
     <main className="page focused-page" id="main-content">
-      <PageHeader eyebrow="Welcome back" title="Log in" />
+      <PageHeader title="Log in" />
 
       {error ? <InlineAlert title="Could not log in">{error}</InlineAlert> : null}
 

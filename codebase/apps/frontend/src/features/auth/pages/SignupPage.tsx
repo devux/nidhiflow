@@ -46,7 +46,7 @@ export function SignupPage() {
 
   return (
     <main className="page focused-page" id="main-content">
-      <PageHeader eyebrow="Optional account" title="Create account" />
+      <PageHeader title="Create account" />
 
       {error ? <InlineAlert title="Account action failed">{error}</InlineAlert> : null}
       <Card>
