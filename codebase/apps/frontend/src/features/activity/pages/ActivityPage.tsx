@@ -1,3 +1,4 @@
+import List from "@mui/material/List";
 import { useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
@@ -200,13 +201,15 @@ export function ActivityPage() {
                 {formatDateHeading(date, preferences.locale, preferences.timezone)}
               </h2>
               <Card className="transaction-list">
-                {records.map((transaction) => (
-                  <TransactionRow
-                    key={transaction.id}
-                    locale={preferences.locale}
-                    transaction={transaction}
-                  />
-                ))}
+                <List disablePadding>
+                  {records.map((transaction) => (
+                    <TransactionRow
+                      key={transaction.id}
+                      locale={preferences.locale}
+                      transaction={transaction}
+                    />
+                  ))}
+                </List>
               </Card>
             </section>
           ))}

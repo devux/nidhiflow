@@ -34,3 +34,14 @@
   progress tracking.
 - Reintroduce Bills as a future feature outside the current Budget module,
   including due dates, status, recurrence, reminders, and related notifications.
+
+## Growth and Discoverability
+
+- Add SEO and AEO planning for the app, including metadata, structured content,
+  answer-friendly landing content, indexability decisions, and measurement.
+
+## Quality and Accessibility
+
+- Add a full accessibility test pass covering automated checks, keyboard
+  navigation, screen reader behavior, color contrast, focus states, and mobile
+  accessibility.

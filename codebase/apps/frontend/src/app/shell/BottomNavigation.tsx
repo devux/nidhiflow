@@ -1,39 +1,55 @@
-import { NavLink } from "react-router-dom";
-
-import { Icon, type IconName } from "../../shared/components/Icon";
+import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
+import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
+import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
+import MuiBottomNavigation from "@mui/material/BottomNavigation";
+import BottomNavigationAction from "@mui/material/BottomNavigationAction";
+import Paper from "@mui/material/Paper";
+import type { ReactElement } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const destinations: Array<{
-  icon: IconName;
+  icon: ReactElement;
   label: string;
   path: string;
 }> = [
-  { icon: "home", label: "Home", path: "/" },
-  { icon: "report", label: "Reports", path: "/reports" },
-  { icon: "flow", label: "Flow", path: "/flow" },
-  { icon: "plan", label: "Budget", path: "/budget" },
-  { icon: "user", label: "You", path: "/you" },
+  { icon: <HomeRoundedIcon />, label: "Home", path: "/" },
+  { icon: <AutoAwesomeRoundedIcon />, label: "Flow", path: "/flow" },
+  { icon: <PersonRoundedIcon />, label: "You", path: "/you" },
 ];
 
 export function BottomNavigation() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const currentPath =
+    destinations.find((destination) =>
+      destination.path === "/"
+        ? location.pathname === "/"
+        : location.pathname.startsWith(destination.path),
+    )?.path ?? false;
+
   return (
-    <nav aria-label="Primary navigation" className="bottom-navigation">
-      {destinations.map((destination) => (
-        <NavLink
-          className={({ isActive }) =>
-            `bottom-navigation__item ${
-              destination.label === "Flow" ? "bottom-navigation__item--flow" : ""
-            } ${isActive ? "is-active" : ""}`
-          }
-          end={destination.path === "/"}
-          key={destination.path}
-          to={destination.path}
-        >
-          <span className="bottom-navigation__icon">
-            <Icon name={destination.icon} size={destination.label === "Flow" ? 28 : 22} />
-          </span>
-          <span>{destination.label}</span>
-        </NavLink>
-      ))}
-    </nav>
+    <Paper
+      aria-label="Primary navigation"
+      className="bottom-navigation"
+      component="nav"
+      elevation={0}
+    >
+      <MuiBottomNavigation
+        showLabels
+        value={currentPath}
+        onChange={(_event, nextPath: string) => {
+          void navigate(nextPath);
+        }}
+      >
+        {destinations.map((destination) => (
+          <BottomNavigationAction
+            icon={destination.icon}
+            key={destination.path}
+            label={destination.label}
+            value={destination.path}
+          />
+        ))}
+      </MuiBottomNavigation>
+    </Paper>
   );
 }

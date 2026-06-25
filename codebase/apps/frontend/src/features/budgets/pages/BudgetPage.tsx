@@ -1,5 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import Chart from "chart.js/auto";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import IconButton from "@mui/material/IconButton";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import Typography from "@mui/material/Typography";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 
 import { useAuth } from "../../../app/providers/AuthProvider";
@@ -359,7 +365,10 @@ export function BudgetPage() {
   const [isBudgetDialogOpen, setIsBudgetDialogOpen] = useState(false);
   const [isBudgetSaving, setIsBudgetSaving] = useState(false);
   const [isQuickFillSaving, setIsQuickFillSaving] = useState(false);
-  const [openBudgetMenuId, setOpenBudgetMenuId] = useState<string | undefined>();
+  const [openBudgetMenu, setOpenBudgetMenu] = useState<{
+    anchorEl: HTMLElement;
+    id: string;
+  } | null>(null);
   const workspaceCurrency = workspaces[0]?.reportingCurrency ?? preferences.currency;
   const workspaceId = workspaces[0]?.id ?? null;
   const budgetDialogCloseRef = useRef<HTMLButtonElement>(null);
@@ -1065,7 +1074,7 @@ export function BudgetPage() {
               <div className="budget-category-list budget-category-list--compact">
                 {categoryRows.map((budget) => {
                   const theme = getBudgetCategoryTheme(budget.category);
-                  const isMenuOpen = openBudgetMenuId === budget.id;
+                  const isMenuOpen = openBudgetMenu?.id === budget.id;
 
                   return (
                     <section
@@ -1094,47 +1103,51 @@ export function BudgetPage() {
                           <small>{money(budget.remainingMinor)} left</small>
                         </span>
                         <span className="budget-category-row__menu">
-                          <button
+                          <IconButton
                             aria-expanded={isMenuOpen}
                             aria-haspopup="menu"
                             aria-label={`More actions for ${budget.category} budget`}
                             className="budget-category-row__menu-button"
-                            onClick={() =>
-                              setOpenBudgetMenuId((current) =>
-                                current === budget.id ? undefined : budget.id,
-                              )
-                            }
-                            type="button"
+                            onClick={(event) => {
+                              setOpenBudgetMenu((current) =>
+                                current?.id === budget.id
+                                  ? null
+                                  : { anchorEl: event.currentTarget, id: budget.id },
+                              );
+                            }}
+                            size="small"
                           >
-                            <Icon name="misc" size={18} />
-                          </button>
-                          {isMenuOpen ? (
-                            <div className="budget-category-menu" role="menu">
-                              <button
-                                onClick={() => {
-                                  setOpenBudgetMenuId(undefined);
-                                  editBudget(budget);
-                                }}
-                                role="menuitem"
-                                type="button"
-                              >
+                            <MoreVertIcon aria-hidden="true" focusable="false" fontSize="small" />
+                          </IconButton>
+                          <Menu
+                            anchorEl={openBudgetMenu?.anchorEl ?? null}
+                            onClose={() => setOpenBudgetMenu(null)}
+                            open={isMenuOpen}
+                          >
+                            <MenuItem
+                              onClick={() => {
+                                setOpenBudgetMenu(null);
+                                editBudget(budget);
+                              }}
+                            >
+                              <ListItemIcon>
                                 <Icon name="edit" size={18} />
-                                Edit
-                              </button>
-                              <button
-                                className="budget-category-menu__danger"
-                                onClick={() => {
-                                  setOpenBudgetMenuId(undefined);
-                                  deleteBudget(budget.id);
-                                }}
-                                role="menuitem"
-                                type="button"
-                              >
+                              </ListItemIcon>
+                              <Typography variant="body2">Edit</Typography>
+                            </MenuItem>
+                            <MenuItem
+                              className="budget-category-menu__danger"
+                              onClick={() => {
+                                setOpenBudgetMenu(null);
+                                void deleteBudget(budget.id);
+                              }}
+                            >
+                              <ListItemIcon>
                                 <Icon name="delete" size={18} />
-                                Delete
-                              </button>
-                            </div>
-                          ) : null}
+                              </ListItemIcon>
+                              <Typography variant="body2">Delete</Typography>
+                            </MenuItem>
+                          </Menu>
                         </span>
                       </div>
                       <BudgetProgressChart
@@ -1152,7 +1165,9 @@ export function BudgetPage() {
                         />
                         <button
                           aria-label={`Delete ${budget.category} budget`}
-                          onClick={() => deleteBudget(budget.id)}
+                          onClick={() => {
+                            void deleteBudget(budget.id);
+                          }}
                           type="button"
                         />
                       </span>

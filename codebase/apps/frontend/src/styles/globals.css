@@ -283,6 +283,7 @@ p {
 .home-header {
   min-height: auto;
   align-items: flex-start;
+  justify-content: space-between;
 }
 
 .home-header__identity {
@@ -350,6 +351,12 @@ p {
   height: 1.5rem;
 }
 
+.home-header-menu__button {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
 .home-header-menu__items {
   position: absolute;
   z-index: 20;
@@ -415,11 +422,11 @@ p {
   background: var(--color-brand-faint);
 }
 
-.card {
+.card.MuiCard-root {
   min-width: 0;
   padding: var(--space-5);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
+  border-radius: 1.25rem;
   background: var(--color-surface);
   box-shadow: var(--shadow-card);
 }
@@ -447,26 +454,32 @@ p {
   padding-inline: 16px;
 }
 
-.transaction-showcase-card__panel {
+.transaction-showcase-card__panel.MuiCard-root {
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(
+      circle at 18% 12%,
+      color-mix(in srgb, var(--color-brand) 10%, transparent),
+      transparent 12rem
+    ),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--color-brand-faint) 72%, var(--color-surface)),
+      var(--color-surface) 58%,
+      color-mix(in srgb, var(--color-brand-soft) 28%, var(--color-surface))
+    );
+  box-shadow: 0 1rem 2.4rem rgb(15 23 42 / 7%);
+  backdrop-filter: blur(18px);
+}
+
+.transaction-showcase-card__content {
   display: grid;
   grid-template-columns: minmax(0, 0.94fr) minmax(17rem, 1.35fr);
   align-items: center;
-  gap: clamp(1.2rem, 3vw, 3.4rem);
-  padding: clamp(1.4rem, 3.2vw, 3rem);
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--color-brand) 20%, var(--color-border));
-  border-radius: clamp(1.4rem, 3vw, 2.25rem);
-  background:
-    radial-gradient(
-      circle at 20% 18%,
-      color-mix(in srgb, var(--color-brand) 18%, transparent),
-      transparent 15rem
-    ),
-    linear-gradient(145deg, var(--color-brand-faint), var(--color-surface));
-  box-shadow:
-    0 1.2rem 3.2rem rgb(15 23 42 / 9%),
-    inset 0 0 0 1px rgb(255 255 255 / 78%);
-  backdrop-filter: blur(18px);
+  gap: clamp(0.9rem, 2.2vw, 2.4rem);
+  padding: clamp(1rem, 2.2vw, 2rem) !important;
 }
 
 .transaction-showcase-card__progress {
@@ -478,7 +491,7 @@ p {
 .transaction-progress-ring {
   position: relative;
   display: grid;
-  width: min(100%, clamp(12rem, 27vw, 23rem));
+  width: min(100%, clamp(10rem, 22vw, 18rem));
   aspect-ratio: 1;
   border-radius: 50%;
   place-items: center;
@@ -508,38 +521,6 @@ p {
   pointer-events: none;
 }
 
-.transaction-progress-ring__rocket {
-  position: absolute;
-  right: 12%;
-  top: -5%;
-  z-index: 1;
-  display: grid;
-  width: clamp(3.8rem, 9vw, 7.2rem);
-  height: clamp(3.8rem, 9vw, 7.2rem);
-  place-items: center;
-  color: #7740d4;
-  filter: drop-shadow(0 0.9rem 0.9rem rgb(115 64 212 / 18%));
-  transform: rotate(38deg);
-}
-
-.transaction-progress-ring__rocket svg {
-  width: 82%;
-  height: 82%;
-}
-
-.transaction-progress-ring__rocket::after {
-  position: absolute;
-  left: 0.25rem;
-  bottom: 0.4rem;
-  z-index: -1;
-  width: 1.7rem;
-  height: 2.4rem;
-  border-radius: 50% 50% 60% 60%;
-  background: linear-gradient(#ffcf2f, #ff7a1a);
-  content: "";
-  filter: blur(0.15px);
-}
-
 .transaction-progress-ring__content {
   position: relative;
   z-index: 1;
@@ -552,35 +533,35 @@ p {
 
 .transaction-progress-ring__content strong {
   color: #08a64e;
-  font-size: clamp(3.2rem, 8vw, 6.5rem);
+  font-size: clamp(2.6rem, 6.4vw, 5.1rem);
   font-weight: 950;
   letter-spacing: 0;
   line-height: 0.95;
 }
 
 .transaction-progress-ring__content small {
-  margin-top: 0.45rem;
-  font-size: clamp(1.05rem, 2.6vw, 2rem);
+  margin-top: 0.25rem;
+  font-size: clamp(0.9rem, 2vw, 1.45rem);
   font-weight: 700;
   line-height: 1.18;
 }
 
 .transaction-showcase-card__stats {
   display: grid;
-  gap: clamp(0.75rem, 1.7vw, 1.1rem);
+  gap: clamp(0.5rem, 1.2vw, 0.8rem);
   min-width: 0;
   margin: 0;
 }
 
 .transaction-showcase-card__stat {
   display: grid;
-  min-height: clamp(4.8rem, 8vw, 7.8rem);
+  min-height: clamp(3.85rem, 6.2vw, 5.8rem);
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: clamp(0.8rem, 2vw, 1.5rem);
-  padding: clamp(0.65rem, 1.4vw, 0.9rem) clamp(0.9rem, 2vw, 1.45rem);
+  gap: clamp(0.55rem, 1.4vw, 1rem);
+  padding: clamp(0.45rem, 1vw, 0.68rem) clamp(0.7rem, 1.5vw, 1rem);
   border: 1px solid var(--color-border);
-  border-radius: clamp(1.1rem, 2vw, 1.7rem);
+  border-radius: 1.1rem;
   background: color-mix(in srgb, var(--color-surface) 88%, transparent);
   box-shadow: 0 0.7rem 1.65rem rgb(15 23 42 / 4%);
 }
@@ -589,20 +570,20 @@ p {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: clamp(0.9rem, 2.2vw, 1.6rem);
+  gap: clamp(0.65rem, 1.5vw, 1rem);
   color: var(--color-text-primary);
-  font-size: clamp(1.25rem, 2.7vw, 2.15rem);
+  font-size: clamp(1rem, 2.1vw, 1.55rem);
   font-weight: 760;
 }
 
 .transaction-showcase-card__stat-icon {
   display: grid;
-  width: clamp(3.8rem, 7vw, 6.5rem);
-  height: clamp(3.8rem, 7vw, 6.5rem);
+  width: clamp(3rem, 5.2vw, 4.65rem);
+  height: clamp(3rem, 5.2vw, 4.65rem);
   flex: 0 0 auto;
-  border-radius: clamp(1rem, 2vw, 1.55rem);
+  border-radius: 1rem;
   place-items: center;
-  font-size: clamp(1.45rem, 3vw, 2.35rem);
+  font-size: clamp(1.1rem, 2.2vw, 1.7rem);
 }
 
 .transaction-showcase-card__stat-icon--total {
@@ -624,7 +605,7 @@ p {
   min-width: 0;
   margin: 0;
   color: var(--color-text-primary);
-  font-size: clamp(1.2rem, 3vw, 2.55rem);
+  font-size: clamp(1rem, 2.35vw, 1.9rem);
   font-weight: 900;
   letter-spacing: 0;
   line-height: 1.1;
@@ -645,17 +626,21 @@ p {
   grid-column: 1 / -1;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: clamp(0.45rem, 1vw, 0.7rem);
-  min-height: clamp(3.35rem, 5vw, 4.25rem);
-  margin-top: clamp(0.35rem, 1vw, 0.65rem);
-  padding: clamp(0.5rem, 1vw, 0.8rem) clamp(0.65rem, 1.4vw, 1rem);
+  gap: 0.55rem;
+  min-height: 2.2rem;
+  margin-top: 0.15rem;
+  padding: 0.28rem 0.45rem;
   border: 1px solid color-mix(in srgb, var(--color-brand) 24%, var(--color-border));
-  border-radius: clamp(0.9rem, 1.5vw, 1.25rem);
+  border-radius: 1rem;
   color: var(--color-text-primary);
-  background: linear-gradient(90deg, var(--color-brand-soft) 0%, var(--color-brand-faint) 100%);
+  background: color-mix(in srgb, var(--color-brand-soft) 62%, var(--color-surface));
   box-shadow: inset 0 0 1.1rem rgb(19 174 84 / 7%);
-  font-size: clamp(0.82rem, 1.45vw, 1.05rem);
+  font-size: 10px;
   font-weight: 650;
+}
+
+.transaction-showcase-card__tip .MuiTypography-root {
+  font-size: 10px;
 }
 
 .transaction-showcase-card--alert .transaction-showcase-card__tip {
@@ -674,13 +659,13 @@ p {
 
 .transaction-showcase-card__tip-icon {
   display: grid;
-  width: clamp(2.35rem, 4vw, 3.2rem);
-  height: clamp(2.35rem, 4vw, 3.2rem);
+  width: 1.65rem;
+  height: 1.65rem;
   border-radius: 50%;
   place-items: center;
   color: #ffca28;
   background: var(--color-brand-faint);
-  font-size: clamp(1.05rem, 2vw, 1.55rem);
+  font-size: 0.82rem;
 }
 
 .transaction-showcase-card--alert .transaction-showcase-card__tip-icon {
@@ -690,16 +675,16 @@ p {
 
 .transaction-showcase-card__insights {
   display: inline-flex;
-  min-height: 3rem;
+  min-height: 1.8rem;
   align-items: center;
   justify-content: center;
-  gap: 0.6rem;
-  padding-inline: clamp(0.8rem, 1.5vw, 1.2rem);
+  gap: 0.4rem;
+  padding-inline: 0.55rem;
   border: 1px solid color-mix(in srgb, var(--color-brand) 42%, var(--color-border));
-  border-radius: 0.9rem;
+  border-radius: 0.75rem;
   color: var(--color-brand-strong);
   background: color-mix(in srgb, var(--color-surface) 72%, transparent);
-  font-size: clamp(0.82rem, 1.45vw, 1.05rem);
+  font-size: clamp(0.72rem, 1.2vw, 0.9rem);
   font-weight: 850;
   line-height: 1.15;
   text-decoration: none;
@@ -722,7 +707,7 @@ p {
 }
 
 .transaction-history-card {
-  padding: var(--space-4);
+  padding: 0 var(--space-4) var(--space-4);
 }
 
 .transaction-history-card .section-heading {
@@ -750,12 +735,12 @@ p {
   flex: 0 0 auto;
 }
 
-.transaction-history-list {
+.transaction-history-list.MuiList-root {
   display: grid;
   gap: var(--space-2);
 }
 
-.transaction-history-row {
+.transaction-history-row.MuiListItemButton-root {
   display: grid;
   min-width: 0;
   min-height: 4.75rem;
@@ -765,14 +750,25 @@ p {
   border-radius: 1.25rem;
   color: var(--color-text-primary);
   text-decoration: none;
+  transition:
+    background-color 160ms ease,
+    transform 160ms ease;
 }
 
-.transaction-history-row:focus-visible {
+.transaction-history-row.MuiListItemButton-root:hover {
+  background: color-mix(in srgb, var(--color-brand-faint) 74%, var(--color-surface));
+}
+
+.transaction-history-row.MuiListItemButton-root:active {
+  transform: scale(0.995);
+}
+
+.transaction-history-row.MuiListItemButton-root:focus-visible {
   outline: 3px solid var(--color-focus);
   outline-offset: 3px;
 }
 
-.transaction-history-row__avatar {
+.transaction-history-row__avatar.MuiAvatar-root {
   display: grid;
   width: 3rem;
   height: 3rem;
@@ -797,7 +793,7 @@ p {
   gap: 0.15rem;
 }
 
-.transaction-history-row__details strong {
+.transaction-history-row__details .MuiListItemText-primary {
   overflow: hidden;
   font-size: 1rem;
   font-weight: 500;
@@ -806,7 +802,7 @@ p {
   white-space: nowrap;
 }
 
-.transaction-history-row__details small {
+.transaction-history-row__details .MuiListItemText-secondary {
   overflow: hidden;
   color: var(--color-text-secondary);
   font-size: 0.8125rem;
@@ -923,14 +919,14 @@ p {
 }
 
 @media (max-width: 52rem) {
-  .transaction-showcase-card__panel {
+  .transaction-showcase-card__content {
     grid-template-columns: minmax(8rem, 0.9fr) minmax(0, 1.22fr);
-    gap: clamp(0.75rem, 2vw, 1.4rem);
-    padding: clamp(0.9rem, 2.6vw, 1.5rem);
+    gap: clamp(0.55rem, 1.5vw, 1rem);
+    padding: clamp(0.7rem, 1.9vw, 1.15rem) !important;
   }
 
   .transaction-progress-ring {
-    width: min(100%, 14rem);
+    width: min(100%, 11.75rem);
   }
 
   .transaction-showcase-card__tip {
@@ -974,92 +970,79 @@ p {
     letter-spacing: 0.05em;
   }
 
-  .transaction-showcase-card__panel {
+  .transaction-showcase-card__content {
     grid-template-columns: minmax(7.25rem, 0.9fr) minmax(0, 1.2fr);
-    gap: 0.65rem;
+    gap: 0.5rem;
     align-items: center;
-    padding: 0.75rem;
-    border-radius: 1.25rem;
+    padding: 0.58rem !important;
   }
 
   .transaction-progress-ring {
-    width: min(100%, 8.25rem);
-  }
-
-  .transaction-progress-ring__rocket {
-    width: 2.8rem;
-    height: 2.8rem;
-    right: 10%;
-    top: -6%;
-  }
-
-  .transaction-progress-ring__rocket::after {
-    width: 0.8rem;
-    height: 1.15rem;
+    width: min(100%, 7.25rem);
   }
 
   .transaction-progress-ring__content strong {
-    font-size: 2.15rem;
+    font-size: 1.85rem;
   }
 
   .transaction-progress-ring__content small {
-    margin-top: 0.25rem;
-    font-size: 0.78rem;
+    margin-top: 0.15rem;
+    font-size: 0.68rem;
     line-height: 1.12;
   }
 
   .transaction-showcase-card__stats {
-    gap: 0.42rem;
+    gap: 0.34rem;
   }
 
   .transaction-showcase-card__stat {
-    min-height: 3.2rem;
+    min-height: 2.75rem;
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.45rem;
-    padding: 0.38rem 0.55rem;
-    border-radius: 0.85rem;
+    gap: 0.35rem;
+    padding: 0.3rem 0.45rem;
+    border-radius: 0.75rem;
   }
 
   .transaction-showcase-card__stat dt {
-    gap: 0.45rem;
-    font-size: 0.72rem;
+    gap: 0.35rem;
+    font-size: 0.66rem;
     font-weight: 850;
   }
 
   .transaction-showcase-card__stat dd {
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     text-align: right;
   }
 
   .transaction-showcase-card__stat-icon {
-    width: 2.35rem;
-    height: 2.35rem;
-    border-radius: 0.75rem;
-    font-size: 1rem;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.65rem;
+    font-size: 0.82rem;
   }
 
   .transaction-showcase-card__tip {
     grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
-    gap: 0.38rem;
-    min-height: 2.75rem;
-    padding: 0.42rem;
-    border-radius: 0.9rem;
-    font-size: 0.58rem;
+    gap: 0.28rem;
+    min-height: 1.9rem;
+    padding: 0.24rem 0.32rem;
+    border-radius: 0.72rem;
+    font-size: 10px;
     line-height: 1.15;
   }
 
   .transaction-showcase-card__tip-icon {
-    width: 1.8rem;
-    height: 1.8rem;
-    font-size: 0.85rem;
+    width: 1.45rem;
+    height: 1.45rem;
+    font-size: 0.72rem;
   }
 
   .transaction-showcase-card__insights {
-    min-height: 1.95rem;
+    min-height: 1.55rem;
     gap: 0.25rem;
-    padding-inline: 0.42rem;
-    border-radius: 0.65rem;
+    padding-inline: 0.34rem;
+    border-radius: 0.55rem;
     font-size: 0.6rem;
   }
 
@@ -1072,7 +1055,7 @@ p {
   padding-block: 0;
 }
 
-.transaction-row {
+.transaction-row.MuiListItemButton-root {
   display: grid;
   min-width: 0;
   min-height: 4.75rem;
@@ -1080,15 +1063,32 @@ p {
   align-items: center;
   gap: var(--space-3);
   border-bottom: 1px solid var(--color-border);
+  border-radius: 0.9rem;
   color: var(--color-text-primary);
   text-decoration: none;
+  transition:
+    background-color 160ms ease,
+    transform 160ms ease;
 }
 
 .transaction-row:last-child {
   border-bottom: 0;
 }
 
-.transaction-row__icon {
+.transaction-row.MuiListItemButton-root:hover {
+  background: color-mix(in srgb, var(--color-brand-faint) 70%, var(--color-surface));
+}
+
+.transaction-row.MuiListItemButton-root:active {
+  transform: scale(0.995);
+}
+
+.transaction-row.MuiListItemButton-root:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+.transaction-row__icon.MuiAvatar-root {
   display: grid;
   width: 2.75rem;
   height: 2.75rem;
@@ -1104,9 +1104,21 @@ p {
   gap: var(--space-1);
 }
 
-.transaction-row__details small {
+.transaction-row__details .MuiListItemText-primary {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transaction-row__details .MuiListItemText-secondary {
   overflow: hidden;
   color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+  line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2089,20 +2101,13 @@ p {
   display: inline-flex;
 }
 
-.budget-category-row__menu-button {
-  display: grid;
+.budget-category-row__menu-button.MuiIconButton-root {
   width: 2rem;
   height: 2rem;
   padding: 0;
-  border: 0;
-  place-items: center;
   color: var(--color-text-secondary);
   background: transparent;
-  cursor: pointer;
-}
-
-.budget-category-row__menu-button svg {
-  transform: rotate(90deg);
+  box-shadow: none;
 }
 
 .budget-category-menu {
@@ -2876,16 +2881,15 @@ p {
 .bottom-navigation {
   position: fixed;
   z-index: 20;
-  inset-inline: 0;
   right: 0;
   bottom: 0;
   left: 0;
-  display: grid;
+  display: flex;
   width: 100%;
   max-width: 100%;
-  min-height: var(--navigation-height);
-  grid-template-columns: repeat(5, 1fr);
-  align-items: end;
+  min-height: calc(var(--navigation-height) + env(safe-area-inset-bottom));
+  align-items: flex-end;
+  justify-content: center;
   padding: var(--space-1) var(--space-2) calc(var(--space-1) + env(safe-area-inset-bottom));
   border-top: 1px solid var(--color-border);
   background: color-mix(in srgb, var(--color-surface) 94%, transparent);
@@ -2893,34 +2897,39 @@ p {
   backdrop-filter: blur(18px);
 }
 
-.bottom-navigation__item {
-  position: relative;
-  display: grid;
+.bottom-navigation .MuiBottomNavigation-root {
+  width: min(100%, 28rem);
+  height: auto;
+  min-height: 4rem;
+  border-radius: 1.25rem 1.25rem 0 0;
+  background: transparent;
+}
+
+.bottom-navigation .MuiBottomNavigationAction-root {
   min-width: 0;
   min-height: 3.75rem;
-  align-content: center;
-  justify-items: center;
-  gap: 0.2rem;
+  padding: 0.4rem 0.35rem 0.3rem;
   border-radius: var(--radius-control);
   color: var(--color-text-secondary);
+}
+
+.bottom-navigation .MuiBottomNavigationAction-label {
+  font-family: inherit;
   font-size: 0.6875rem;
   font-weight: 750;
-  text-decoration: none;
+  opacity: 1;
 }
 
-.bottom-navigation__icon {
-  display: grid;
-  min-width: 2rem;
-  min-height: 2rem;
-  place-items: center;
-}
-
-.bottom-navigation__item.is-active {
+.bottom-navigation .MuiBottomNavigationAction-root.Mui-selected {
   color: var(--color-brand-strong);
+}
+
+.bottom-navigation .MuiBottomNavigationAction-root.Mui-selected .MuiBottomNavigationAction-label {
+  font-size: 0.6875rem;
   font-weight: 900;
 }
 
-.bottom-navigation__item.is-active:not(.bottom-navigation__item--flow)::after {
+.bottom-navigation .MuiBottomNavigationAction-root.Mui-selected::after {
   position: absolute;
   bottom: 0.2rem;
   width: 1.25rem;
@@ -2930,21 +2939,23 @@ p {
   content: "";
 }
 
-.bottom-navigation__item--flow {
-  transform: translateY(-0.65rem);
+.bottom-navigation .MuiBottomNavigationAction-root[value="/flow"] {
+  transform: translateY(-0.55rem);
 }
 
-.bottom-navigation__item--flow .bottom-navigation__icon {
-  width: 3.5rem;
-  height: 3.5rem;
-  border: 0.35rem solid var(--color-surface);
+.bottom-navigation .MuiBottomNavigationAction-root[value="/flow"] .MuiSvgIcon-root {
+  box-sizing: content-box;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0.65rem;
+  border: 0.3rem solid var(--color-surface);
   border-radius: 50%;
   color: #fff;
   background: radial-gradient(circle at 35% 30%, #86efac, #16a34a 45%, #075f27);
   box-shadow: 0 0.5rem 1.25rem rgb(22 163 74 / 22%);
 }
 
-.bottom-navigation__item--flow.is-active .bottom-navigation__icon {
+.bottom-navigation .MuiBottomNavigationAction-root[value="/flow"].Mui-selected .MuiSvgIcon-root {
   outline: 3px solid var(--color-brand);
   outline-offset: 2px;
 }
@@ -3131,12 +3142,12 @@ p {
     bottom: auto;
     right: auto;
     left: 0;
+    display: flex;
     align-self: start;
     width: 15rem;
     min-height: 100vh;
-    grid-template-columns: 1fr;
-    align-content: center;
     align-items: center;
+    justify-content: center;
     gap: var(--space-2);
     padding: var(--space-8) var(--space-4);
     border-top: 0;
@@ -3144,21 +3155,34 @@ p {
     box-shadow: 0.5rem 0 2rem rgb(15 23 42 / 8%);
   }
 
-  .bottom-navigation__item {
+  .bottom-navigation .MuiBottomNavigation-root {
     width: 100%;
+    min-height: auto;
+    flex-direction: column;
+    gap: var(--space-2);
+    background: transparent;
+  }
+
+  .bottom-navigation .MuiBottomNavigationAction-root {
+    width: 100%;
+    max-width: none;
     min-height: 3.5rem;
-    grid-template-columns: 3rem 1fr;
-    align-content: center;
-    justify-items: start;
-    padding-inline: var(--space-3);
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: var(--space-3);
+    padding: 0 var(--space-3);
+  }
+
+  .bottom-navigation .MuiBottomNavigationAction-label,
+  .bottom-navigation .MuiBottomNavigationAction-root.Mui-selected .MuiBottomNavigationAction-label {
     font-size: 0.9rem;
   }
 
-  .bottom-navigation__item.is-active {
+  .bottom-navigation .MuiBottomNavigationAction-root.Mui-selected {
     background: var(--color-brand-faint);
   }
 
-  .bottom-navigation__item.is-active:not(.bottom-navigation__item--flow)::after {
+  .bottom-navigation .MuiBottomNavigationAction-root.Mui-selected::after {
     top: 50%;
     right: var(--space-3);
     bottom: auto;
@@ -3167,13 +3191,14 @@ p {
     transform: translateY(-50%);
   }
 
-  .bottom-navigation__item--flow {
+  .bottom-navigation .MuiBottomNavigationAction-root[value="/flow"] {
     transform: none;
   }
 
-  .bottom-navigation__item--flow .bottom-navigation__icon {
-    width: 3rem;
-    height: 3rem;
+  .bottom-navigation .MuiBottomNavigationAction-root[value="/flow"] .MuiSvgIcon-root {
+    width: 1.55rem;
+    height: 1.55rem;
+    padding: 0.55rem;
     border-width: 0.25rem;
   }
 }

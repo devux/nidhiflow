@@ -5,13 +5,25 @@ import {
   faBagShopping,
   faLightbulb,
   faPiggyBank,
-  faRocket,
   faWallet,
 } from "@fortawesome/free-solid-svg-icons";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
-import { type CSSProperties, useMemo, useState } from "react";
+import Avatar from "@mui/material/Avatar";
+import Box from "@mui/material/Box";
+import MuiCard from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import IconButton from "@mui/material/IconButton";
+import List from "@mui/material/List";
+import ListItemAvatar from "@mui/material/ListItemAvatar";
+import ListItemButton from "@mui/material/ListItemButton";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
+import { type CSSProperties, type MouseEvent, useMemo, useState } from "react";
 
-import { useAuth } from "../../../app/providers/AuthProvider";
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
 import { useGuestTransactions } from "../../../app/providers/GuestTransactionsProvider";
 import { formatMoney } from "../../../domain/money/money";
@@ -19,7 +31,6 @@ import type { SupportedLocale } from "../../../domain/preferences/guestPreferenc
 import { calculateTransactionTotals } from "../../../domain/transactions/transaction";
 import type { GuestTransaction } from "../../../domain/transactions/transaction";
 import { Brand } from "../../../shared/components/Brand";
-import { Card } from "../../../shared/components/Card";
 import { EmptyState } from "../../../shared/components/EmptyState";
 import { Icon } from "../../../shared/components/Icon";
 
@@ -65,38 +76,42 @@ function TransactionHistoryRow({ locale, transaction }: TransactionHistoryRowPro
   );
 
   return (
-    <Link
+    <ListItemButton
       aria-label={`Edit ${title} ${transaction.type} from ${formatTransactionDate(
         transaction.transactionDate,
         locale,
       )}`}
       className="transaction-history-row"
+      component={Link}
       to={`/transactions/${transaction.id}/edit`}
     >
-      <span
-        className={`transaction-history-row__avatar transaction-history-row__avatar--${transaction.type}`}
-      >
-        {transaction.category.charAt(0)}
-      </span>
-      <span className="transaction-history-row__details">
-        <strong>{title}</strong>
-        <small>{formatTransactionDate(transaction.transactionDate, locale)}</small>
-      </span>
-      <span
+      <ListItemAvatar>
+        <Avatar
+          className={`transaction-history-row__avatar transaction-history-row__avatar--${transaction.type}`}
+        >
+          {transaction.category.charAt(0)}
+        </Avatar>
+      </ListItemAvatar>
+      <ListItemText
+        className="transaction-history-row__details"
+        primary={title}
+        secondary={formatTransactionDate(transaction.transactionDate, locale)}
+      />
+      <Typography
         className={`transaction-history-row__amount transaction-history-row__amount--${transaction.type}`}
+        component="span"
       >
         <span className="sr-only">{transaction.type === "income" ? "Income" : "Expense"}:</span>
         {amount}
-      </span>
-    </Link>
+      </Typography>
+    </ListItemButton>
   );
 }
 
 export function HomePage() {
-  const { isAuthenticated, user, workspaces } = useAuth();
   const { preferences } = useGuestPreferences();
   const { transactions } = useGuestTransactions();
-  const [isHeaderMenuOpen, setIsHeaderMenuOpen] = useState(false);
+  const [headerMenuAnchor, setHeaderMenuAnchor] = useState<HTMLElement | null>(null);
   const currentMonthRange = useMemo(() => getCurrentMonthRange(), []);
   const currentMonthTransactions = useMemo(
     () =>
@@ -124,140 +139,134 @@ export function HomePage() {
   const progressRingStyle = {
     "--transaction-progress": `${budgetProgressValue * 3.6}deg`,
   } as CSSProperties;
-  const displayName = user?.displayName ?? preferences.displayName;
-  const activeWorkspace = workspaces[0];
-  const workspaceLabel = isAuthenticated
-    ? activeWorkspace?.type === "family"
-      ? activeWorkspace.name
-      : `${displayName}'s workspace`
-    : "Guest read-only workspace";
   const showcaseTip = isBudgetUnderControl
     ? "Tip: You're saving better than 68% of users!"
     : "Tip: Expenses are above income. Review spending.";
+  const isHeaderMenuOpen = Boolean(headerMenuAnchor);
+
+  function openHeaderMenu(event: MouseEvent<HTMLButtonElement>) {
+    setHeaderMenuAnchor(event.currentTarget);
+  }
+
+  function closeHeaderMenu() {
+    setHeaderMenuAnchor(null);
+  }
 
   return (
     <main className="page page--home" id="main-content">
-      <header className="home-header">
-        <div className="home-header__identity">
+      <Stack className="home-header" component="header" direction="row">
+        <Box className="home-header__identity">
           <Brand />
-          <p className="eyebrow">{workspaceLabel}</p>
-        </div>
-        <div
-          className="home-header-menu"
-          onBlur={(event) => {
-            if (!event.currentTarget.contains(event.relatedTarget)) {
-              setIsHeaderMenuOpen(false);
-            }
-          }}
-        >
-          <button
+        </Box>
+        <Box className="home-header-menu">
+          <IconButton
             aria-controls={isHeaderMenuOpen ? "home-header-menu" : undefined}
             aria-expanded={isHeaderMenuOpen}
             aria-haspopup="menu"
             aria-label="More options"
-            className="icon-button home-header-menu__button"
-            onClick={() => setIsHeaderMenuOpen((isOpen) => !isOpen)}
-            type="button"
+            className="home-header-menu__button"
+            onClick={openHeaderMenu}
+            size="small"
           >
             <MoreVertIcon aria-hidden="true" focusable="false" fontSize="small" />
-          </button>
-          {isHeaderMenuOpen ? (
-            <div className="home-header-menu__items" id="home-header-menu" role="menu">
-              <Link
-                aria-label="Notification preferences"
-                className="home-header-menu__item"
-                onClick={() => setIsHeaderMenuOpen(false)}
-                role="menuitem"
-                to="/you#preferences"
-              >
+          </IconButton>
+          <Menu
+            anchorEl={headerMenuAnchor}
+            id="home-header-menu"
+            onClose={closeHeaderMenu}
+            open={isHeaderMenuOpen}
+          >
+            <MenuItem component={Link} onClick={closeHeaderMenu} to="/you#preferences">
+              <ListItemIcon>
                 <Icon name="bell" size={18} />
-                <span>Notification preferences</span>
-              </Link>
-            </div>
-          ) : null}
-        </div>
-      </header>
+              </ListItemIcon>
+              <Typography variant="body2">Notification preferences</Typography>
+            </MenuItem>
+          </Menu>
+        </Box>
+      </Stack>
 
-      <section aria-label="Budget summaries">
+      <section aria-label="Budget summaries" className="home-budget-section">
         <div className="home-summary-grid">
-          <div
+          <MuiCard
             className={`home-summary-card transaction-showcase-card__panel${
               isBudgetUnderControl ? "" : " transaction-showcase-card--alert"
             }`}
+            elevation={0}
           >
-            <div className="transaction-showcase-card__progress">
-              <div
-                aria-label={`Budget usage: ${budgetProgressValue} percent`}
-                aria-valuemax={100}
-                aria-valuemin={0}
-                aria-valuenow={budgetProgressValue}
-                className="transaction-progress-ring"
-                role="progressbar"
-                style={progressRingStyle}
-              >
-                <span className="transaction-progress-ring__rocket" aria-hidden="true">
-                  <FontAwesomeIcon icon={faRocket} />
-                </span>
-                <span className="transaction-progress-ring__content">
-                  <strong>{budgetProgressValue}%</strong>
-                  <small>
-                    of budget
-                    <br />
-                    used <span aria-hidden="true">😎</span>
-                  </small>
-                </span>
-              </div>
-            </div>
-
-            <dl className="transaction-showcase-card__stats">
-              <div className="transaction-showcase-card__stat">
-                <dt>
-                  <span className="transaction-showcase-card__stat-icon transaction-showcase-card__stat-icon--total">
-                    <FontAwesomeIcon icon={faWallet} />
-                  </span>
-                  <span>Total</span>
-                </dt>
-                <dd>{money(budgetTotalMinor.toString())}</dd>
-              </div>
-              <div className="transaction-showcase-card__stat">
-                <dt>
-                  <span className="transaction-showcase-card__stat-icon transaction-showcase-card__stat-icon--spent">
-                    <FontAwesomeIcon icon={faBagShopping} />
-                  </span>
-                  <span>Spent</span>
-                </dt>
-                <dd>{money(expenseMinor.toString())}</dd>
-              </div>
-              <div className="transaction-showcase-card__stat">
-                <dt>
-                  <span className="transaction-showcase-card__stat-icon transaction-showcase-card__stat-icon--remaining">
-                    <FontAwesomeIcon icon={faPiggyBank} />
-                  </span>
-                  <span>Remaining</span>
-                </dt>
-                <dd
-                  className={
-                    isBudgetUnderControl
-                      ? "transaction-showcase-card__amount--positive"
-                      : "transaction-showcase-card__amount--alert"
-                  }
+            <CardContent className="transaction-showcase-card__content">
+              <Box className="transaction-showcase-card__progress">
+                <Box
+                  aria-label={`Budget usage: ${budgetProgressValue} percent`}
+                  aria-valuemax={100}
+                  aria-valuemin={0}
+                  aria-valuenow={budgetProgressValue}
+                  className="transaction-progress-ring"
+                  role="progressbar"
+                  style={progressRingStyle}
                 >
-                  {money(budgetRemainingMinor.toString())}
-                </dd>
-              </div>
-            </dl>
+                  <span className="transaction-progress-ring__content">
+                    <Typography component="strong">{budgetProgressValue}%</Typography>
+                    <Typography component="small">
+                      of budget
+                      <br />
+                      used <span aria-hidden="true">😎</span>
+                    </Typography>
+                  </span>
+                </Box>
+              </Box>
 
-            <div className="transaction-showcase-card__tip">
-              <span className="transaction-showcase-card__tip-icon" aria-hidden="true">
-                <FontAwesomeIcon icon={faLightbulb} />
-              </span>
-              <span>{showcaseTip}</span>
-              <Link className="transaction-showcase-card__insights" to="/reports">
-                See Insights
-                <FontAwesomeIcon icon={faArrowTrendUp} />
-              </Link>
-            </div>
-          </div>
+              <List className="transaction-showcase-card__stats" component="dl">
+                <Box className="transaction-showcase-card__stat" component="div">
+                  <Typography component="dt">
+                    <span className="transaction-showcase-card__stat-icon transaction-showcase-card__stat-icon--total">
+                      <FontAwesomeIcon icon={faWallet} />
+                    </span>
+                    <span>Total</span>
+                  </Typography>
+                  <Typography component="dd">{money(budgetTotalMinor.toString())}</Typography>
+                </Box>
+                <Box className="transaction-showcase-card__stat" component="div">
+                  <Typography component="dt">
+                    <span className="transaction-showcase-card__stat-icon transaction-showcase-card__stat-icon--spent">
+                      <FontAwesomeIcon icon={faBagShopping} />
+                    </span>
+                    <span>Spent</span>
+                  </Typography>
+                  <Typography component="dd">{money(expenseMinor.toString())}</Typography>
+                </Box>
+                <Box className="transaction-showcase-card__stat" component="div">
+                  <Typography component="dt">
+                    <span className="transaction-showcase-card__stat-icon transaction-showcase-card__stat-icon--remaining">
+                      <FontAwesomeIcon icon={faPiggyBank} />
+                    </span>
+                    <span>Balance</span>
+                  </Typography>
+                  <Typography
+                    className={
+                      isBudgetUnderControl
+                        ? "transaction-showcase-card__amount--positive"
+                        : "transaction-showcase-card__amount--alert"
+                    }
+                    component="dd"
+                  >
+                    {money(budgetRemainingMinor.toString())}
+                  </Typography>
+                </Box>
+              </List>
+
+              <Box className="transaction-showcase-card__tip">
+                <span className="transaction-showcase-card__tip-icon" aria-hidden="true">
+                  <FontAwesomeIcon icon={faLightbulb} />
+                </span>
+                <Typography component="span">{showcaseTip}</Typography>
+                <Link className="transaction-showcase-card__insights" to="/reports">
+                  See Insights
+                  <FontAwesomeIcon icon={faArrowTrendUp} />
+                </Link>
+              </Box>
+            </CardContent>
+          </MuiCard>
 
           <section aria-label="Quick actions" className="home-actions-section">
             <div className="quick-actions">
@@ -298,16 +307,23 @@ export function HomePage() {
         </div>
       </section>
 
-      <Card aria-labelledby="recent-activity-title" className="transaction-history-card">
+      <MuiCard
+        aria-labelledby="recent-activity-title"
+        className="transaction-history-card"
+        component="section"
+        elevation={0}
+      >
         <div className="section-heading">
-          <h2 id="recent-activity-title">Transaction history</h2>
+          <Typography component="h2" id="recent-activity-title">
+            Transaction history
+          </Typography>
           <Link className="transaction-history-card__see-all" to="/activity">
             See all
             <Icon name="chevron" size={20} />
           </Link>
         </div>
         {recentTransactions.length > 0 ? (
-          <div className="transaction-history-list">
+          <List className="transaction-history-list" disablePadding>
             {recentTransactions.map((transaction) => (
               <TransactionHistoryRow
                 key={transaction.id}
@@ -315,7 +331,7 @@ export function HomePage() {
                 transaction={transaction}
               />
             ))}
-          </div>
+          </List>
         ) : (
           <EmptyState
             action={
@@ -328,7 +344,7 @@ export function HomePage() {
             title="No activity yet"
           />
         )}
-      </Card>
+      </MuiCard>
     </main>
   );
 }

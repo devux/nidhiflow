@@ -44,9 +44,8 @@ const defaultPreferences: GuestPreferences = {
   timezone: "UTC",
 };
 
-async function expectHomeHeader(workspaceName: string | RegExp): Promise<void> {
-  expect(await screen.findByText(workspaceName)).toBeDefined();
-  expect(screen.getByLabelText("NidhiFlow")).toBeDefined();
+async function expectHomeHeader(): Promise<void> {
+  expect(await screen.findByLabelText("NidhiFlow")).toBeDefined();
   expect(screen.getByRole("button", { name: "More options" })).toBeDefined();
 }
 
@@ -463,33 +462,27 @@ describe("App", () => {
     jest.useRealTimers();
   });
 
-  it("lets a guest enter and navigate the five mobile destinations in order", async () => {
+  it("lets a guest enter and navigate the mobile destinations in order", async () => {
     window.history.replaceState({}, "", "/");
     const user = userEvent.setup();
     render(
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    await expectHomeHeader("Guest read-only workspace");
+    await expectHomeHeader();
 
     const navigation = screen.getByRole("navigation", { name: "Primary navigation" });
-    const links = Array.from(navigation.querySelectorAll("a")).map((link) =>
-      link.textContent?.trim(),
-    );
+    const links = within(navigation)
+      .getAllByRole("button")
+      .map((button) => button.textContent?.trim());
 
-    expect(links).toEqual(["Home", "Reports", "Flow", "Budget", "You"]);
+    expect(links).toEqual(["Home", "Flow", "You"]);
     expect(links).not.toContain("Activity");
 
-    await user.click(screen.getByRole("link", { name: "Reports" }));
-    expect(await screen.findByRole("heading", { name: "Reports" })).toBeDefined();
-
-    await user.click(screen.getByRole("link", { name: "Flow" }));
+    await user.click(within(navigation).getByRole("button", { name: "Flow" }));
     expect(await screen.findByRole("heading", { name: "Flow" })).toBeDefined();
 
-    await user.click(screen.getByRole("link", { name: "Budget" }));
-    expect(await screen.findByRole("heading", { name: "Budget" })).toBeDefined();
-
-    await user.click(screen.getByRole("link", { name: "You" }));
+    await user.click(within(navigation).getByRole("button", { name: "You" }));
     expect(await screen.findByRole("heading", { name: "You" })).toBeDefined();
   });
 
@@ -526,7 +519,7 @@ describe("App", () => {
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    await expectHomeHeader("Guest read-only workspace");
+    await expectHomeHeader();
     await user.click(screen.getByRole("button", { name: "More options" }));
     await user.click(screen.getByRole("menuitem", { name: "Notification preferences" }));
 
@@ -581,7 +574,7 @@ describe("App", () => {
     await user.type(screen.getByLabelText("Password"), "StrongPassword123");
     await user.click(screen.getByRole("button", { name: "Create account" }));
 
-    expect(await screen.findByText("Maya's workspace")).toBeDefined();
+    await expectHomeHeader();
     expect(screen.getByRole("button", { name: "More options" })).toBeDefined();
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining("/api/v1/auth/register"),
@@ -641,7 +634,7 @@ describe("App", () => {
     await user.type(screen.getByLabelText("Password"), "StrongPassword123");
     await user.click(screen.getByRole("button", { name: "Create account" }));
 
-    expect(await screen.findByText("Maya's workspace")).toBeDefined();
+    await expectHomeHeader();
     expect(screen.queryByRole("region", { name: "Move local data" })).toBeNull();
     const migrationCall = fetchMock.mock.calls.find(([input]) =>
       getRequestUrl(input).endsWith("/api/v1/users/me/guest-migrations"),
@@ -696,8 +689,7 @@ describe("App", () => {
     await user.type(screen.getByLabelText("Password"), "StrongPassword123");
     await user.click(screen.getByRole("button", { name: "Log in" }));
 
-    await expectHomeHeader("Nila's workspace");
-    expect(screen.getByText("Nila's workspace")).toBeDefined();
+    await expectHomeHeader();
   });
 
   it("keeps the signed-in details after a browser refresh in the same session", async () => {
@@ -746,7 +738,7 @@ describe("App", () => {
     await user.type(screen.getByLabelText("Password"), "StrongPassword123");
     await user.click(screen.getByRole("button", { name: "Log in" }));
 
-    await expectHomeHeader("Nila's workspace");
+    await expectHomeHeader();
     firstRender.unmount();
 
     fetchMock.mockImplementation(() => Promise.reject(new Error("Network unavailable.")));
@@ -940,8 +932,7 @@ describe("App", () => {
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    await expectHomeHeader("Nila's workspace");
-    expect(screen.getByText("Nila's workspace")).toBeDefined();
+    await expectHomeHeader();
     expect(screen.queryByText("Nila Workspace")).toBeNull();
     expect(screen.queryByRole("heading", { name: /Guest/ })).toBeNull();
   });
@@ -1043,7 +1034,7 @@ describe("App", () => {
     await user.type(screen.getByLabelText("Password"), "StrongPassword123");
     await user.click(screen.getByRole("button", { name: "Log in" }));
 
-    await expectHomeHeader("Maya's workspace");
+    await expectHomeHeader();
     expect(screen.queryByRole("region", { name: "Move local data" })).toBeNull();
   });
 
@@ -1096,7 +1087,7 @@ describe("App", () => {
     await user.type(screen.getByLabelText("Password"), "StrongPassword123");
     await user.click(screen.getByRole("button", { name: "Log in" }));
 
-    await expectHomeHeader("Nila's workspace");
+    await expectHomeHeader();
 
     act(() => {
       jest.advanceTimersByTime(5 * 60 * 1000 + 1);
@@ -1138,7 +1129,7 @@ describe("App", () => {
       />,
     );
 
-    await expectHomeHeader("Guest read-only workspace");
+    await expectHomeHeader();
     const budgetSection = screen.getByRole("region", { name: "Budget summaries" });
 
     expect(within(budgetSection).queryByText("Savings goal")).toBeNull();
@@ -1220,8 +1211,15 @@ describe("App", () => {
     expect(screen.getByText("1 of 12 monthly plans entered")).toBeDefined();
     await user.click(screen.getByRole("button", { name: "Monthly" }));
 
-    await user.click(screen.getByRole("link", { name: "Home" }));
-    await user.click(screen.getByRole("link", { name: "Budget" }));
+    await user.click(
+      within(screen.getByRole("navigation", { name: "Primary navigation" })).getByRole("button", {
+        name: "Home",
+      }),
+    );
+    act(() => {
+      window.history.pushState({}, "", "/budget");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
     expect(await screen.findByText("₹80.00 spent of ₹250.00")).toBeDefined();
 
     await user.click(screen.getByRole("button", { name: "Edit Food budget" }));
@@ -1480,10 +1478,13 @@ describe("App", () => {
     await screen.findByText("Profile updated.");
     expect(screen.getByRole("heading", { name: "Priya" })).toBeDefined();
 
-    await user.click(screen.getByRole("link", { name: "Home" }));
+    await user.click(
+      within(screen.getByRole("navigation", { name: "Primary navigation" })).getByRole("button", {
+        name: "Home",
+      }),
+    );
 
-    await expectHomeHeader("Priya's workspace");
-    expect(screen.getByText("Priya's workspace")).toBeDefined();
+    await expectHomeHeader();
     expect(screen.queryByText("Old Workspace Name")).toBeNull();
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining("/api/v1/users/me"),
@@ -1504,7 +1505,7 @@ describe("App", () => {
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    await expectHomeHeader("Guest read-only workspace");
+    await expectHomeHeader();
 
     expect((await axe(container)).violations).toHaveLength(0);
   });
@@ -1605,7 +1606,7 @@ describe("App", () => {
         method: "POST",
       }),
     );
-    expect(await screen.findByText("Nila's workspace")).toBeDefined();
+    await expectHomeHeader();
     expect(window.location.pathname).toBe("/");
   });
 
@@ -1623,7 +1624,11 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Show more categories" }));
 
     expect(screen.getByRole("button", { name: "Travel" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Home" })).toBeDefined();
+    expect(
+      within(screen.getByRole("group", { name: "Category" })).getByRole("button", {
+        name: "Home",
+      }),
+    ).toBeDefined();
   });
 
   it("has no automated accessibility violations on transaction entry", async () => {
