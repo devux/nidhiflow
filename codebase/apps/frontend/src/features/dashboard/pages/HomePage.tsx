@@ -5,12 +5,13 @@ import { useAuth } from "../../../app/providers/AuthProvider";
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
 import { useGuestTransactions } from "../../../app/providers/GuestTransactionsProvider";
 import { formatMoney } from "../../../domain/money/money";
+import type { SupportedLocale } from "../../../domain/preferences/guestPreferences";
 import { calculateTransactionTotals } from "../../../domain/transactions/transaction";
+import type { GuestTransaction } from "../../../domain/transactions/transaction";
 import { Brand } from "../../../shared/components/Brand";
 import { Card } from "../../../shared/components/Card";
 import { EmptyState } from "../../../shared/components/EmptyState";
 import { Icon } from "../../../shared/components/Icon";
-import { TransactionRow } from "../../transactions/components/TransactionRow";
 
 function toDateValue(date: Date): string {
   return [
@@ -29,6 +30,58 @@ function getCurrentMonthRange() {
   };
 }
 
+function formatTransactionDate(value: string, locale: SupportedLocale) {
+  const [datePart] = value.split("T");
+  const [year, month, day] = datePart.split("-").map(Number);
+  const date = year && month && day ? new Date(year, month - 1, day) : new Date(value);
+
+  return new Intl.DateTimeFormat(locale, {
+    day: "numeric",
+    month: "long",
+  }).format(date);
+}
+
+interface TransactionHistoryRowProps {
+  locale: SupportedLocale;
+  transaction: GuestTransaction;
+}
+
+function TransactionHistoryRow({ locale, transaction }: TransactionHistoryRowProps) {
+  const title = transaction.note.trim() || transaction.category;
+  const amount = formatMoney(
+    { amountMinor: transaction.amountMinor, currency: transaction.currency },
+    locale,
+    transaction.type === "income" ? { sign: "positive" } : undefined,
+  );
+
+  return (
+    <Link
+      aria-label={`Edit ${title} ${transaction.type} from ${formatTransactionDate(
+        transaction.transactionDate,
+        locale,
+      )}`}
+      className="transaction-history-row"
+      to={`/transactions/${transaction.id}/edit`}
+    >
+      <span
+        className={`transaction-history-row__avatar transaction-history-row__avatar--${transaction.type}`}
+      >
+        {transaction.category.charAt(0)}
+      </span>
+      <span className="transaction-history-row__details">
+        <strong>{title}</strong>
+        <small>{formatTransactionDate(transaction.transactionDate, locale)}</small>
+      </span>
+      <span
+        className={`transaction-history-row__amount transaction-history-row__amount--${transaction.type}`}
+      >
+        <span className="sr-only">{transaction.type === "income" ? "Income" : "Expense"}:</span>
+        {amount}
+      </span>
+    </Link>
+  );
+}
+
 export function HomePage() {
   const { isAuthenticated, user, workspaces } = useAuth();
   const { preferences } = useGuestPreferences();
@@ -45,7 +98,9 @@ export function HomePage() {
     [currentMonthRange.from, currentMonthRange.to, transactions],
   );
   const totals = calculateTransactionTotals(currentMonthTransactions);
-  const recentTransactions = transactions.slice(0, 4);
+  const recentTransactions = transactions
+    .filter((transaction) => !transaction.deletedAt)
+    .slice(0, 5);
   const money = (amountMinor: string) =>
     formatMoney({ amountMinor, currency: preferences.currency }, preferences.locale);
   const incomeMinor = BigInt(totals.incomeMinor);
@@ -116,13 +171,7 @@ export function HomePage() {
             </div>
           </Card>
 
-          <Card
-            aria-labelledby="quick-actions-title"
-            className="home-summary-card home-actions-card"
-          >
-            <div className="home-summary-card__header">
-              <h2 id="quick-actions-title">Quick actions</h2>
-            </div>
+          <section aria-label="Quick actions" className="home-actions-section">
             <div className="quick-actions">
               <Link
                 aria-label="Add income"
@@ -132,13 +181,7 @@ export function HomePage() {
                 <span className="quick-action__icon">
                   <Icon name="income" />
                 </span>
-                <span>
-                  <strong>
-                    <span className="quick-action__verb">Add </span>income
-                  </strong>
-                  <small>Record earnings</small>
-                </span>
-                <Icon name="chevron" />
+                <strong>Add income</strong>
               </Link>
               <Link
                 aria-label="Add expense"
@@ -148,31 +191,37 @@ export function HomePage() {
                 <span className="quick-action__icon">
                   <Icon name="expense" />
                 </span>
-                <span>
-                  <strong>
-                    <span className="quick-action__verb">Add </span>expense
-                  </strong>
-                  <small>Track spending</small>
+                <strong>Add expense</strong>
+              </Link>
+              <Link aria-label="Open budget" className="quick-action" to="/budget">
+                <span className="quick-action__icon">
+                  <Icon name="plan" />
                 </span>
-                <Icon name="chevron" />
+                <strong>Budget</strong>
+              </Link>
+              <Link aria-label="Open reports" className="quick-action" to="/reports">
+                <span className="quick-action__icon">
+                  <Icon name="report" />
+                </span>
+                <strong>Reports</strong>
               </Link>
             </div>
-          </Card>
+          </section>
         </div>
       </section>
 
-      <Card aria-labelledby="recent-activity-title">
+      <Card aria-labelledby="recent-activity-title" className="transaction-history-card">
         <div className="section-heading">
-          <h2 id="recent-activity-title">
-            <Icon name="activity" size={18} />
-            Recent activity
-          </h2>
-          <Link to="/activity">View all</Link>
+          <h2 id="recent-activity-title">Transaction history</h2>
+          <Link className="transaction-history-card__see-all" to="/activity">
+            See all
+            <Icon name="chevron" size={20} />
+          </Link>
         </div>
         {recentTransactions.length > 0 ? (
-          <div className="transaction-list">
+          <div className="transaction-history-list">
             {recentTransactions.map((transaction) => (
-              <TransactionRow
+              <TransactionHistoryRow
                 key={transaction.id}
                 locale={preferences.locale}
                 transaction={transaction}
