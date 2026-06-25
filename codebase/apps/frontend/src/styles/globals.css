@@ -128,6 +128,10 @@ p {
   padding-bottom: calc(var(--navigation-height) + var(--space-8) + env(safe-area-inset-bottom));
 }
 
+.app-shell__content--transaction-entry {
+  padding-bottom: 0;
+}
+
 .app-shell__content[inert] {
   pointer-events: none;
   user-select: none;
@@ -1150,7 +1154,8 @@ p {
   margin-inline: 0;
   overflow-x: hidden;
   padding-inline: var(--space-4);
-  background: var(--color-surface);
+  background:
+    radial-gradient(circle at 20% 0%, rgb(34 197 94 / 8%), transparent 20rem), var(--color-canvas);
 }
 
 .transaction-entry-page > .transaction-entry-header,
@@ -1172,12 +1177,15 @@ p {
   min-height: 2.75rem;
 }
 
-.transaction-entry-header .icon-button {
+.transaction-entry-header .icon-button,
+.transaction-entry-header__close.MuiIconButton-root {
   position: absolute;
   left: 0;
   width: 2.5rem;
   height: 2.5rem;
   border: 0;
+  color: var(--color-brand-strong);
+  background: transparent;
   box-shadow: none;
 }
 
@@ -1192,6 +1200,7 @@ p {
   gap: var(--space-3);
   width: 100%;
   min-width: 0;
+  padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
 }
 
 .transaction-form fieldset {
@@ -1236,7 +1245,7 @@ p {
   font-weight: 850;
 }
 
-.amount-card {
+.amount-card.MuiCard-root {
   display: grid;
   justify-items: center;
   padding: var(--space-1) 0 0;
@@ -1246,15 +1255,21 @@ p {
   text-align: center;
 }
 
-.amount-input {
+.amount-input.MuiFormControl-root {
   display: inline-grid;
   width: 100%;
   justify-self: center;
   max-width: 100%;
-  grid-template-columns: auto minmax(0, 15ch);
   align-items: center;
+}
+
+.amount-input .MuiInputBase-root {
   justify-content: center;
-  gap: 0.35rem;
+  color: var(--color-brand-strong);
+}
+
+.amount-input .MuiInputAdornment-root {
+  margin-right: 0.35rem;
 }
 
 .amount-input input::placeholder {
@@ -1263,7 +1278,7 @@ p {
   text-align: center;
 }
 
-.amount-input span {
+.amount-input .MuiInputAdornment-root span {
   color: var(--color-brand-strong);
   font-size: clamp(1.95rem, 8vw, 2.5rem);
   font-weight: 900;
@@ -1322,6 +1337,7 @@ p {
   font-weight: 800;
   line-height: 1.15;
   text-align: center;
+  text-transform: none;
 }
 
 .category-grid__more {
@@ -1338,14 +1354,22 @@ p {
   border-width: 1px;
 }
 
-.form-fields {
+.form-fields.MuiCard-root {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-2);
   min-width: 0;
   padding: 0;
   border: 0;
+  border-radius: 0;
   background: transparent;
   box-shadow: none;
+}
+
+.transaction-field-label {
+  color: var(--color-text-primary);
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1.1;
 }
 
 .form-fields label {
@@ -1375,6 +1399,38 @@ p {
   background: var(--color-surface);
   color: var(--color-text-primary);
   font-weight: 800;
+}
+
+.form-fields .MuiInputBase-input,
+.form-fields textarea.MuiInputBase-input {
+  min-height: auto;
+  padding: var(--space-3);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.form-fields .MuiOutlinedInput-root {
+  border-radius: 0.85rem;
+  background: color-mix(in srgb, var(--color-brand-faint) 58%, var(--color-surface));
+}
+
+.form-fields .MuiInputLabel-root {
+  color: var(--color-text-primary);
+  font-weight: 850;
+}
+
+.transaction-details-card .MuiOutlinedInput-notchedOutline {
+  border-color: color-mix(in srgb, var(--color-brand) 20%, var(--color-border));
+}
+
+.transaction-details-card .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: color-mix(in srgb, var(--color-brand) 45%, var(--color-border));
+}
+
+.transaction-details-card .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--color-brand);
+  border-width: 2px;
 }
 
 .activity-filters input,
@@ -1415,12 +1471,22 @@ p {
   margin-bottom: var(--space-3);
 }
 
+.transaction-submit.MuiButton-root,
 .transaction-submit {
+  position: fixed;
+  z-index: 10;
+  right: var(--space-4);
+  bottom: calc(var(--space-4) + env(safe-area-inset-bottom));
+  left: var(--space-4);
   min-height: 2.95rem;
-  border-radius: 0.55rem;
+  border-radius: 0.85rem;
   font-size: 0.95rem;
   justify-self: stretch;
-  max-width: 100%;
+  width: auto;
+  max-width: calc(37.5rem - (var(--space-4) * 2));
+  margin-inline: auto;
+  box-shadow: 0 0.75rem 1.5rem rgb(22 163 74 / 18%);
+  text-transform: none;
 }
 
 .remove-transaction {
@@ -3115,6 +3181,14 @@ p {
   .app-shell__content {
     grid-column: 2;
     padding-bottom: 0;
+  }
+
+  .app-shell--transaction-entry {
+    display: block;
+  }
+
+  .app-shell--transaction-entry .app-shell__content {
+    grid-column: auto;
   }
 
   .page {

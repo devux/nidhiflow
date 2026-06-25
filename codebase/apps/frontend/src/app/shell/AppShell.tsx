@@ -16,6 +16,7 @@ export function AppShell() {
   const navigate = useNavigate();
   const [showGuestChoice, setShowGuestChoice] = useState(false);
   const isAuthRoute = location.pathname === "/login" || location.pathname === "/signup";
+  const isTransactionEntryRoute = location.pathname.startsWith("/transactions/");
   const isApiLoading = apiLoadingCount > 0;
   const shouldInertContent =
     isApiLoading && !(typeof navigator !== "undefined" && navigator.userAgent.includes("jsdom"));
@@ -34,11 +35,20 @@ export function AppShell() {
   }
 
   return (
-    <div className="app-shell">
+    <div
+      className={isTransactionEntryRoute ? "app-shell app-shell--transaction-entry" : "app-shell"}
+    >
       <a className="skip-link" href="#main-content">
         Skip to main content
       </a>
-      <div className="app-shell__content" inert={shouldInertContent}>
+      <div
+        className={
+          isTransactionEntryRoute
+            ? "app-shell__content app-shell__content--transaction-entry"
+            : "app-shell__content"
+        }
+        inert={shouldInertContent}
+      >
         <Outlet />
       </div>
       {isApiLoading ? <LoadingScreen variant="overlay" /> : null}
@@ -57,7 +67,12 @@ export function AppShell() {
               <Button onClick={() => setShowGuestChoice(false)} variant="secondary">
                 Continue as guest
               </Button>
-              <Button onClick={() => navigate("/login")} variant="primary">
+              <Button
+                onClick={() => {
+                  void navigate("/login");
+                }}
+                variant="primary"
+              >
                 Log in
               </Button>
             </div>
@@ -65,7 +80,7 @@ export function AppShell() {
         </aside>
       ) : null}
       <GuestProtectionReminder isAuthenticated={isAuthenticated} />
-      <BottomNavigation />
+      {isTransactionEntryRoute ? null : <BottomNavigation />}
     </div>
   );
 }

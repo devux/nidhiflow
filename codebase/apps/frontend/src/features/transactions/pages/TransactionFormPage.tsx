@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import Box from "@mui/material/Box";
+import IconButton from "@mui/material/IconButton";
+import InputAdornment from "@mui/material/InputAdornment";
+import MuiButton from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
@@ -114,6 +121,7 @@ export function TransactionFormPage() {
   const [saveError, setSaveError] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const dateInputRef = useRef<HTMLInputElement | null>(null);
   const [showAllCategories, setShowAllCategories] = useState(
     existing ? initialCategories.indexOf(existing.category) >= COLLAPSED_CATEGORY_COUNT : false,
   );
@@ -141,8 +149,10 @@ export function TransactionFormPage() {
     return (
       <main className="page focused-page" id="main-content">
         <Card>
-          <h1>Transaction not found</h1>
-          <p>It may have already been removed from this device.</p>
+          <Typography component="h1" variant="h5">
+            Transaction not found
+          </Typography>
+          <Typography>It may have already been removed from this device.</Typography>
           <Link className="button button--secondary" to="/">
             Return to Home
           </Link>
@@ -156,11 +166,13 @@ export function TransactionFormPage() {
       <main className="page focused-page" id="main-content">
         <Card className="auth-required-card">
           <Icon name="lock" size={28} />
-          <h1>Sign in to save changes</h1>
-          <p>
+          <Typography component="h1" variant="h5">
+            Sign in to save changes
+          </Typography>
+          <Typography>
             Guest mode is read-only. Log in or create an account to add income, add expenses, edit
             transactions, or save finance changes to the database.
-          </p>
+          </Typography>
           <div className="confirmation-actions">
             <Link className="button button--primary" to="/login">
               Log in
@@ -195,6 +207,17 @@ export function TransactionFormPage() {
   ) {
     setValues((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: undefined }));
+  }
+
+  function openDatePicker() {
+    const input = dateInputRef.current;
+    if (!input) return;
+    input.focus();
+    input.showPicker?.();
+  }
+
+  function handleDateFieldClick() {
+    openDatePicker();
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -242,12 +265,18 @@ export function TransactionFormPage() {
 
   return (
     <main className="page focused-page transaction-entry-page" id="main-content">
-      <header className="focused-header transaction-entry-header">
-        <Link aria-label="Cancel and return to Home" className="icon-button" to="/">
-          <Icon name="back" />
-        </Link>
-        <h1>{title}</h1>
-      </header>
+      <Box className="focused-header transaction-entry-header" component="header">
+        <IconButton
+          aria-label="Cancel and return to Home"
+          className="transaction-entry-header__close"
+          component={Link}
+          size="small"
+          to="/"
+        >
+          <CloseRoundedIcon aria-hidden="true" focusable="false" fontSize="small" />
+        </IconButton>
+        <Typography component="h1">{title}</Typography>
+      </Box>
 
       {saveError ? (
         <InlineAlert title="Transaction was not saved">
@@ -260,7 +289,7 @@ export function TransactionFormPage() {
           <legend>Category</legend>
           <div className="category-grid" id="transaction-category">
             {visibleCategories.map((category) => (
-              <button
+              <MuiButton
                 aria-pressed={values.category === category}
                 className={values.category === category ? "is-selected" : ""}
                 key={category}
@@ -268,38 +297,51 @@ export function TransactionFormPage() {
                 type="button"
               >
                 <span>{category}</span>
-              </button>
+              </MuiButton>
             ))}
             {shouldCollapseCategories ? (
-              <button
+              <MuiButton
                 aria-label="Show more categories"
                 className="category-grid__more"
                 onClick={() => setShowAllCategories(true)}
                 type="button"
               >
                 <span>More</span>
-              </button>
+              </MuiButton>
             ) : null}
           </div>
           {errors.category ? <p className="field-error">{errors.category}</p> : null}
         </fieldset>
 
         <Card className="amount-card">
-          <div className="amount-input">
-            <span aria-hidden="true">{currencySymbol}</span>
-            <input
-              aria-describedby={errors.amount ? "transaction-amount-error" : undefined}
-              aria-invalid={Boolean(errors.amount)}
-              aria-label="Amount"
-              autoComplete="off"
-              id="transaction-amount"
-              inputMode="decimal"
-              onChange={(event) => updateValue("amount", normalizeAmountInput(event.target.value))}
-              pattern="[0-9]*[.]?[0-9]{0,2}"
-              placeholder="0"
-              value={values.amount}
-            />
-          </div>
+          <TextField
+            aria-describedby={errors.amount ? "transaction-amount-error" : undefined}
+            autoComplete="off"
+            className="amount-input"
+            error={Boolean(errors.amount)}
+            fullWidth
+            hiddenLabel
+            id="transaction-amount"
+            onChange={(event) => updateValue("amount", normalizeAmountInput(event.target.value))}
+            placeholder="0"
+            slotProps={{
+              htmlInput: {
+                "aria-label": "Amount",
+                inputMode: "decimal",
+                pattern: "[0-9]*[.]?[0-9]{0,2}",
+              },
+              input: {
+                disableUnderline: true,
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <span aria-hidden="true">{currencySymbol}</span>
+                  </InputAdornment>
+                ),
+              },
+            }}
+            value={values.amount}
+            variant="standard"
+          />
           <label className="amount-card__label" htmlFor="transaction-amount">
             {amountLabel}
           </label>
@@ -311,43 +353,70 @@ export function TransactionFormPage() {
         </Card>
 
         <Card className="form-fields transaction-details-card">
-          <label htmlFor="transaction-date">
-            <span>Date</span>
-            <input
-              aria-describedby={errors.transactionDate ? "transaction-date-error" : undefined}
-              aria-invalid={Boolean(errors.transactionDate)}
-              id="transaction-date"
-              onChange={(event) => updateValue("transactionDate", event.target.value)}
-              type="date"
-              value={values.transactionDate}
-            />
-          </label>
+          <Typography
+            className="transaction-field-label"
+            component="label"
+            htmlFor="transaction-date"
+          >
+            Date
+          </Typography>
+          <TextField
+            aria-describedby={errors.transactionDate ? "transaction-date-error" : undefined}
+            error={Boolean(errors.transactionDate)}
+            fullWidth
+            id="transaction-date"
+            onClick={handleDateFieldClick}
+            onChange={(event) => updateValue("transactionDate", event.target.value)}
+            slotProps={{
+              input: {
+                onClick: handleDateFieldClick,
+              },
+              htmlInput: {
+                "aria-label": "Date",
+                ref: dateInputRef,
+              },
+            }}
+            type="date"
+            value={values.transactionDate}
+          />
           {errors.transactionDate ? (
             <p className="field-error" id="transaction-date-error">
               {errors.transactionDate}
             </p>
           ) : null}
-          <label htmlFor="transaction-note">
-            <span>Notes</span>
-            <textarea
-              aria-describedby="transaction-note-help"
-              aria-invalid={Boolean(errors.note)}
-              id="transaction-note"
-              maxLength={101}
-              onChange={(event) => updateValue("note", event.target.value)}
-              placeholder="Add note (optional)"
-              rows={3}
-              value={values.note}
-            />
-          </label>
+          <Typography
+            className="transaction-field-label"
+            component="label"
+            htmlFor="transaction-note"
+          >
+            Notes
+          </Typography>
+          <TextField
+            aria-describedby="transaction-note-help"
+            error={Boolean(errors.note)}
+            fullWidth
+            id="transaction-note"
+            multiline
+            onChange={(event) => updateValue("note", event.target.value)}
+            placeholder="Add note (optional)"
+            rows={3}
+            slotProps={{ htmlInput: { maxLength: 101 } }}
+            value={values.note}
+          />
           <p className={errors.note ? "field-error" : "field-help"} id="transaction-note-help">
             {errors.note ?? `${values.note.length}/100 characters`}
           </p>
         </Card>
 
-        <Button className="transaction-submit" disabled={isSaving} fullWidth type="submit">
+        <MuiButton
+          className="button button--primary button--full transaction-submit"
+          disabled={isSaving}
+          fullWidth
+          type="submit"
+          variant="contained"
+        >
           {isSaving ? "Saving..." : `Save ${transactionLabel}`}
-        </Button>
+        </MuiButton>
 
         {existing ? (
           <section className="remove-transaction" aria-label="Remove transaction">
