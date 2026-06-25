@@ -199,6 +199,11 @@ p {
   background: #f8f9fd;
 }
 
+.page--activity {
+  padding-inline: 0;
+  background: var(--color-surface);
+}
+
 @media (max-width: 47.9375rem) {
   .page--home {
     padding-inline: 0;
@@ -211,6 +216,10 @@ p {
 
 .page--home > * + * {
   margin-top: var(--space-3);
+}
+
+.page--activity > .page-header {
+  padding-inline: var(--space-4);
 }
 
 .page-header,
@@ -1519,6 +1528,12 @@ p {
   gap: var(--space-4);
 }
 
+.activity-filter-bar {
+  margin-top: calc(var(--space-2) * -1);
+  gap: var(--space-2);
+  padding-inline: var(--space-4);
+}
+
 .search-field {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -1540,6 +1555,136 @@ p {
 .filter-grid {
   display: grid;
   gap: var(--space-3);
+}
+
+.filter-dropdown-grid {
+  width: 100%;
+  padding-top: var(--space-3);
+}
+
+.filter-dropdown.MuiButton-root {
+  min-width: 0;
+  min-height: 2.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border-color: color-mix(in srgb, var(--color-brand) 16%, var(--color-border));
+  color: var(--color-text-secondary);
+  background: color-mix(in srgb, var(--color-surface) 92%, var(--color-brand-faint));
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-transform: none;
+  box-shadow: none;
+}
+
+.filter-dropdown.MuiButton-root.is-active,
+.filter-dropdown.MuiButton-contained {
+  border-color: var(--color-brand);
+  color: #fff;
+  background: var(--color-brand);
+  box-shadow: 0 0.85rem 1.35rem rgb(22 163 74 / 18%);
+}
+
+.filter-dropdown .MuiButton-endIcon {
+  margin-left: 0.2rem;
+}
+
+.filter-dropdown .MuiButton-endIcon svg {
+  font-size: 1.05rem;
+}
+
+.activity-filter-sheet.MuiPaper-root {
+  max-height: min(78vh, 36rem);
+  overflow: hidden;
+  border-radius: 1.35rem 1.35rem 0 0;
+  background: var(--color-surface);
+  box-shadow: 0 -1rem 2.5rem rgb(15 23 42 / 14%);
+}
+
+.activity-filter-sheet__content {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  max-height: min(78vh, 36rem);
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom));
+}
+
+.activity-filter-sheet__content h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.activity-filter-options {
+  overflow-y: auto;
+  padding-right: 0.15rem;
+}
+
+.activity-filter-option.MuiListItemButton-root {
+  min-height: 3.2rem;
+  gap: var(--space-3);
+  margin-bottom: var(--space-1);
+  border-radius: 0.95rem;
+  color: var(--color-text-primary);
+}
+
+.activity-filter-option.MuiListItemButton-root:hover,
+.activity-filter-option.Mui-selected {
+  background: color-mix(in srgb, var(--color-brand-faint) 78%, var(--color-surface));
+}
+
+.activity-filter-option .MuiListItemText-primary {
+  font-size: 0.95rem;
+  font-weight: 850;
+}
+
+.activity-filter-option .MuiCheckbox-root {
+  color: var(--color-border-strong);
+}
+
+.activity-filter-option .MuiCheckbox-root.Mui-checked {
+  color: var(--color-brand);
+}
+
+.activity-filter-sheet__actions {
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+
+.activity-filter-sheet__actions .MuiButton-root {
+  min-height: 2.8rem;
+  border-radius: 0.85rem;
+  font-weight: 900;
+  text-transform: none;
+}
+
+.activity-filter-sheet__actions .MuiButton-outlined {
+  border-color: color-mix(in srgb, var(--color-brand) 55%, var(--color-border));
+  color: var(--color-brand-strong);
+  background: color-mix(in srgb, var(--color-brand-faint) 70%, var(--color-surface));
+}
+
+.activity-filter-sheet__actions .MuiButton-contained {
+  color: #fff;
+  background: var(--color-brand);
+  box-shadow: 0 0.75rem 1.5rem rgb(22 163 74 / 18%);
+}
+
+.activity-transaction-list.MuiCard-root {
+  padding: var(--space-2) 0;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--color-brand-faint) 76%, var(--color-surface));
+  box-shadow: none;
+}
+
+.activity-transaction-list .transaction-history-list.MuiList-root {
+  gap: var(--space-1);
+}
+
+.activity-transaction-list .transaction-history-row.MuiListItemButton-root {
+  border-radius: 0;
+  background: var(--color-surface);
 }
 
 .report-custom-range {

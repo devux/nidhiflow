@@ -508,8 +508,8 @@ describe("App", () => {
     );
 
     expect(await screen.findByRole("heading", { name: "Activity" })).toBeDefined();
-    expect(await screen.findByRole("heading", { name: "April 15, 2026" })).toBeDefined();
     expect(screen.getByText("Groceries")).toBeDefined();
+    expect(screen.getByText("April 15")).toBeDefined();
   });
 
   it("links the Home notification entry to the guest preferences page", async () => {
@@ -1525,7 +1525,7 @@ describe("App", () => {
     expect(screen.getByRole("link", { name: "Sign up" })).toBeDefined();
   });
 
-  it("opens the income form from Activity when the income filter is selected", async () => {
+  it("opens the expense form from Activity", async () => {
     mockAuthenticatedFinanceSession(globalThis.fetch as jest.MockedFunction<typeof fetch>);
     window.history.replaceState({}, "", "/activity");
     const user = userEvent.setup();
@@ -1533,12 +1533,11 @@ describe("App", () => {
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    await user.click(await screen.findByRole("button", { name: "Income" }));
-    await user.click(screen.getByRole("link", { name: "Add transaction" }));
+    await user.click(await screen.findByRole("link", { name: "Add transaction" }));
 
-    expect(await screen.findByRole("heading", { name: "Add Income" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Salary" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Save Income" })).toBeDefined();
+    expect(await screen.findByRole("heading", { name: "Add Expense" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Misc" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Save Expense" })).toBeDefined();
   });
 
   it("preserves entered transaction values after validation errors", async () => {

@@ -1,5 +1,14 @@
+import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Checkbox from "@mui/material/Checkbox";
+import Drawer from "@mui/material/Drawer";
 import List from "@mui/material/List";
-import { useMemo } from "react";
+import ListItemButton from "@mui/material/ListItemButton";
+import ListItemText from "@mui/material/ListItemText";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
+import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
@@ -7,218 +16,235 @@ import { useGuestTransactions } from "../../../app/providers/GuestTransactionsPr
 import { expenseCategories, incomeCategories } from "../../../domain/transactions/transaction";
 import { Card } from "../../../shared/components/Card";
 import { EmptyState } from "../../../shared/components/EmptyState";
-import { Icon } from "../../../shared/components/Icon";
 import { PageHeader } from "../../../shared/components/PageHeader";
-import { SegmentedControl } from "../../../shared/components/SegmentedControl";
 import { TransactionRow } from "../../transactions/components/TransactionRow";
 
-function toDateKey(date: string): string {
-  return /^\d{4}-\d{2}-\d{2}/.test(date) ? date.slice(0, 10) : "unknown";
+type FilterSheet = "category" | "date";
+type DatePreset = "this-month" | "last-month" | "this-year";
+
+const datePresetOptions: Array<{ label: string; value: DatePreset }> = [
+  { label: "This month", value: "this-month" },
+  { label: "Last month", value: "last-month" },
+  { label: "This year", value: "this-year" },
+];
+
+function toIsoDate(date: Date): string {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
 }
 
-function formatDateHeading(date: string, locale: string, timezone: string): string {
-  const dateKey = toDateKey(date);
+function getDatePresetRange(preset: DatePreset): { from: string; to: string } {
+  const now = new Date();
 
-  if (dateKey === "unknown") return "Unknown date";
+  if (preset === "this-year") {
+    return {
+      from: `${now.getFullYear()}-01-01`,
+      to: `${now.getFullYear()}-12-31`,
+    };
+  }
 
-  const today = new Date();
-  const todayKey = [
-    today.getFullYear(),
-    String(today.getMonth() + 1).padStart(2, "0"),
-    String(today.getDate()).padStart(2, "0"),
-  ].join("-");
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayKey = [
-    yesterday.getFullYear(),
-    String(yesterday.getMonth() + 1).padStart(2, "0"),
-    String(yesterday.getDate()).padStart(2, "0"),
-  ].join("-");
+  const monthOffset = preset === "last-month" ? -1 : 0;
+  const start = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + monthOffset + 1, 0);
 
-  if (dateKey === todayKey) return "Today";
-  if (dateKey === yesterdayKey) return "Yesterday";
+  return { from: toIsoDate(start), to: toIsoDate(end) };
+}
 
-  const parsed = new Date(`${dateKey}T12:00:00Z`);
-
-  if (Number.isNaN(parsed.getTime())) return "Unknown date";
-
-  return new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    month: "long",
-    timeZone: timezone,
-    year: "numeric",
-  }).format(parsed);
+function getDatePresetFromRange(dateFrom: string, dateTo: string): DatePreset | "" {
+  return (
+    datePresetOptions.find((option) => {
+      const range = getDatePresetRange(option.value);
+      return range.from === dateFrom && range.to === dateTo;
+    })?.value ?? ""
+  );
 }
 
 export function ActivityPage() {
   const { preferences } = useGuestPreferences();
   const { transactions } = useGuestTransactions();
   const [searchParams, setSearchParams] = useSearchParams();
-  const typeParam = searchParams.get("type");
-  const selectedType = typeParam === "income" || typeParam === "expense" ? typeParam : "all";
-  const query = searchParams.get("query") ?? "";
   const category = searchParams.get("category") ?? "";
   const dateFrom = searchParams.get("from") ?? "";
   const dateTo = searchParams.get("to") ?? "";
+  const selectedDatePreset = getDatePresetFromRange(dateFrom, dateTo);
+  const [openFilterSheet, setOpenFilterSheet] = useState<FilterSheet | null>(null);
+  const [draftCategory, setDraftCategory] = useState(category);
+  const [draftDatePreset, setDraftDatePreset] = useState<DatePreset | "">(selectedDatePreset);
 
   const filteredTransactions = useMemo(
     () =>
       transactions.filter((transaction) => {
-        if (selectedType !== "all" && transaction.type !== selectedType) return false;
         if (category && transaction.category !== category) return false;
         if (dateFrom && transaction.transactionDate < dateFrom) return false;
         if (dateTo && transaction.transactionDate > dateTo) return false;
-        if (
-          query &&
-          !`${transaction.category} ${transaction.note}`
-            .toLocaleLowerCase()
-            .includes(query.toLocaleLowerCase())
-        )
-          return false;
         return true;
       }),
-    [category, dateFrom, dateTo, query, selectedType, transactions],
+    [category, dateFrom, dateTo, transactions],
   );
 
-  const groups = useMemo(() => {
-    const grouped = new Map<string, typeof filteredTransactions>();
-    for (const transaction of filteredTransactions) {
-      const dateKey = toDateKey(transaction.transactionDate);
-      const group = grouped.get(dateKey) ?? [];
-      group.push(transaction);
-      grouped.set(dateKey, group);
-    }
-    return Array.from(grouped.entries());
-  }, [filteredTransactions]);
+  const categories = Array.from(new Set([...incomeCategories, ...expenseCategories]));
 
-  const categories =
-    selectedType === "income"
-      ? incomeCategories
-      : selectedType === "expense"
-        ? expenseCategories
-        : [...incomeCategories, ...expenseCategories];
+  const dateFilterLabel =
+    datePresetOptions.find((option) => option.value === selectedDatePreset)?.label ?? "Date";
+  const categoryFilterLabel = category || "Category";
 
-  function setFilter(name: string, value: string) {
-    const next = new URLSearchParams(searchParams);
-    if (value) next.set(name, value);
-    else next.delete(name);
-    if (name === "type") next.delete("category");
-    setSearchParams(next, { replace: true });
+  function openSheet(sheet: FilterSheet) {
+    setDraftCategory(category);
+    setDraftDatePreset(selectedDatePreset);
+    setOpenFilterSheet(sheet);
   }
 
-  const filtersActive = Boolean(query || category || dateFrom || dateTo);
-  const newTransactionType = selectedType === "income" ? "income" : "expense";
+  function applyFilterSheet() {
+    const next = new URLSearchParams(searchParams);
+
+    if (openFilterSheet === "category") {
+      if (draftCategory) next.set("category", draftCategory);
+      else next.delete("category");
+    }
+
+    if (openFilterSheet === "date") {
+      if (draftDatePreset) {
+        const range = getDatePresetRange(draftDatePreset);
+        next.set("from", range.from);
+        next.set("to", range.to);
+      } else {
+        next.delete("from");
+        next.delete("to");
+      }
+    }
+
+    setSearchParams(next, { replace: true });
+    setOpenFilterSheet(null);
+  }
+
+  function clearFilterSheet() {
+    const next = new URLSearchParams(searchParams);
+
+    if (openFilterSheet === "category") {
+      next.delete("category");
+      setDraftCategory("");
+    }
+
+    if (openFilterSheet === "date") {
+      next.delete("from");
+      next.delete("to");
+      setDraftDatePreset("");
+    }
+
+    setSearchParams(next, { replace: true });
+    setOpenFilterSheet(null);
+  }
+
+  const filtersActive = Boolean(category || dateFrom || dateTo);
 
   return (
-    <main className="page" id="main-content">
-      <PageHeader
-        action={
-          <Link
-            aria-label="Add transaction"
-            className="icon-button"
-            to={`/transactions/new?type=${newTransactionType}`}
-          >
-            <Icon name="plus" />
-          </Link>
-        }
-        title="Activity"
-      />
-      <SegmentedControl
-        label="Transaction type"
-        onChange={(value) => setFilter("type", value === "all" ? "" : value)}
-        options={[
-          { label: "All", value: "all" },
-          { label: "Income", value: "income" },
-          { label: "Expense", value: "expense" },
-        ]}
-        value={selectedType}
-      />
+    <main className="page page--activity" id="main-content">
+      <PageHeader title="Activity" />
 
-      <Card className="activity-filters">
-        <label className="search-field" htmlFor="activity-search">
-          <Icon name="search" size={20} />
-          <span className="sr-only">Search transactions</span>
-          <input
-            id="activity-search"
-            onChange={(event) => setFilter("query", event.target.value)}
-            placeholder="Search category or note"
-            type="search"
-            value={query}
-          />
-        </label>
-        <div className="filter-grid">
-          <label>
-            <span>Category</span>
-            <select
-              onChange={(event) => setFilter("category", event.target.value)}
-              value={category}
-            >
-              <option value="">All categories</option>
+      <Stack className="filter-dropdown-grid activity-filter-bar" direction="row" spacing={1.5}>
+        <Button
+          aria-haspopup="dialog"
+          aria-label={`Filter by category, current value ${categoryFilterLabel}`}
+          className={category ? "filter-dropdown is-active" : "filter-dropdown"}
+          endIcon={<KeyboardArrowDownRoundedIcon />}
+          fullWidth
+          onClick={() => openSheet("category")}
+          variant={category ? "contained" : "outlined"}
+        >
+          {categoryFilterLabel}
+        </Button>
+        <Button
+          aria-haspopup="dialog"
+          aria-label={`Filter by date, current value ${dateFilterLabel}`}
+          className={selectedDatePreset ? "filter-dropdown is-active" : "filter-dropdown"}
+          endIcon={<KeyboardArrowDownRoundedIcon />}
+          fullWidth
+          onClick={() => openSheet("date")}
+          variant={selectedDatePreset ? "contained" : "outlined"}
+        >
+          {dateFilterLabel}
+        </Button>
+      </Stack>
+
+      <Drawer
+        anchor="bottom"
+        aria-labelledby="activity-filter-sheet-title"
+        onClose={() => setOpenFilterSheet(null)}
+        open={Boolean(openFilterSheet)}
+        slotProps={{ paper: { className: "activity-filter-sheet" } }}
+      >
+        <Box className="activity-filter-sheet__content" role="dialog">
+          <Typography component="h2" id="activity-filter-sheet-title">
+            {openFilterSheet === "category" ? "Category" : "Date"}
+          </Typography>
+          {openFilterSheet === "category" ? (
+            <List disablePadding className="activity-filter-options">
+              <ListItemButton
+                className="activity-filter-option"
+                onClick={() => setDraftCategory("")}
+                selected={!draftCategory}
+              >
+                <ListItemText primary="All categories" />
+                <Checkbox checked={!draftCategory} edge="end" tabIndex={-1} />
+              </ListItemButton>
               {categories.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
+                <ListItemButton
+                  className="activity-filter-option"
+                  key={option}
+                  onClick={() => setDraftCategory(option)}
+                  selected={draftCategory === option}
+                >
+                  <ListItemText primary={option} />
+                  <Checkbox checked={draftCategory === option} edge="end" tabIndex={-1} />
+                </ListItemButton>
               ))}
-            </select>
-          </label>
-          <label>
-            <span>From</span>
-            <input
-              onChange={(event) => setFilter("from", event.target.value)}
-              type="date"
-              value={dateFrom}
-            />
-          </label>
-          <label>
-            <span>To</span>
-            <input
-              onChange={(event) => setFilter("to", event.target.value)}
-              type="date"
-              value={dateTo}
-            />
-          </label>
-        </div>
-        {filtersActive ? (
-          <button
-            className="text-button"
-            onClick={() => {
-              const next = new URLSearchParams();
-              if (selectedType !== "all") next.set("type", selectedType);
-              setSearchParams(next, { replace: true });
-            }}
-            type="button"
-          >
-            Clear filters
-          </button>
-        ) : null}
-      </Card>
+            </List>
+          ) : (
+            <List disablePadding className="activity-filter-options">
+              {datePresetOptions.map((option) => (
+                <ListItemButton
+                  className="activity-filter-option"
+                  key={option.value}
+                  onClick={() => setDraftDatePreset(option.value)}
+                  selected={draftDatePreset === option.value}
+                >
+                  <ListItemText primary={option.label} />
+                  <Checkbox checked={draftDatePreset === option.value} edge="end" tabIndex={-1} />
+                </ListItemButton>
+              ))}
+            </List>
+          )}
+          <Stack className="activity-filter-sheet__actions" direction="row" spacing={1.5}>
+            <Button fullWidth onClick={clearFilterSheet} variant="outlined">
+              Clear all
+            </Button>
+            <Button fullWidth onClick={applyFilterSheet} variant="contained">
+              Apply
+            </Button>
+          </Stack>
+        </Box>
+      </Drawer>
 
-      {groups.length > 0 ? (
-        <div className="activity-groups">
-          {groups.map(([date, records]) => (
-            <section aria-labelledby={`activity-${date}`} key={date}>
-              <h2 id={`activity-${date}`}>
-                {formatDateHeading(date, preferences.locale, preferences.timezone)}
-              </h2>
-              <Card className="transaction-list">
-                <List disablePadding>
-                  {records.map((transaction) => (
-                    <TransactionRow
-                      key={transaction.id}
-                      locale={preferences.locale}
-                      transaction={transaction}
-                    />
-                  ))}
-                </List>
-              </Card>
-            </section>
-          ))}
-        </div>
+      {filteredTransactions.length > 0 ? (
+        <Card className="transaction-list activity-transaction-list">
+          <List className="transaction-history-list" disablePadding>
+            {filteredTransactions.map((transaction) => (
+              <TransactionRow
+                key={transaction.id}
+                locale={preferences.locale}
+                transaction={transaction}
+              />
+            ))}
+          </List>
+        </Card>
       ) : (
         <Card>
           <EmptyState
             action={
-              filtersActive || selectedType !== "all" ? (
+              filtersActive ? (
                 <button
                   className="button button--secondary"
                   onClick={() => setSearchParams({}, { replace: true })}
@@ -229,7 +255,7 @@ export function ActivityPage() {
               ) : (
                 <Link
                   className="button button--secondary"
-                  to={`/transactions/new?type=${newTransactionType}`}
+                  to="/transactions/new?type=expense"
                 >
                   Add a transaction
                 </Link>

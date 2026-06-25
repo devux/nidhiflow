@@ -8,35 +8,49 @@ import { Link } from "react-router-dom";
 import { formatMoney } from "../../../domain/money/money";
 import type { GuestTransaction } from "../../../domain/transactions/transaction";
 import type { SupportedLocale } from "../../../domain/preferences/guestPreferences";
-import { Icon } from "../../../shared/components/Icon";
 
 interface TransactionRowProps {
   locale: SupportedLocale;
   transaction: GuestTransaction;
 }
 
+function formatTransactionDate(value: string, locale: SupportedLocale) {
+  const [datePart] = value.split("T");
+  const [year, month, day] = datePart.split("-").map(Number);
+  const date = year && month && day ? new Date(year, month - 1, day) : new Date(value);
+
+  return new Intl.DateTimeFormat(locale, {
+    day: "numeric",
+    month: "long",
+  }).format(date);
+}
+
 export function TransactionRow({ locale, transaction }: TransactionRowProps) {
   const sign = transaction.type === "income" ? "positive" : "negative";
+  const title = transaction.note.trim() || transaction.category;
+  const formattedDate = formatTransactionDate(transaction.transactionDate, locale);
 
   return (
     <ListItemButton
-      aria-label={`Edit ${transaction.category} ${transaction.type}`}
-      className="transaction-row"
+      aria-label={`Edit ${title} ${transaction.type} from ${formattedDate}`}
+      className="transaction-history-row"
       component={Link}
       to={`/transactions/${transaction.id}/edit`}
     >
       <ListItemAvatar>
-        <Avatar className={`transaction-row__icon transaction-row__icon--${transaction.type}`}>
-          <Icon name={transaction.type} size={21} />
+        <Avatar
+          className={`transaction-history-row__avatar transaction-history-row__avatar--${transaction.type}`}
+        >
+          {transaction.category.charAt(0)}
         </Avatar>
       </ListItemAvatar>
       <ListItemText
-        className="transaction-row__details"
-        primary={transaction.category}
-        secondary={transaction.note || `${transaction.type === "income" ? "Income" : "Expense"}`}
+        className="transaction-history-row__details"
+        primary={title}
+        secondary={formattedDate}
       />
       <Typography
-        className={`transaction-amount transaction-amount--${transaction.type}`}
+        className={`transaction-history-row__amount transaction-history-row__amount--${transaction.type}`}
         component="span"
       >
         <span className="sr-only">{transaction.type === "income" ? "Income" : "Expense"}:</span>
@@ -46,7 +60,6 @@ export function TransactionRow({ locale, transaction }: TransactionRowProps) {
           { sign },
         )}
       </Typography>
-      <Icon name="chevron" size={18} />
     </ListItemButton>
   );
 }
