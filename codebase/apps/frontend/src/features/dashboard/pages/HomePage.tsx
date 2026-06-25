@@ -1,5 +1,15 @@
 import { Link } from "react-router-dom";
-import { useMemo } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faArrowTrendUp,
+  faBagShopping,
+  faLightbulb,
+  faPiggyBank,
+  faRocket,
+  faWallet,
+} from "@fortawesome/free-solid-svg-icons";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import { type CSSProperties, useMemo, useState } from "react";
 
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
@@ -86,6 +96,7 @@ export function HomePage() {
   const { isAuthenticated, user, workspaces } = useAuth();
   const { preferences } = useGuestPreferences();
   const { transactions } = useGuestTransactions();
+  const [isHeaderMenuOpen, setIsHeaderMenuOpen] = useState(false);
   const currentMonthRange = useMemo(() => getCurrentMonthRange(), []);
   const currentMonthTransactions = useMemo(
     () =>
@@ -109,6 +120,10 @@ export function HomePage() {
   const budgetRemainingMinor = incomeMinor - expenseMinor;
   const budgetProgress = incomeMinor === 0n ? 0 : Number((expenseMinor * 100n) / incomeMinor);
   const budgetProgressValue = Math.min(100, budgetProgress);
+  const isBudgetUnderControl = budgetRemainingMinor >= 0n;
+  const progressRingStyle = {
+    "--transaction-progress": `${budgetProgressValue * 3.6}deg`,
+  } as CSSProperties;
   const displayName = user?.displayName ?? preferences.displayName;
   const activeWorkspace = workspaces[0];
   const workspaceLabel = isAuthenticated
@@ -116,6 +131,9 @@ export function HomePage() {
       ? activeWorkspace.name
       : `${displayName}'s workspace`
     : "Guest read-only workspace";
+  const showcaseTip = isBudgetUnderControl
+    ? "Tip: You're saving better than 68% of users!"
+    : "Tip: Expenses are above income. Review spending.";
 
   return (
     <main className="page page--home" id="main-content">
@@ -124,52 +142,122 @@ export function HomePage() {
           <Brand />
           <p className="eyebrow">{workspaceLabel}</p>
         </div>
-        <Link aria-label="Notification preferences" className="icon-button" to="/you#preferences">
-          <Icon name="bell" />
-        </Link>
+        <div
+          className="home-header-menu"
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) {
+              setIsHeaderMenuOpen(false);
+            }
+          }}
+        >
+          <button
+            aria-controls={isHeaderMenuOpen ? "home-header-menu" : undefined}
+            aria-expanded={isHeaderMenuOpen}
+            aria-haspopup="menu"
+            aria-label="More options"
+            className="icon-button home-header-menu__button"
+            onClick={() => setIsHeaderMenuOpen((isOpen) => !isOpen)}
+            type="button"
+          >
+            <MoreVertIcon aria-hidden="true" focusable="false" fontSize="small" />
+          </button>
+          {isHeaderMenuOpen ? (
+            <div className="home-header-menu__items" id="home-header-menu" role="menu">
+              <Link
+                aria-label="Notification preferences"
+                className="home-header-menu__item"
+                onClick={() => setIsHeaderMenuOpen(false)}
+                role="menuitem"
+                to="/you#preferences"
+              >
+                <Icon name="bell" size={18} />
+                <span>Notification preferences</span>
+              </Link>
+            </div>
+          ) : null}
+        </div>
       </header>
 
       <section aria-label="Budget summaries">
         <div className="home-summary-grid">
-          <Card className="home-summary-card">
-            <div className="home-summary-card__header">
-              <span className="home-summary-card__title">
-                <span className="icon-tile">
-                  <Icon name="plan" />
-                </span>
-                <span>
-                  <strong>Transactions</strong>
-                  <small>This month, matching Flow and Reports.</small>
-                </span>
-              </span>
-            </div>
-            <div className="budget-overview__content">
+          <div
+            className={`home-summary-card transaction-showcase-card__panel${
+              isBudgetUnderControl ? "" : " transaction-showcase-card--alert"
+            }`}
+          >
+            <div className="transaction-showcase-card__progress">
               <div
                 aria-label={`Budget usage: ${budgetProgressValue} percent`}
                 aria-valuemax={100}
                 aria-valuemin={0}
                 aria-valuenow={budgetProgressValue}
-                className="progress-ring"
+                className="transaction-progress-ring"
                 role="progressbar"
+                style={progressRingStyle}
               >
-                <span>{budgetProgressValue}%</span>
+                <span className="transaction-progress-ring__rocket" aria-hidden="true">
+                  <FontAwesomeIcon icon={faRocket} />
+                </span>
+                <span className="transaction-progress-ring__content">
+                  <strong>{budgetProgressValue}%</strong>
+                  <small>
+                    of budget
+                    <br />
+                    used <span aria-hidden="true">😎</span>
+                  </small>
+                </span>
               </div>
-              <dl className="summary-list">
-                <div>
-                  <dt>Total</dt>
-                  <dd>{money(budgetTotalMinor.toString())}</dd>
-                </div>
-                <div>
-                  <dt>Spent</dt>
-                  <dd>{money(expenseMinor.toString())}</dd>
-                </div>
-                <div>
-                  <dt>Remaining</dt>
-                  <dd>{money(budgetRemainingMinor.toString())}</dd>
-                </div>
-              </dl>
             </div>
-          </Card>
+
+            <dl className="transaction-showcase-card__stats">
+              <div className="transaction-showcase-card__stat">
+                <dt>
+                  <span className="transaction-showcase-card__stat-icon transaction-showcase-card__stat-icon--total">
+                    <FontAwesomeIcon icon={faWallet} />
+                  </span>
+                  <span>Total</span>
+                </dt>
+                <dd>{money(budgetTotalMinor.toString())}</dd>
+              </div>
+              <div className="transaction-showcase-card__stat">
+                <dt>
+                  <span className="transaction-showcase-card__stat-icon transaction-showcase-card__stat-icon--spent">
+                    <FontAwesomeIcon icon={faBagShopping} />
+                  </span>
+                  <span>Spent</span>
+                </dt>
+                <dd>{money(expenseMinor.toString())}</dd>
+              </div>
+              <div className="transaction-showcase-card__stat">
+                <dt>
+                  <span className="transaction-showcase-card__stat-icon transaction-showcase-card__stat-icon--remaining">
+                    <FontAwesomeIcon icon={faPiggyBank} />
+                  </span>
+                  <span>Remaining</span>
+                </dt>
+                <dd
+                  className={
+                    isBudgetUnderControl
+                      ? "transaction-showcase-card__amount--positive"
+                      : "transaction-showcase-card__amount--alert"
+                  }
+                >
+                  {money(budgetRemainingMinor.toString())}
+                </dd>
+              </div>
+            </dl>
+
+            <div className="transaction-showcase-card__tip">
+              <span className="transaction-showcase-card__tip-icon" aria-hidden="true">
+                <FontAwesomeIcon icon={faLightbulb} />
+              </span>
+              <span>{showcaseTip}</span>
+              <Link className="transaction-showcase-card__insights" to="/reports">
+                See Insights
+                <FontAwesomeIcon icon={faArrowTrendUp} />
+              </Link>
+            </div>
+          </div>
 
           <section aria-label="Quick actions" className="home-actions-section">
             <div className="quick-actions">

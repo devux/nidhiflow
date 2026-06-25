@@ -47,7 +47,7 @@ const defaultPreferences: GuestPreferences = {
 async function expectHomeHeader(workspaceName: string | RegExp): Promise<void> {
   expect(await screen.findByText(workspaceName)).toBeDefined();
   expect(screen.getByLabelText("NidhiFlow")).toBeDefined();
-  expect(screen.getByRole("link", { name: "Notification preferences" })).toBeDefined();
+  expect(screen.getByRole("button", { name: "More options" })).toBeDefined();
 }
 
 function createRepository(
@@ -527,7 +527,8 @@ describe("App", () => {
     );
 
     await expectHomeHeader("Guest read-only workspace");
-    await user.click(screen.getByRole("link", { name: "Notification preferences" }));
+    await user.click(screen.getByRole("button", { name: "More options" }));
+    await user.click(screen.getByRole("menuitem", { name: "Notification preferences" }));
 
     expect(await screen.findByRole("heading", { name: "You" })).toBeDefined();
   });
@@ -581,7 +582,7 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Create account" }));
 
     expect(await screen.findByText("Maya's workspace")).toBeDefined();
-    expect(screen.getByRole("link", { name: "Notification preferences" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "More options" })).toBeDefined();
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining("/api/v1/auth/register"),
       expect.objectContaining({ method: "POST" }),

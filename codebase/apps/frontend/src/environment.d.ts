@@ -4,3 +4,8 @@ declare namespace NodeJS {
     readonly NIDHIFLOW_API_BASE_URL?: string;
   }
 }
+
+declare module "*.png" {
+  const src: string;
+  export default src;
+}

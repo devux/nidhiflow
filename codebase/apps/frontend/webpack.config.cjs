@@ -38,6 +38,13 @@ module.exports = {
         test: /\.css$/,
         use: ["style-loader", "css-loader"],
       },
+      {
+        test: /\.(png|jpe?g|webp|gif)$/i,
+        type: "asset/resource",
+        generator: {
+          filename: "assets/images/[name].[contenthash][ext]",
+        },
+      },
     ],
   },
   plugins: [
