@@ -163,7 +163,7 @@ function formatToolResult(result: unknown) {
 }
 
 export function FlowPage() {
-  const { accessToken, isAuthenticated, user, workspaces } = useAuth();
+  const { accessToken, activeWorkspace, isAuthenticated, user } = useAuth();
   const [email, setEmail] = useState("");
   const [subscribeState, setSubscribeState] = useState<"error" | "idle" | "saved" | "saving">(
     "idle",
@@ -177,7 +177,7 @@ export function FlowPage() {
     ),
   ]);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const primaryWorkspace = workspaces[0] ?? null;
+  const primaryWorkspace = activeWorkspace;
   const canChat = Boolean(isAuthenticated && accessToken && primaryWorkspace);
   const conversation = useMemo<FlowChatMessage[]>(
     () =>

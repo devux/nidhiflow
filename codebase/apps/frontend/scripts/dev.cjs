@@ -14,6 +14,7 @@ const middleware = webpackDevMiddleware(compiler, {
   publicPath: webpackConfig.output.publicPath,
   stats: "minimal",
 });
+const port = Number(process.env.PORT ?? 5173);
 
 const server = http.createServer((request, response) => {
   middleware(request, response, () => {
@@ -27,8 +28,8 @@ const server = http.createServer((request, response) => {
   });
 });
 
-server.listen(5173, "127.0.0.1", () => {
-  console.log("Frontend available at http://127.0.0.1:5173");
+server.listen(port, "127.0.0.1", () => {
+  console.log(`Frontend available at http://127.0.0.1:${port}`);
 });
 
 function shutdown() {

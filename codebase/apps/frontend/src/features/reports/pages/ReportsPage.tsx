@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import Chart from "chart.js/auto";
 import { useSearchParams } from "react-router-dom";
 
@@ -6,7 +6,6 @@ import { useAuth } from "../../../app/providers/AuthProvider";
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
 import { useGuestTransactions } from "../../../app/providers/GuestTransactionsProvider";
 import { formatMoney } from "../../../domain/money/money";
-import type { SupportedCurrency } from "../../../domain/preferences/guestPreferences";
 import { Card } from "../../../shared/components/Card";
 import { EmptyState } from "../../../shared/components/EmptyState";
 import { PageHeader } from "../../../shared/components/PageHeader";
@@ -53,7 +52,7 @@ function getPeriodRange(period: ReportPeriod, customFrom: string, customTo: stri
 export function ReportsPage() {
   const chartCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const expenseChartRef = useRef<Chart | null>(null);
-  const { workspaces } = useAuth();
+  const { activeWorkspace } = useAuth();
   const { preferences } = useGuestPreferences();
   const { transactions } = useGuestTransactions();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -62,8 +61,7 @@ export function ReportsPage() {
     periodParam === "year" || periodParam === "custom" ? periodParam : "month";
   const customFrom = searchParams.get("from") ?? "";
   const customTo = searchParams.get("to") ?? "";
-  const reportingCurrency =
-    (workspaces[0]?.reportingCurrency as SupportedCurrency | undefined) ?? preferences.currency;
+  const reportingCurrency = activeWorkspace?.reportingCurrency ?? preferences.currency;
   const range = getPeriodRange(period, customFrom, customTo);
 
   const reportTransactions = useMemo(
@@ -119,11 +117,14 @@ export function ReportsPage() {
       .sort((left, right) => Number(right.amountMinor - left.amountMinor));
   }, [reportTransactions, totals.expenseMinor]);
 
-  const money = (amountMinor: bigint) =>
-    formatMoney(
-      { amountMinor: amountMinor.toString(), currency: reportingCurrency },
-      preferences.locale,
-    );
+  const money = useCallback(
+    (amountMinor: bigint) =>
+      formatMoney(
+        { amountMinor: amountMinor.toString(), currency: reportingCurrency },
+        preferences.locale,
+      ),
+    [preferences.locale, reportingCurrency],
+  );
 
   useEffect(() => {
     expenseChartRef.current?.destroy();
@@ -181,7 +182,7 @@ export function ReportsPage() {
       expenseChartRef.current?.destroy();
       expenseChartRef.current = null;
     };
-  }, [categoryRows, preferences.locale, reportingCurrency, totals.expenseMinor]);
+  }, [categoryRows, money, preferences.locale, reportingCurrency, totals.expenseMinor]);
 
   function setPeriod(nextPeriod: string) {
     const next = new URLSearchParams(searchParams);

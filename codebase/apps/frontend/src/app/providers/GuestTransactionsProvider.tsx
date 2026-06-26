@@ -86,11 +86,11 @@ export function GuestTransactionsProvider({
   children,
   repository = defaultRepository,
 }: GuestTransactionsProviderProps) {
-  const { accessToken, isAuthenticated, isCheckingSession, workspaces } = useAuth();
+  const { accessToken, activeWorkspace, isAuthenticated, isCheckingSession } = useAuth();
   const [transactions, setTransactions] = useState<GuestTransaction[]>();
   const [loadError, setLoadError] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
-  const workspaceId = workspaces[0]?.id ?? null;
+  const workspaceId = activeWorkspace?.id ?? null;
 
   useEffect(() => {
     let isActive = true;

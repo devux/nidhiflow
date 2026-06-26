@@ -1,9 +1,19 @@
 import Chart from "chart.js/auto";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
+import AccountBalanceWalletRoundedIcon from "@mui/icons-material/AccountBalanceWalletRounded";
+import CalendarMonthRoundedIcon from "@mui/icons-material/CalendarMonthRounded";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
+import ShoppingBagRoundedIcon from "@mui/icons-material/ShoppingBagRounded";
+import TrendingUpRoundedIcon from "@mui/icons-material/TrendingUpRounded";
+import Box from "@mui/material/Box";
+import MuiButton from "@mui/material/Button";
+import Checkbox from "@mui/material/Checkbox";
+import Drawer from "@mui/material/Drawer";
 import IconButton from "@mui/material/IconButton";
-import ListItemIcon from "@mui/material/ListItemIcon";
-import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
+import List from "@mui/material/List";
+import ListItemButton from "@mui/material/ListItemButton";
+import ListItemText from "@mui/material/ListItemText";
+import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { Link } from "react-router-dom";
@@ -28,7 +38,6 @@ import { EmptyState } from "../../../shared/components/EmptyState";
 import { Icon, type IconName } from "../../../shared/components/Icon";
 import { InlineAlert } from "../../../shared/components/InlineAlert";
 import { PageHeader } from "../../../shared/components/PageHeader";
-import { SegmentedControl } from "../../../shared/components/SegmentedControl";
 
 interface BudgetCategory {
   amountMinor: string;
@@ -46,6 +55,15 @@ interface BudgetProgressChartProps {
   progress: number;
   trackColor?: string;
 }
+
+type BudgetFilterSheet = "category" | "date";
+type BudgetDatePreset = "this-month" | "last-month" | "this-year";
+
+const budgetDatePresetOptions: Array<{ label: string; value: BudgetDatePreset }> = [
+  { label: "This month", value: "this-month" },
+  { label: "Last month", value: "last-month" },
+  { label: "This year", value: "this-year" },
+];
 
 function BudgetProgressChart({
   color = "#16a34a",
@@ -349,7 +367,7 @@ function isBudgetForRange(
 }
 
 export function BudgetPage() {
-  const { accessToken, isAuthenticated, workspaces } = useAuth();
+  const { accessToken, activeWorkspace, isAuthenticated } = useAuth();
   const { preferences } = useGuestPreferences();
   const { transactions } = useGuestTransactions();
   const [section, setSection] = useState("monthly");
@@ -365,12 +383,13 @@ export function BudgetPage() {
   const [isBudgetDialogOpen, setIsBudgetDialogOpen] = useState(false);
   const [isBudgetSaving, setIsBudgetSaving] = useState(false);
   const [isQuickFillSaving, setIsQuickFillSaving] = useState(false);
-  const [openBudgetMenu, setOpenBudgetMenu] = useState<{
-    anchorEl: HTMLElement;
-    id: string;
-  } | null>(null);
-  const workspaceCurrency = workspaces[0]?.reportingCurrency ?? preferences.currency;
-  const workspaceId = workspaces[0]?.id ?? null;
+  const [openFilterSheet, setOpenFilterSheet] = useState<BudgetFilterSheet | null>(null);
+  const [selectedCategoryFilters, setSelectedCategoryFilters] = useState<string[]>([]);
+  const [draftCategoryFilters, setDraftCategoryFilters] = useState<string[]>([]);
+  const [selectedDatePreset, setSelectedDatePreset] = useState<BudgetDatePreset>("this-month");
+  const [draftDatePreset, setDraftDatePreset] = useState<BudgetDatePreset>("this-month");
+  const workspaceCurrency = activeWorkspace?.reportingCurrency ?? preferences.currency;
+  const workspaceId = activeWorkspace?.id ?? null;
   const budgetDialogCloseRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -442,13 +461,13 @@ export function BudgetPage() {
 
   const monthlyBudgets = useMemo(
     () => dedupeBudgetCategories(budgets.filter((budget) => isBudgetForRange(budget, monthRange))),
-    [budgets, monthRange.from, monthRange.to],
+    [budgets, monthRange],
   );
 
   const previousMonthBudgets = useMemo(
     () =>
       dedupeByCategory(budgets.filter((budget) => isBudgetForRange(budget, previousMonthRange))),
-    [budgets, previousMonthRange.from, previousMonthRange.to],
+    [budgets, previousMonthRange],
   );
 
   const yearlyBudgets = useMemo(
@@ -628,7 +647,6 @@ export function BudgetPage() {
       }),
     [budgets, preferences.locale, transactions, yearlyMonths],
   );
-
   const money = (amountMinor: bigint) =>
     formatMoney(
       { amountMinor: amountMinor.toString(), currency: workspaceCurrency },
@@ -641,6 +659,70 @@ export function BudgetPage() {
     month: "long",
     year: "numeric",
   }).format(selectedMonth);
+  const budgetCategoryOptions = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...expenseCategories,
+          ...monthlyBudgets.map((budget) => budget.category),
+          ...yearlyCategoryRows.map((row) => row.category),
+        ]),
+      ),
+    [monthlyBudgets, yearlyCategoryRows],
+  );
+  const filteredCategoryRows =
+    selectedCategoryFilters.length === 0
+      ? categoryRows
+      : categoryRows.filter((budget) => selectedCategoryFilters.includes(budget.category));
+  const filteredYearlyCategoryRows =
+    selectedCategoryFilters.length === 0
+      ? yearlyCategoryRows
+      : yearlyCategoryRows.filter((row) => selectedCategoryFilters.includes(row.category));
+  const filteredYearlyMonthRows =
+    selectedCategoryFilters.length === 0
+      ? yearlyMonthRows
+      : yearlyMonths.map((date) => {
+          const range = getMonthRange(date);
+          const monthBudgets = budgets.filter(
+            (budget) =>
+              isBudgetForRange(budget, range) && selectedCategoryFilters.includes(budget.category),
+          );
+          const totalMinor = monthBudgets.reduce(
+            (total, budget) => total + BigInt(budget.amountMinor),
+            0n,
+          );
+          const spentMinor = transactions
+            .filter(
+              (transaction) =>
+                transaction.type === "expense" &&
+                !transaction.deletedAt &&
+                transaction.transactionDate >= range.from &&
+                transaction.transactionDate <= range.to &&
+                monthBudgets.some((budget) => budget.category === transaction.category),
+            )
+            .reduce((total, transaction) => total + BigInt(transaction.amountMinor), 0n);
+          const progress = totalMinor === 0n ? 0 : Number((spentMinor * 100n) / totalMinor);
+
+          return {
+            label: new Intl.DateTimeFormat(preferences.locale, {
+              month: "short",
+              year: "numeric",
+            }).format(date),
+            monthKey: toMonthKey(date),
+            progress: Math.min(100, progress),
+            remainingMinor: totalMinor - spentMinor,
+            spentMinor,
+            totalMinor,
+          };
+        });
+  const categoryFilterLabel =
+    selectedCategoryFilters.length === 0
+      ? "Category"
+      : selectedCategoryFilters.length === 1
+        ? selectedCategoryFilters[0]
+        : `${selectedCategoryFilters.length} categories`;
+  const dateFilterLabel =
+    budgetDatePresetOptions.find((option) => option.value === selectedDatePreset)?.label ?? "Date";
 
   function resetForm() {
     setEditingId(undefined);
@@ -659,8 +741,53 @@ export function BudgetPage() {
     setIsBudgetDialogOpen(true);
   }
 
-  function updateSection(nextSection: string) {
-    setSection(nextSection);
+  function openSheet(sheet: BudgetFilterSheet) {
+    setDraftCategoryFilters(selectedCategoryFilters);
+    setDraftDatePreset(selectedDatePreset);
+    setOpenFilterSheet(sheet);
+  }
+
+  function applyFilterSheet() {
+    if (openFilterSheet === "category") {
+      setSelectedCategoryFilters(draftCategoryFilters);
+    }
+
+    if (openFilterSheet === "date") {
+      setSelectedDatePreset(draftDatePreset);
+
+      if (draftDatePreset === "this-year") {
+        setSection("yearly");
+        setSelectedMonth(new Date());
+      } else {
+        const monthOffset = draftDatePreset === "last-month" ? -1 : 0;
+        setSection("monthly");
+        setSelectedMonth(addMonths(new Date(), monthOffset));
+      }
+    }
+
+    setOpenFilterSheet(null);
+  }
+
+  function clearFilterSheet() {
+    if (openFilterSheet === "category") {
+      setDraftCategoryFilters([]);
+      setSelectedCategoryFilters([]);
+    }
+
+    if (openFilterSheet === "date") {
+      setDraftDatePreset("this-month");
+      setSelectedDatePreset("this-month");
+      setSection("monthly");
+      setSelectedMonth(new Date());
+    }
+
+    setOpenFilterSheet(null);
+  }
+
+  function toggleDraftCategoryFilter(option: string) {
+    setDraftCategoryFilters((current) =>
+      current.includes(option) ? current.filter((item) => item !== option) : [...current, option],
+    );
   }
 
   function closeBudgetDialog() {
@@ -827,19 +954,95 @@ export function BudgetPage() {
       : yearlyMonthRows.reduce((total, row) => total + row.remainingMinor, 0n) /
         BigInt(yearlyMonthRows.length);
   const projectedYearlySavingsMinor = yearlyAverageRemainingMinor * 12n;
+  const availablePercent = Math.max(0, 100 - budgetTotals.progress);
 
   return (
     <main className="page" id="main-content">
       <PageHeader title="Budget" />
-      <SegmentedControl
-        label="Budget section"
-        onChange={updateSection}
-        options={[
-          { label: "Monthly", value: "monthly" },
-          { label: "Yearly", value: "yearly" },
-        ]}
-        value={section}
-      />
+
+      <Stack className="filter-dropdown-grid activity-filter-bar budget-filter-bar" direction="row" spacing={1.5}>
+        <MuiButton
+          aria-haspopup="dialog"
+          aria-label={`Filter by category, current value ${categoryFilterLabel}`}
+          className={selectedCategoryFilters.length > 0 ? "filter-dropdown is-active" : "filter-dropdown"}
+          endIcon={<KeyboardArrowDownRoundedIcon />}
+          fullWidth
+          onClick={() => openSheet("category")}
+          variant={selectedCategoryFilters.length > 0 ? "contained" : "outlined"}
+        >
+          {categoryFilterLabel}
+        </MuiButton>
+        <MuiButton
+          aria-haspopup="dialog"
+          aria-label={`Filter by date, current value ${dateFilterLabel}`}
+          className={selectedDatePreset !== "this-month" ? "filter-dropdown is-active" : "filter-dropdown"}
+          endIcon={<KeyboardArrowDownRoundedIcon />}
+          fullWidth
+          onClick={() => openSheet("date")}
+          variant={selectedDatePreset !== "this-month" ? "contained" : "outlined"}
+        >
+          {dateFilterLabel}
+        </MuiButton>
+      </Stack>
+
+      <Drawer
+        anchor="bottom"
+        aria-labelledby="budget-filter-sheet-title"
+        onClose={() => setOpenFilterSheet(null)}
+        open={Boolean(openFilterSheet)}
+        slotProps={{ paper: { className: "activity-filter-sheet" } }}
+      >
+        <Box className="activity-filter-sheet__content" role="dialog">
+          <Typography component="h2" id="budget-filter-sheet-title">
+            {openFilterSheet === "category" ? "Category" : "Date"}
+          </Typography>
+          {openFilterSheet === "category" ? (
+            <List disablePadding className="activity-filter-options">
+              <ListItemButton
+                className="activity-filter-option"
+                onClick={() => setDraftCategoryFilters([])}
+                selected={draftCategoryFilters.length === 0}
+              >
+                <ListItemText primary="All categories" />
+                <Checkbox checked={draftCategoryFilters.length === 0} edge="end" tabIndex={-1} />
+              </ListItemButton>
+              {budgetCategoryOptions.map((option) => (
+                <ListItemButton
+                  className="activity-filter-option"
+                  key={option}
+                  onClick={() => toggleDraftCategoryFilter(option)}
+                  selected={draftCategoryFilters.includes(option)}
+                >
+                  <ListItemText primary={option} />
+                  <Checkbox checked={draftCategoryFilters.includes(option)} edge="end" tabIndex={-1} />
+                </ListItemButton>
+              ))}
+            </List>
+          ) : (
+            <List disablePadding className="activity-filter-options">
+              {budgetDatePresetOptions.map((option) => (
+                <ListItemButton
+                  className="activity-filter-option"
+                  key={option.value}
+                  onClick={() => setDraftDatePreset(option.value)}
+                  selected={draftDatePreset === option.value}
+                >
+                  <ListItemText primary={option.label} />
+                  <Checkbox checked={draftDatePreset === option.value} edge="end" tabIndex={-1} />
+                </ListItemButton>
+              ))}
+            </List>
+          )}
+          <Stack className="activity-filter-sheet__actions" direction="row" spacing={1.5}>
+            <MuiButton fullWidth onClick={clearFilterSheet} variant="outlined">
+              Clear
+            </MuiButton>
+            <MuiButton fullWidth onClick={applyFilterSheet} variant="contained">
+              Apply
+            </MuiButton>
+          </Stack>
+        </Box>
+      </Drawer>
 
       {section === "yearly" ? (
         <>
@@ -906,7 +1109,7 @@ export function BudgetPage() {
               </span>
             </div>
             <div className="yearly-breakdown-list">
-              {yearlyMonthRows.map((row) => (
+              {filteredYearlyMonthRows.map((row) => (
                 <section aria-label={`${row.label} budget`} key={row.monthKey}>
                   <div className="budget-category-list__header">
                     <span>
@@ -934,9 +1137,9 @@ export function BudgetPage() {
                 <small>Budget and actual spending by category</small>
               </span>
             </div>
-            {yearlyCategoryRows.length > 0 ? (
+            {filteredYearlyCategoryRows.length > 0 ? (
               <div className="budget-category-list budget-category-list--compact">
-                {yearlyCategoryRows.map((row) => {
+                {filteredYearlyCategoryRows.map((row) => {
                   const theme = getBudgetCategoryTheme(row.category);
 
                   return (
@@ -990,8 +1193,11 @@ export function BudgetPage() {
         <>
           {isMonthlyBudgetMissing ? (
             <InlineAlert title="Monthly budget required">
-              <span className="inline-alert__content">
-                Add a budget for {selectedMonthLabel} before continuing monthly budgeting.
+              <span className="inline-alert__content budget-copy-note">
+                <span aria-hidden="true">
+                  <Icon name="plan" size={18} />
+                </span>
+                <span>Add {selectedMonthLabel} budget.</span>
                 {previousMonthBudgets.length > 0 ? (
                   <button
                     className="text-button"
@@ -1006,22 +1212,31 @@ export function BudgetPage() {
             </InlineAlert>
           ) : null}
 
-          <Card className="monthly-card">
+          <Card className="monthly-card budget-summary-card">
             <div className="monthly-card__month-row">
               <div className="month-navigator">
                 <button
                   aria-label="Previous month"
                   className="icon-button icon-button--flat month-navigator__previous"
-                  onClick={() => setSelectedMonth((current) => addMonths(current, -1))}
+                  onClick={() => {
+                    setSelectedDatePreset("last-month");
+                    setSelectedMonth((current) => addMonths(current, -1));
+                  }}
                   type="button"
                 >
                   <Icon name="chevron" size={17} />
                 </button>
-                <strong className="month-navigator__label">{selectedMonthLabel}</strong>
+                <strong className="month-navigator__label">
+                  <CalendarMonthRoundedIcon aria-hidden="true" focusable="false" fontSize="small" />
+                  {selectedMonthLabel}
+                </strong>
                 <button
                   aria-label="Next month"
                   className="icon-button icon-button--flat"
-                  onClick={() => setSelectedMonth((current) => addMonths(current, 1))}
+                  onClick={() => {
+                    setSelectedDatePreset("this-month");
+                    setSelectedMonth((current) => addMonths(current, 1));
+                  }}
                   type="button"
                 >
                   <Icon name="chevron" size={17} />
@@ -1029,26 +1244,56 @@ export function BudgetPage() {
               </div>
             </div>
             <div className="monthly-card__summary-row">
-              <h2>{money(budgetTotals.totalMinor)}</h2>
-              <strong className="percentage">{budgetTotals.progress}%</strong>
+              <span className="budget-summary-card__amount">
+                <span>Total Budget</span>
+                <h2>{money(budgetTotals.totalMinor)}</h2>
+                <small>Your budget for this month</small>
+              </span>
+              <span className="budget-summary-card__usage">
+                <span aria-hidden="true">
+                  <TrendingUpRoundedIcon fontSize="small" />
+                </span>
+                <strong>{budgetTotals.progress}%</strong>
+                <small>of budget used</small>
+              </span>
             </div>
             <BudgetProgressChart
               label={`Budget usage: ${budgetTotals.progress} percent`}
               progress={budgetTotals.progress}
             />
-            <dl className="monthly-card__totals">
-              <div>
-                <dt>Spent</dt>
-                <dd>{money(budgetTotals.spentMinor)}</dd>
+            <div className="budget-summary-card__progress-labels">
+              <span>{money(budgetTotals.spentMinor)} spent</span>
+              <strong>{money(budgetTotals.remainingMinor)} left</strong>
+            </div>
+            <dl className="monthly-card__totals budget-summary-card__stats">
+              <div className="budget-summary-card__stat budget-summary-card__stat--spent">
+                <span className="budget-summary-card__stat-icon" aria-hidden="true">
+                  <ShoppingBagRoundedIcon fontSize="small" />
+                </span>
+                <span>
+                  <dt>Spent</dt>
+                  <dd>{money(budgetTotals.spentMinor)}</dd>
+                </span>
+                <strong className="budget-summary-card__badge budget-summary-card__badge--spent">
+                  {budgetTotals.progress}%
+                </strong>
               </div>
-              <div>
-                <dt>Remaining</dt>
-                <dd>{money(budgetTotals.remainingMinor)}</dd>
+              <div className="budget-summary-card__stat budget-summary-card__stat--available">
+                <span className="budget-summary-card__stat-icon" aria-hidden="true">
+                  <AccountBalanceWalletRoundedIcon fontSize="small" />
+                </span>
+                <span>
+                  <dt>Available</dt>
+                  <dd>{money(budgetTotals.remainingMinor)}</dd>
+                </span>
+                <strong className="budget-summary-card__badge budget-summary-card__badge--available">
+                  {availablePercent}%
+                </strong>
               </div>
             </dl>
           </Card>
 
-          <Card>
+          <Card className="budget-categories-card">
             <div className="section-heading">
               <span>
                 <h2>Categories</h2>
@@ -1070,23 +1315,25 @@ export function BudgetPage() {
                 Add categories manually if copying fails.
               </InlineAlert>
             ) : null}
-            {categoryRows.length > 0 ? (
+            {filteredCategoryRows.length > 0 ? (
               <div className="budget-category-list budget-category-list--compact">
-                {categoryRows.map((budget) => {
+                {filteredCategoryRows.map((budget) => {
                   const theme = getBudgetCategoryTheme(budget.category);
-                  const isMenuOpen = openBudgetMenu?.id === budget.id;
 
                   return (
-                    <section
-                      aria-label={`${budget.category} budget`}
+                    <ListItemButton
+                      aria-label={`Edit ${budget.category} budget`}
                       className="budget-category-card"
+                      component="button"
                       key={budget.id}
+                      onClick={() => editBudget(budget)}
                       style={
                         {
                           "--budget-category-color": theme.color,
                           "--budget-category-surface": theme.surface,
                         } as CSSProperties
                       }
+                      type="button"
                     >
                       <div className="budget-category-row">
                         <span className="budget-category-row__icon">
@@ -1098,80 +1345,11 @@ export function BudgetPage() {
                             {money(budget.spentMinor)} spent of {money(BigInt(budget.amountMinor))}
                           </small>
                         </span>
-                        <span className="budget-category-row__meta">
-                          <strong>{budget.progress}%</strong>
-                          <small>{money(budget.remainingMinor)} left</small>
-                        </span>
-                        <span className="budget-category-row__menu">
-                          <IconButton
-                            aria-expanded={isMenuOpen}
-                            aria-haspopup="menu"
-                            aria-label={`More actions for ${budget.category} budget`}
-                            className="budget-category-row__menu-button"
-                            onClick={(event) => {
-                              setOpenBudgetMenu((current) =>
-                                current?.id === budget.id
-                                  ? null
-                                  : { anchorEl: event.currentTarget, id: budget.id },
-                              );
-                            }}
-                            size="small"
-                          >
-                            <MoreVertIcon aria-hidden="true" focusable="false" fontSize="small" />
-                          </IconButton>
-                          <Menu
-                            anchorEl={openBudgetMenu?.anchorEl ?? null}
-                            onClose={() => setOpenBudgetMenu(null)}
-                            open={isMenuOpen}
-                          >
-                            <MenuItem
-                              onClick={() => {
-                                setOpenBudgetMenu(null);
-                                editBudget(budget);
-                              }}
-                            >
-                              <ListItemIcon>
-                                <Icon name="edit" size={18} />
-                              </ListItemIcon>
-                              <Typography variant="body2">Edit</Typography>
-                            </MenuItem>
-                            <MenuItem
-                              className="budget-category-menu__danger"
-                              onClick={() => {
-                                setOpenBudgetMenu(null);
-                                void deleteBudget(budget.id);
-                              }}
-                            >
-                              <ListItemIcon>
-                                <Icon name="delete" size={18} />
-                              </ListItemIcon>
-                              <Typography variant="body2">Delete</Typography>
-                            </MenuItem>
-                          </Menu>
-                        </span>
+                        <strong className="budget-category-row__amount">
+                          {money(BigInt(budget.amountMinor))}
+                        </strong>
                       </div>
-                      <BudgetProgressChart
-                        color={theme.color}
-                        compact
-                        label={`${budget.category} usage: ${budget.progress} percent`}
-                        progress={budget.progress}
-                        trackColor="#e8eaee"
-                      />
-                      <span className="sr-only">
-                        <button
-                          aria-label={`Edit ${budget.category} budget`}
-                          onClick={() => editBudget(budget)}
-                          type="button"
-                        />
-                        <button
-                          aria-label={`Delete ${budget.category} budget`}
-                          onClick={() => {
-                            void deleteBudget(budget.id);
-                          }}
-                          type="button"
-                        />
-                      </span>
-                    </section>
+                    </ListItemButton>
                   );
                 })}
               </div>
@@ -1226,7 +1404,7 @@ export function BudgetPage() {
               <section
                 aria-labelledby="budget-category-dialog-title"
                 aria-modal="true"
-                className="modal-card"
+                className="modal-card budget-category-dialog"
                 onKeyDown={(event) => {
                   if (event.key === "Escape") {
                     closeBudgetDialog();
@@ -1234,19 +1412,19 @@ export function BudgetPage() {
                 }}
                 role="dialog"
               >
+                <IconButton
+                  aria-label="Close budget category form"
+                  className="budget-category-dialog__close"
+                  onClick={closeBudgetDialog}
+                  ref={budgetDialogCloseRef}
+                  size="small"
+                >
+                  <CloseRoundedIcon aria-hidden="true" focusable="false" fontSize="small" />
+                </IconButton>
                 <div className="section-heading">
                   <h2 id="budget-category-dialog-title">
                     {editingId ? "Edit budget category" : "Add budget category"}
                   </h2>
-                  <button
-                    aria-label="Close budget category form"
-                    className="text-button"
-                    onClick={closeBudgetDialog}
-                    ref={budgetDialogCloseRef}
-                    type="button"
-                  >
-                    Close
-                  </button>
                 </div>
                 <form
                   className="budget-category-form"
@@ -1284,6 +1462,20 @@ export function BudgetPage() {
                         ? "Save budget category"
                         : "Add budget category"}
                   </Button>
+                  {editingId ? (
+                    <Button
+                      disabled={isBudgetSaving}
+                      fullWidth
+                      onClick={() => {
+                        void deleteBudget(editingId);
+                        setIsBudgetDialogOpen(false);
+                      }}
+                      type="button"
+                      variant="secondary"
+                    >
+                      Delete budget category
+                    </Button>
+                  ) : null}
                 </form>
               </section>
             </div>

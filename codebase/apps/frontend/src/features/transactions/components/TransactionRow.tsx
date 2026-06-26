@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { formatMoney } from "../../../domain/money/money";
 import type { GuestTransaction } from "../../../domain/transactions/transaction";
 import type { SupportedLocale } from "../../../domain/preferences/guestPreferences";
+import { getTransactionAvatarStyle } from "./transactionAvatarTheme";
 
 interface TransactionRowProps {
   locale: SupportedLocale;
@@ -40,6 +41,7 @@ export function TransactionRow({ locale, transaction }: TransactionRowProps) {
       <ListItemAvatar>
         <Avatar
           className={`transaction-history-row__avatar transaction-history-row__avatar--${transaction.type}`}
+          style={getTransactionAvatarStyle(transaction)}
         >
           {transaction.category.charAt(0)}
         </Avatar>

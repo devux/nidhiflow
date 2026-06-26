@@ -115,6 +115,21 @@ export class WorkspaceController {
     });
   };
 
+  createShareCode = async (request: Request<{ workspaceId: string }>, response: Response) => {
+    const auth = getAuthContext(response);
+    const shareCode = await this.service.createShareCode(
+      auth.userId,
+      request.params.workspaceId,
+      response.locals.requestId as string,
+    );
+
+    sendSuccess(response, {
+      data: shareCode,
+      message: "Workspace share code created successfully.",
+      status: 201,
+    });
+  };
+
   acceptInvitation = async (request: Request<{ token: string }>, response: Response) => {
     const auth = getAuthContext(response);
     const workspace = await this.service.acceptInvitation(
@@ -126,6 +141,20 @@ export class WorkspaceController {
     sendSuccess(response, {
       data: workspace,
       message: "Workspace invitation accepted successfully.",
+    });
+  };
+
+  joinShareCode = async (request: Request<{ code: string }>, response: Response) => {
+    const auth = getAuthContext(response);
+    const workspace = await this.service.joinShareCode(
+      auth.userId,
+      request.params.code,
+      response.locals.requestId as string,
+    );
+
+    sendSuccess(response, {
+      data: workspace,
+      message: "Workspace joined successfully.",
     });
   };
 

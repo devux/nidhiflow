@@ -827,6 +827,21 @@ const paths = {
       ),
     }),
   },
+  "/api/v1/workspaces/{workspaceId}/share-codes": {
+    post: operation({
+      tags: ["Workspace Members"],
+      summary: "Create workspace share code",
+      description:
+        "Creates a short-lived family workspace share code. The code is returned once and stored only as a hash.",
+      operationId: "createWorkspaceShareCode",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId")],
+      responses: responseSet(
+        { "201": successResponse("Workspace share code created.", ref("WorkspaceShareCode")) },
+        { auth: true, conflict: true, forbidden: true, notFound: true, validation: true },
+      ),
+    }),
+  },
   "/api/v1/workspaces/{workspaceId}/members/{userId}": {
     delete: operation({
       tags: ["Workspace Members"],
@@ -867,6 +882,28 @@ const paths = {
       responses: responseSet(
         { "200": successResponse("Workspace invitation accepted.", ref("Workspace")) },
         { auth: true, conflict: true, notFound: true, validation: true },
+      ),
+    }),
+  },
+  "/api/v1/workspace-invitations/share-codes/{code}/join": {
+    post: operation({
+      tags: ["Workspace Members"],
+      summary: "Join workspace by share code",
+      description:
+        "Lets an authenticated user join a family workspace with a pending, unexpired share code.",
+      operationId: "joinWorkspaceByShareCode",
+      security: bearerSecurity,
+      parameters: [
+        {
+          in: "path",
+          name: "code",
+          required: true,
+          schema: { example: "ABCD-2345", maxLength: 12, minLength: 8, type: "string" },
+        },
+      ],
+      responses: responseSet(
+        { "200": successResponse("Workspace joined.", ref("Workspace")) },
+        { auth: true, conflict: true, forbidden: true, notFound: true, validation: true },
       ),
     }),
   },
@@ -2014,10 +2051,20 @@ export const openApiDocument = {
         properties: {
           id,
           workspaceId: { type: "string" },
-          invitedEmail: { format: "email", type: "string" },
+          invitedEmail: { format: "email", nullable: true, type: "string" },
           status: { enum: ["pending", "accepted", "revoked", "expired"], type: "string" },
           expiresAt: timestamp,
           debugToken: { description: "Only returned outside production.", type: "string" },
+        },
+      },
+      WorkspaceShareCode: {
+        type: "object",
+        required: ["code", "expiresAt", "id", "workspaceId"],
+        properties: {
+          code: { example: "ABCD-2345", type: "string" },
+          expiresAt: timestamp,
+          id,
+          workspaceId: { type: "string" },
         },
       },
       Account: {

@@ -30,7 +30,7 @@ export interface WorkspaceInvitationRecord {
   expiresAt: string;
   id: string;
   invitedByUserId: string;
-  invitedEmail: string;
+  invitedEmail: string | null;
   revokedAt: string | null;
   status: "pending" | "accepted" | "revoked" | "expired";
   updatedAt: string;
@@ -264,7 +264,7 @@ export class WorkspaceRepository {
       expiresAt: string;
       id: string;
       invitedByUserId: string;
-      invitedEmail: string;
+      invitedEmail: string | null;
       tokenHash: string;
       workspaceId: string;
     },

@@ -12,12 +12,6 @@ import { createDatabase, type Database } from "../../shared/database/database.js
 
 interface RegisterResponseBody {
   data: {
-    debugToken: string;
-  };
-}
-
-interface VerifyResponseBody {
-  data: {
     accessToken: string;
   };
 }
@@ -40,8 +34,17 @@ interface WorkspaceResponseBody {
 interface InvitationResponseBody {
   data: {
     debugToken: string;
-    invitedEmail: string;
+    invitedEmail: string | null;
     status: string;
+  };
+}
+
+interface ShareCodeResponseBody {
+  data: {
+    code: string;
+    expiresAt: string;
+    id: string;
+    workspaceId: string;
   };
 }
 
@@ -141,24 +144,17 @@ describe("family workspace integration", () => {
     });
     const registerBody = registerResponse.body as RegisterResponseBody;
 
-    expect(registerResponse.status).toBe(202);
-
-    const verifyResponse = await request(app).post("/api/v1/auth/verify-email").send({
-      token: registerBody.data.debugToken,
-    });
-    const verifyBody = verifyResponse.body as VerifyResponseBody;
-
-    expect(verifyResponse.status).toBe(200);
+    expect(registerResponse.status).toBe(201);
 
     const currentUserResponse = await request(app)
       .get("/api/v1/users/me")
-      .set("Authorization", `Bearer ${verifyBody.data.accessToken}`);
+      .set("Authorization", `Bearer ${registerBody.data.accessToken}`);
     const currentUserBody = currentUserResponse.body as CurrentUserResponseBody;
 
     expect(currentUserResponse.status).toBe(200);
 
     return {
-      accessToken: verifyBody.data.accessToken,
+      accessToken: registerBody.data.accessToken,
       app,
       user: currentUserBody.data,
     };
@@ -310,6 +306,30 @@ describe("family workspace integration", () => {
 
     expect(nonManagerInviteResponse.status).toBe(403);
 
+    const shareCodeResponse = await request(manager.app)
+      .post(`/api/v1/workspaces/${familyWorkspaceId}/share-codes`)
+      .set("Authorization", `Bearer ${manager.accessToken}`);
+    const shareCodeBody = shareCodeResponse.body as ShareCodeResponseBody;
+
+    expect(shareCodeResponse.status).toBe(201);
+    expect(shareCodeBody.data).toMatchObject({
+      workspaceId: familyWorkspaceId,
+    });
+    expect(shareCodeBody.data.code).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
+
+    const shareMember = await registerAndVerify("Sara", `sara-${unique}@example.com`);
+    const joinShareCodeResponse = await request(shareMember.app)
+      .post(`/api/v1/workspace-invitations/share-codes/${shareCodeBody.data.code}/join`)
+      .set("Authorization", `Bearer ${shareMember.accessToken}`);
+    const joinShareCodeBody = joinShareCodeResponse.body as WorkspaceResponseBody;
+
+    expect(joinShareCodeResponse.status).toBe(200);
+    expect(joinShareCodeBody.data).toMatchObject({
+      id: familyWorkspaceId,
+      membershipRole: "member",
+      type: "family",
+    });
+
     const removeResponse = await request(manager.app)
       .delete(`/api/v1/workspaces/${familyWorkspaceId}/members/${member.user.id}`)
       .set("Authorization", `Bearer ${manager.accessToken}`);
@@ -329,6 +349,7 @@ describe("family workspace integration", () => {
           AND action IN (
             'workspace.family.created',
             'workspace.invitation.created',
+            'workspace.share_code.created',
             'workspace.member.joined',
             'workspace.member.removed'
           )
@@ -339,6 +360,8 @@ describe("family workspace integration", () => {
     expect(auditActions.rows.map((row) => row.action)).toEqual([
       "workspace.family.created",
       "workspace.invitation.created",
+      "workspace.member.joined",
+      "workspace.share_code.created",
       "workspace.member.joined",
       "workspace.member.removed",
     ]);

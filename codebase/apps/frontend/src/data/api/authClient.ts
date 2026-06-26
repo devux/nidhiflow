@@ -14,6 +14,7 @@ export interface AuthUser {
 
 export interface WorkspaceSummary {
   id: string;
+  membershipRole?: "manager" | "member";
   name: string;
   reportingCurrency?: SupportedCurrency;
   type: string;

@@ -7,9 +7,13 @@ import {
   faPiggyBank,
   faWallet,
 } from "@fortawesome/free-solid-svg-icons";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
+import GroupsRoundedIcon from "@mui/icons-material/GroupsRounded";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
+import MuiButton from "@mui/material/Button";
 import MuiCard from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import IconButton from "@mui/material/IconButton";
@@ -22,17 +26,26 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import { type CSSProperties, type MouseEvent, useMemo, useState } from "react";
+import { type CSSProperties, type FormEvent, type MouseEvent, useMemo, useState } from "react";
 
+import { useAuth } from "../../../app/providers/AuthProvider";
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
 import { useGuestTransactions } from "../../../app/providers/GuestTransactionsProvider";
+import {
+  createFamilyWorkspace,
+  createWorkspaceShareCode,
+  joinWorkspaceByShareCode,
+  type WorkspaceShareCode,
+} from "../../../data/api/workspaceClient";
 import { formatMoney } from "../../../domain/money/money";
 import type { SupportedLocale } from "../../../domain/preferences/guestPreferences";
 import { calculateTransactionTotals } from "../../../domain/transactions/transaction";
 import type { GuestTransaction } from "../../../domain/transactions/transaction";
 import { Brand } from "../../../shared/components/Brand";
+import { Button } from "../../../shared/components/Button";
 import { EmptyState } from "../../../shared/components/EmptyState";
 import { Icon } from "../../../shared/components/Icon";
+import { getTransactionAvatarStyle } from "../../transactions/components/transactionAvatarTheme";
 
 function toDateValue(date: Date): string {
   return [
@@ -88,6 +101,7 @@ function TransactionHistoryRow({ locale, transaction }: TransactionHistoryRowPro
       <ListItemAvatar>
         <Avatar
           className={`transaction-history-row__avatar transaction-history-row__avatar--${transaction.type}`}
+          style={getTransactionAvatarStyle(transaction)}
         >
           {transaction.category.charAt(0)}
         </Avatar>
@@ -109,9 +123,17 @@ function TransactionHistoryRow({ locale, transaction }: TransactionHistoryRowPro
 }
 
 export function HomePage() {
+  const { accessToken, isAuthenticated, refreshWorkspaces, user, workspaces } = useAuth();
   const { preferences } = useGuestPreferences();
   const { transactions } = useGuestTransactions();
   const [headerMenuAnchor, setHeaderMenuAnchor] = useState<HTMLElement | null>(null);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
+  const [shareCode, setShareCode] = useState<WorkspaceShareCode | null>(null);
+  const [shareStatus, setShareStatus] = useState<
+    "copied" | "creating" | "error" | "idle" | "joining" | "joined"
+  >("idle");
+  const [shareMessage, setShareMessage] = useState("");
   const currentMonthRange = useMemo(() => getCurrentMonthRange(), []);
   const currentMonthTransactions = useMemo(
     () =>
@@ -143,6 +165,10 @@ export function HomePage() {
     ? "Tip: You're saving better than 68% of users!"
     : "Tip: Expenses are above income. Review spending.";
   const isHeaderMenuOpen = Boolean(headerMenuAnchor);
+  const familyWorkspace = workspaces.find((workspace) => workspace.type === "family");
+  const manageableFamilyWorkspace = workspaces.find(
+    (workspace) => workspace.type === "family" && workspace.membershipRole === "manager",
+  );
 
   function openHeaderMenu(event: MouseEvent<HTMLButtonElement>) {
     setHeaderMenuAnchor(event.currentTarget);
@@ -152,6 +178,102 @@ export function HomePage() {
     setHeaderMenuAnchor(null);
   }
 
+  function openShareModal() {
+    setIsShareModalOpen(true);
+    setShareStatus("idle");
+    setShareMessage("");
+
+    if (isAuthenticated && accessToken && manageableFamilyWorkspace) {
+      void handleCreateShareCode(manageableFamilyWorkspace.id);
+    }
+  }
+
+  function closeShareModal() {
+    setIsShareModalOpen(false);
+    setShareStatus("idle");
+    setShareMessage("");
+  }
+
+  async function handleCreateShareCode(workspaceId: string) {
+    if (!accessToken) return;
+
+    setShareStatus("creating");
+    setShareMessage("");
+
+    try {
+      const createdShareCode = await createWorkspaceShareCode(accessToken, workspaceId);
+      setShareCode(createdShareCode);
+      setShareStatus("idle");
+    } catch {
+      setShareStatus("error");
+      setShareMessage("Share code could not be created. Please try again.");
+    }
+  }
+
+  async function handleCreateFamilyWorkspace() {
+    if (!accessToken) return;
+
+    setShareStatus("creating");
+    setShareMessage("");
+
+    try {
+      const workspace = await createFamilyWorkspace(accessToken, {
+        name: `${user?.displayName ?? preferences.displayName}'s Team`,
+        reportingCurrency: user?.preferredCurrency ?? preferences.currency,
+        timezone: user?.timezone ?? preferences.timezone,
+      });
+      await refreshWorkspaces();
+      await handleCreateShareCode(workspace.id);
+    } catch {
+      setShareStatus("error");
+      setShareMessage("Shared space could not be created. Please try again.");
+    }
+  }
+
+  async function handleJoinWorkspace(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const normalizedCode = joinCode.trim().toUpperCase();
+
+    if (!isAuthenticated || !accessToken) {
+      setShareStatus("error");
+      setShareMessage("Log in or create an account before joining a shared workspace.");
+      return;
+    }
+
+    if (!normalizedCode) {
+      setShareStatus("error");
+      setShareMessage("Enter a sharing code.");
+      return;
+    }
+
+    setShareStatus("joining");
+    setShareMessage("");
+
+    try {
+      await joinWorkspaceByShareCode(accessToken, normalizedCode);
+      await refreshWorkspaces();
+      setJoinCode("");
+      setShareStatus("joined");
+      setShareMessage("Joined. Shared finances are ready.");
+    } catch {
+      setShareStatus("error");
+      setShareMessage("Code did not work. Ask for a new one.");
+    }
+  }
+
+  async function handleCopyShareCode() {
+    if (!shareCode) return;
+
+    try {
+      await navigator.clipboard.writeText(shareCode.code);
+      setShareStatus("copied");
+      setShareMessage("Code copied.");
+    } catch {
+      setShareStatus("error");
+      setShareMessage("Copy failed. Select the code instead.");
+    }
+  }
+
   return (
     <main className="page page--home" id="main-content">
       <Stack className="home-header" component="header" direction="row">
@@ -159,6 +281,14 @@ export function HomePage() {
           <Brand />
         </Box>
         <Box className="home-header-menu">
+          <IconButton
+            aria-label="Shared workspace"
+            className="home-header-menu__button home-share-button"
+            onClick={openShareModal}
+            size="small"
+          >
+            <GroupsRoundedIcon aria-hidden="true" focusable="false" fontSize="small" />
+          </IconButton>
           <IconButton
             aria-controls={isHeaderMenuOpen ? "home-header-menu" : undefined}
             aria-expanded={isHeaderMenuOpen}
@@ -185,6 +315,149 @@ export function HomePage() {
           </Menu>
         </Box>
       </Stack>
+
+      {isShareModalOpen ? (
+        <div
+          aria-labelledby="family-collaboration-title"
+          aria-modal="true"
+          className="modal-backdrop"
+          role="dialog"
+        >
+          <section className="modal-card family-share-modal">
+            <IconButton
+              aria-label="Close sharing"
+              className="family-share-modal__close"
+              onClick={closeShareModal}
+              size="small"
+            >
+              <CloseRoundedIcon aria-hidden="true" focusable="false" fontSize="small" />
+            </IconButton>
+            <div className="family-share-modal__header">
+              <span className="icon-tile" aria-hidden="true">
+                <GroupsRoundedIcon fontSize="small" />
+              </span>
+              <div>
+                <h2 id="family-collaboration-title">Team</h2>
+                <p>Share money tracking with others.</p>
+              </div>
+            </div>
+
+            {!isAuthenticated ? (
+              <div className="family-share-modal__auth">
+                <p>Sign in to share or join safely.</p>
+                <div className="family-share-modal__actions">
+                  <Link className="button button--primary" to="/signup">
+                    Create account
+                  </Link>
+                  <Link className="button button--secondary" to="/login">
+                    Log in
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <>
+                {manageableFamilyWorkspace ? (
+                  <div className="share-code-panel">
+                    <div className="share-code-panel__top">
+                      <span className="share-code-panel__label">Code</span>
+                      <IconButton
+                        aria-label="Copy sharing code"
+                        className="share-code-panel__copy"
+                        disabled={!shareCode}
+                        onClick={() => void handleCopyShareCode()}
+                        size="small"
+                      >
+                        <ContentCopyRoundedIcon
+                          aria-hidden="true"
+                          focusable="false"
+                          fontSize="small"
+                        />
+                      </IconButton>
+                    </div>
+                    <output className={shareCode ? "share-code-panel__code" : "share-code-panel__pending"}>
+                      {shareCode?.code ?? (shareStatus === "creating" ? "Getting code" : "Code loading")}
+                    </output>
+                    <small>Valid for 7 days. Others can view and edit.</small>
+                    <div className="family-share-modal__actions">
+                      <MuiButton
+                        className="family-share-modal__compact-action"
+                        disabled={shareStatus === "creating"}
+                        onClick={() => void handleCreateShareCode(manageableFamilyWorkspace.id)}
+                        variant="outlined"
+                      >
+                        New
+                      </MuiButton>
+                      <MuiButton
+                        className="family-share-modal__compact-action family-share-modal__compact-action--primary"
+                        disabled={!shareCode}
+                        onClick={() => void handleCopyShareCode()}
+                        variant="contained"
+                      >
+                        Copy code
+                      </MuiButton>
+                    </div>
+                  </div>
+                ) : familyWorkspace ? (
+                  <div className="family-share-modal__notice">
+                    <strong>Ask a manager for a code.</strong>
+                    <span>You are already in a shared space.</span>
+                  </div>
+                ) : (
+                  <div className="family-share-modal__notice">
+                    <strong>Create shared space.</strong>
+                    <span>Personal records stay separate.</span>
+                    <Button
+                      disabled={shareStatus === "creating"}
+                      onClick={() => void handleCreateFamilyWorkspace()}
+                    >
+                      {shareStatus === "creating" ? "Creating" : "Create"}
+                    </Button>
+                  </div>
+                )}
+
+                <form
+                  className="family-share-modal__join"
+                  onSubmit={(event) => void handleJoinWorkspace(event)}
+                >
+                  <label htmlFor="workspace-share-code">Join with code</label>
+                  <div className="field-row">
+                    <input
+                      autoComplete="off"
+                      id="workspace-share-code"
+                      inputMode="text"
+                      onChange={(event) => setJoinCode(event.target.value)}
+                      placeholder="ABCD-2345"
+                      value={joinCode}
+                    />
+                    <MuiButton
+                      className="family-share-modal__compact-action"
+                      disabled={shareStatus === "joining"}
+                      type="submit"
+                      variant="outlined"
+                    >
+                      {shareStatus === "joining" ? "Joining" : "Join"}
+                    </MuiButton>
+                  </div>
+                </form>
+              </>
+            )}
+
+            {shareMessage ? (
+              <p
+                className={
+                  shareStatus === "error"
+                    ? "family-share-modal__message family-share-modal__message--error"
+                    : "family-share-modal__message"
+                }
+                role={shareStatus === "error" ? "alert" : "status"}
+              >
+                {shareMessage}
+              </p>
+            ) : null}
+
+          </section>
+        </div>
+      ) : null}
 
       <section aria-label="Budget summaries" className="home-budget-section">
         <div className="home-summary-grid">

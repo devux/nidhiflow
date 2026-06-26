@@ -6,7 +6,10 @@ import { validate } from "../../app/middleware/validate.js";
 import type { Database } from "../../shared/database/database.js";
 import { WorkspaceController } from "./workspace.controller.js";
 import { WorkspaceService } from "./workspace.service.js";
-import { workspaceInvitationParamsSchema } from "./workspace.schemas.js";
+import {
+  workspaceInvitationParamsSchema,
+  workspaceShareCodeParamsSchema,
+} from "./workspace.schemas.js";
 
 export function createWorkspaceInvitationsRouter({
   database,
@@ -23,6 +26,11 @@ export function createWorkspaceInvitationsRouter({
     "/:token/accept",
     validate({ params: workspaceInvitationParamsSchema }),
     controller.acceptInvitation,
+  );
+  router.post(
+    "/share-codes/:code/join",
+    validate({ params: workspaceShareCodeParamsSchema }),
+    controller.joinShareCode,
   );
 
   return router;

@@ -30,6 +30,17 @@ export const workspaceInvitationParamsSchema = z.object({
   token: z.string().trim().min(20).max(255),
 });
 
+export const workspaceShareCodeParamsSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .min(8)
+    .max(12)
+    .transform((value) => value.replace(/[\s-]/g, "").toUpperCase())
+    .refine((value) => /^[A-Z2-9]{8}$/.test(value), "Share code must be 8 letters or numbers.")
+    .transform((value) => `${value.slice(0, 4)}-${value.slice(4)}`),
+});
+
 export const createWorkspaceBodySchema = z.object({
   name: z.string().trim().min(1).max(80),
   reportingCurrency: currencySchema,

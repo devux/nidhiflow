@@ -512,6 +512,105 @@ describe("App", () => {
     expect(screen.getByText("April 15")).toBeDefined();
   });
 
+  it("loads shared family workspace activity after a user joins", async () => {
+    window.sessionStorage.setItem("nidhiflow.accessToken", "access-token-joined-family");
+    const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = getRequestUrl(input);
+      const method = init?.method ?? "GET";
+
+      if (url.endsWith("/api/v1/users/me") && method === "GET") {
+        return Promise.resolve(
+          createJsonResponse({
+            data: {
+              displayName: "Arun",
+              email: "arun@example.com",
+              id: "usr_joined",
+              locale: "en-US",
+              preferredCurrency: "USD",
+              theme: "system",
+              timezone: "UTC",
+            },
+            message: "Current user retrieved successfully.",
+            success: true,
+          }),
+        );
+      }
+
+      if (url.endsWith("/api/v1/workspaces") && method === "GET") {
+        return Promise.resolve(
+          createJsonResponse({
+            data: [
+              {
+                id: "wsp_personal",
+                membershipRole: "manager",
+                name: "Arun",
+                reportingCurrency: "USD",
+                type: "personal",
+              },
+              {
+                id: "wsp_family",
+                membershipRole: "member",
+                name: "Family Money",
+                reportingCurrency: "USD",
+                type: "family",
+              },
+            ],
+            message: "Workspaces retrieved successfully.",
+            success: true,
+          }),
+        );
+      }
+
+      if (url.endsWith("/api/v1/workspaces/wsp_family/categories") && method === "GET") {
+        return Promise.resolve(
+          createJsonResponse({
+            data: [{ id: "cat_food", isArchived: false, name: "Food", transactionType: "expense" }],
+            message: "Categories retrieved successfully.",
+            success: true,
+          }),
+        );
+      }
+
+      if (url.endsWith("/api/v1/workspaces/wsp_family/transactions") && method === "GET") {
+        return Promise.resolve(
+          createJsonResponse({
+            data: [
+              {
+                amount: "42.00",
+                categoryId: "cat_food",
+                createdAt: "2026-04-15T08:30:00.000Z",
+                currency: "USD",
+                id: "txn_family",
+                note: "Shared groceries",
+                transactionDate: "2026-04-15T00:00:00.000Z",
+                type: "expense",
+                updatedAt: "2026-04-15T08:30:00.000Z",
+              },
+            ],
+            message: "Transactions retrieved successfully.",
+            success: true,
+          }),
+        );
+      }
+
+      if (url.includes("/api/v1/workspaces/wsp_personal/")) {
+        throw new Error(`Personal workspace should not be loaded: ${url}`);
+      }
+
+      return Promise.reject(new Error(`Unexpected request: ${url}`));
+    });
+
+    window.history.replaceState({}, "", "/activity");
+    render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Activity" })).toBeDefined();
+    expect(screen.getByText("Shared groceries")).toBeDefined();
+  });
+
   it("links the Home notification entry to the guest preferences page", async () => {
     window.history.replaceState({}, "", "/");
     const user = userEvent.setup();
@@ -524,6 +623,125 @@ describe("App", () => {
     await user.click(screen.getByRole("menuitem", { name: "Notification preferences" }));
 
     expect(await screen.findByRole("heading", { name: "You" })).toBeDefined();
+  });
+
+  it("gates family workspace sharing for guests from Home", async () => {
+    window.history.replaceState({}, "", "/");
+    const user = userEvent.setup();
+    render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    await expectHomeHeader();
+    await user.click(screen.getByRole("button", { name: "Shared workspace" }));
+
+    expect(screen.getByRole("dialog", { name: "Team" })).toBeDefined();
+    expect(screen.getByText(/Sign in to share or join safely/)).toBeDefined();
+    expect(screen.getByRole("link", { name: "Create account" }).getAttribute("href")).toBe(
+      "/signup",
+    );
+    expect(screen.getByRole("link", { name: "Log in" }).getAttribute("href")).toBe("/login");
+  });
+
+  it("creates and joins family workspace share codes from Home", async () => {
+    window.sessionStorage.setItem("nidhiflow.accessToken", "access-token-family");
+    const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = getRequestUrl(input);
+      const method = init?.method ?? "GET";
+
+      if (url.endsWith("/api/v1/users/me") && method === "GET") {
+        return Promise.resolve(
+          createJsonResponse({
+            data: {
+              displayName: "Nila",
+              email: "nila@example.com",
+              id: "usr_family",
+              locale: "en-US",
+              preferredCurrency: "USD",
+              theme: "system",
+              timezone: "UTC",
+            },
+            message: "Current user retrieved successfully.",
+            success: true,
+          }),
+        );
+      }
+
+      if (url.endsWith("/api/v1/workspaces") && method === "GET") {
+        return Promise.resolve(
+          createJsonResponse({
+            data: [
+              {
+                id: "wsp_family",
+                membershipRole: "manager",
+                name: "Nila Family",
+                reportingCurrency: "USD",
+                type: "family",
+              },
+            ],
+            message: "Workspaces retrieved successfully.",
+            success: true,
+          }),
+        );
+      }
+
+      if (url.endsWith("/api/v1/workspaces/wsp_family/share-codes") && method === "POST") {
+        return Promise.resolve(
+          createJsonResponse(
+            {
+              data: {
+                code: "ABCD-2345",
+                expiresAt: "2026-07-03T00:00:00.000Z",
+                id: "wsi_share",
+                workspaceId: "wsp_family",
+              },
+              message: "Workspace share code created successfully.",
+              success: true,
+            },
+            true,
+            201,
+          ),
+        );
+      }
+
+      if (
+        url.endsWith("/api/v1/workspace-invitations/share-codes/LMNO-6789/join") &&
+        method === "POST"
+      ) {
+        return Promise.resolve(
+          createJsonResponse({
+            data: {
+              id: "wsp_family",
+              membershipRole: "member",
+              name: "Nila Family",
+              reportingCurrency: "USD",
+              type: "family",
+            },
+            message: "Workspace joined successfully.",
+            success: true,
+          }),
+        );
+      }
+
+      return Promise.reject(new Error(`Unexpected request: ${url}`));
+    });
+
+    window.history.replaceState({}, "", "/");
+    const user = userEvent.setup();
+    render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    await expectHomeHeader();
+    await user.click(screen.getByRole("button", { name: "Shared workspace" }));
+
+    expect(await screen.findByText("ABCD-2345")).toBeDefined();
+    await user.type(screen.getByLabelText("Join with code"), "LMNO-6789");
+    await user.click(screen.getByRole("button", { name: "Join" }));
+
+    expect(await screen.findByText(/Joined/)).toBeDefined();
   });
 
   it("lets a guest create an account and start a session", async () => {
@@ -1171,9 +1389,8 @@ describe("App", () => {
     expect(screen.queryByRole("dialog", { name: "Budget period" })).toBeNull();
     expect(screen.getByText("Monthly budget required")).toBeDefined();
     expect(screen.queryByText("No monthly budget yet")).toBeDefined();
-    expect(screen.getByRole("button", { name: "Monthly" }).getAttribute("aria-pressed")).toBe(
-      "true",
-    );
+    expect(screen.queryByRole("button", { name: "Monthly" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Yearly" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Bills" })).toBeNull();
 
     await user.click(screen.getByRole("button", { name: "Add budget category" }));
@@ -1198,8 +1415,11 @@ describe("App", () => {
     expect(screen.getAllByText("32%")).toHaveLength(2);
     expect(screen.queryByRole("heading", { name: "Active goals" })).toBeNull();
 
-    await user.click(screen.getByRole("button", { name: "Yearly" }));
-    expect(screen.getByRole("heading", { name: "Last 12 months" })).toBeDefined();
+    await user.click(screen.getByRole("button", { name: /Filter by date/ }));
+    await user.click(screen.getByRole("button", { name: "This year" }));
+    await user.click(screen.getByRole("button", { name: "Apply" }));
+    await waitFor(() => expect(document.body.style.overflow).toBe(""));
+    expect(await screen.findAllByText("Last 12 months")).toHaveLength(2);
     expect(screen.getByText("Yearly budget summary")).toBeDefined();
     expect(screen.getByText("Budget vs actual")).toBeDefined();
     expect(screen.getByRole("heading", { name: "Month-wise breakdown" })).toBeDefined();
@@ -1209,7 +1429,10 @@ describe("App", () => {
     expect(screen.queryByRole("heading", { name: "Healthy progress only" })).toBeNull();
     expect(screen.getByText("Projected yearly savings")).toBeDefined();
     expect(screen.getByText("1 of 12 monthly plans entered")).toBeDefined();
-    await user.click(screen.getByRole("button", { name: "Monthly" }));
+    await user.click(screen.getByRole("button", { name: /Filter by date/ }));
+    await user.click(screen.getByRole("button", { name: "This month" }));
+    await user.click(screen.getByRole("button", { name: "Apply" }));
+    await waitFor(() => expect(document.body.style.overflow).toBe(""));
 
     await user.click(
       within(screen.getByRole("navigation", { name: "Primary navigation" })).getByRole("button", {
@@ -1233,7 +1456,9 @@ describe("App", () => {
     expect(screen.getByText("₹80.00 spent of ₹400.00")).toBeDefined();
     expect(screen.getAllByText("20%")).toHaveLength(2);
 
-    await user.click(screen.getByRole("button", { name: "Delete Food budget" }));
+    await user.click(screen.getByRole("button", { name: "Edit Food budget" }));
+    budgetDialog = screen.getByRole("dialog", { name: "Edit budget category" });
+    await user.click(within(budgetDialog).getByRole("button", { name: "Delete budget category" }));
     expect(screen.getAllByRole("heading", { name: "₹0.00" })).toHaveLength(1);
     expect(screen.getByText("No monthly budget yet")).toBeDefined();
   });
@@ -1533,7 +1758,7 @@ describe("App", () => {
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    await user.click(await screen.findByRole("link", { name: "Add transaction" }));
+    await user.click(await screen.findByRole("link", { name: "Add a transaction" }));
 
     expect(await screen.findByRole("heading", { name: "Add Expense" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Misc" })).toBeDefined();

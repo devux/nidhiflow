@@ -48,6 +48,11 @@ export function createWorkspacesRouter({
     validate({ params: workspaceParamsSchema, body: createWorkspaceInvitationBodySchema }),
     controller.createInvitation,
   );
+  router.post(
+    "/:workspaceId/share-codes",
+    validate({ params: workspaceParamsSchema }),
+    controller.createShareCode,
+  );
   router.delete(
     "/:workspaceId/members/:userId",
     validate({ params: workspaceMemberParamsSchema }),

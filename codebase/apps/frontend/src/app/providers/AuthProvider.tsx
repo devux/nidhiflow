@@ -24,10 +24,12 @@ import {
 
 interface AuthContextValue {
   accessToken: string | null;
+  activeWorkspace: WorkspaceSummary | null;
   isAuthenticated: boolean;
   isCheckingSession: boolean;
   login: (input: { email: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
+  refreshWorkspaces: () => Promise<WorkspaceSummary[]>;
   register: (input: {
     displayName: string;
     email: string;
@@ -103,6 +105,10 @@ function clearStoredAuthSession() {
   } catch {
     // Nothing to clear when browser storage is unavailable.
   }
+}
+
+function selectActiveWorkspace(workspaces: WorkspaceSummary[]): WorkspaceSummary | null {
+  return workspaces.find((workspace) => workspace.type === "family") ?? workspaces[0] ?? null;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -246,6 +252,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [accessToken, workspaces],
   );
 
+  const handleRefreshWorkspaces = useCallback(async () => {
+    if (!accessToken) {
+      throw new ApiRequestError("Authentication is required.", 401);
+    }
+
+    const currentWorkspaces = await getWorkspaces(accessToken);
+    setWorkspaces(currentWorkspaces);
+
+    if (user) {
+      storeAuthSession({
+        accessToken,
+        user,
+        workspaces: currentWorkspaces,
+      });
+    }
+
+    return currentWorkspaces;
+  }, [accessToken, user]);
+
   const handleLogout = useCallback(async () => {
     await logout();
     clearStoredAuthSession();
@@ -257,11 +282,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const contextValue = useMemo<AuthContextValue>(
     () => ({
       accessToken,
+      activeWorkspace: selectActiveWorkspace(workspaces),
       isAuthenticated: Boolean(user && accessToken),
       isCheckingSession,
       login: handleLogin,
       logout: handleLogout,
       register: handleRegister,
+      refreshWorkspaces: handleRefreshWorkspaces,
       updateProfile: handleUpdateProfile,
       user,
       verifyEmail: handleVerifyEmail,
@@ -271,6 +298,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       accessToken,
       handleLogin,
       handleLogout,
+      handleRefreshWorkspaces,
       handleRegister,
       handleUpdateProfile,
       handleVerifyEmail,

@@ -1,3 +1,5 @@
+import crypto from "node:crypto";
+
 import { AppError } from "../../shared/errors/appError.js";
 import { createId } from "../../shared/security/ids.js";
 import { createOpaqueToken, hashToken } from "../../shared/security/tokens.js";
@@ -35,10 +37,27 @@ function conflict(message: string) {
   });
 }
 
+function isUniqueConstraintViolation(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "23505"
+  );
+}
+
 function addDays(date: Date, days: number) {
   const value = new Date(date);
   value.setUTCDate(value.getUTCDate() + days);
   return value.toISOString();
+}
+
+function createShareCode() {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = crypto.randomBytes(8);
+  const raw = Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join("");
+
+  return `${raw.slice(0, 4)}-${raw.slice(4)}`;
 }
 
 export class WorkspaceService {
@@ -251,6 +270,73 @@ export class WorkspaceService {
     };
   }
 
+  async createShareCode(userId: string, workspaceId: string, requestId: string | null) {
+    const workspace = await this.ensureManager(userId, workspaceId);
+
+    if (workspace.type !== "family") {
+      throw conflict("Share codes are available only for family workspaces.");
+    }
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const code = createShareCode();
+      const invitationId = createId("wsi");
+
+      try {
+        const invitation = await this.database.transaction(async (transaction) => {
+          const repository = new WorkspaceRepository(transaction);
+          const created = await repository.createInvitation(
+            {
+              expiresAt: addDays(new Date(), 7),
+              id: invitationId,
+              invitedByUserId: userId,
+              invitedEmail: null,
+              tokenHash: hashToken(code),
+              workspaceId,
+            },
+            transaction,
+          );
+
+          await new AuthRepository(transaction).insertAuditLog(
+            {
+              action: "workspace.share_code.created",
+              actorUserId: userId,
+              changeMetadata: { expiresAt: created?.expiresAt ?? null },
+              id: createId("aud"),
+              requestId,
+              resourceId: invitationId,
+              resourceType: "workspace_invitation",
+              workspaceId,
+            },
+            transaction,
+          );
+
+          return created;
+        });
+
+        if (!invitation) {
+          break;
+        }
+
+        return {
+          code,
+          expiresAt: invitation.expiresAt,
+          id: invitation.id,
+          workspaceId,
+        };
+      } catch (error) {
+        if (!isUniqueConstraintViolation(error)) {
+          throw error;
+        }
+      }
+    }
+
+    throw new AppError({
+      code: "INTERNAL_ERROR",
+      message: "The share code could not be created.",
+      status: 500,
+    });
+  }
+
   async acceptInvitation(userId: string, token: string, requestId: string | null) {
     const user = await this.authRepository.findUserById(userId);
     const invitation = await this.repository.findInvitationByTokenHash(hashToken(token));
@@ -268,7 +354,10 @@ export class WorkspaceService {
       throw conflict("This invitation has expired.");
     }
 
-    if (user.email.toLowerCase() !== invitation.invitedEmail.toLowerCase()) {
+    if (
+      invitation.invitedEmail &&
+      user.email.toLowerCase() !== invitation.invitedEmail.toLowerCase()
+    ) {
       throw forbidden("This invitation is for a different account.");
     }
 
@@ -303,6 +392,10 @@ export class WorkspaceService {
 
       return repository.findWorkspaceForUser(userId, invitation.workspaceId, transaction);
     });
+  }
+
+  async joinShareCode(userId: string, code: string, requestId: string | null) {
+    return this.acceptInvitation(userId, code.toUpperCase(), requestId);
   }
 
   async removeMember(

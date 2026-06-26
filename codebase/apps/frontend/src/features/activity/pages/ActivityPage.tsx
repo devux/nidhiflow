@@ -253,10 +253,7 @@ export function ActivityPage() {
                   Show all activity
                 </button>
               ) : (
-                <Link
-                  className="button button--secondary"
-                  to="/transactions/new?type=expense"
-                >
+                <Link className="button button--secondary" to="/transactions/new?type=expense">
                   Add a transaction
                 </Link>
               )
