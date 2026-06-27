@@ -52,14 +52,19 @@
 
 ## Reports
 
-- This Month, Last Month, This Year, Custom
+- Date and Custom filters open in bottom sheets with Clear and Apply actions
+- Date options: This month, Last month, Last year
+- Custom requires a start date and end date
 - Total income, total expense, net savings
 - Expense category chart plus textual category, percentage, and amount legend
 - Charts remain understandable without color
 
 ## You
 
+- Keep `You` as the navigation destination and use `Profile` as the page heading
 - Guest/authenticated state
+- Selecting the profile name opens display-name editing in a modal
+- Feedback opens from a single page action into a modal form
 - Guest local-data explanation and non-blocking Create Account action
 - No invented guest email or cloud identity
 - Activity and Reports shortcuts

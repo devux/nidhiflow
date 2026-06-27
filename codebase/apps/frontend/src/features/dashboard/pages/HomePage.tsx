@@ -8,9 +8,14 @@ import {
   faWallet,
 } from "@fortawesome/free-solid-svg-icons";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import ConfirmationNumberOutlinedIcon from "@mui/icons-material/ConfirmationNumberOutlined";
 import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
+import ErrorOutlineRoundedIcon from "@mui/icons-material/ErrorOutlineRounded";
+import LinkRoundedIcon from "@mui/icons-material/LinkRounded";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import GroupsRoundedIcon from "@mui/icons-material/GroupsRounded";
+import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
+import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
 import MuiButton from "@mui/material/Button";
@@ -338,7 +343,7 @@ export function HomePage() {
               </span>
               <div>
                 <h2 id="family-collaboration-title">Team</h2>
-                <p>Share money tracking with others.</p>
+                <p>Share money tracking</p>
               </div>
             </div>
 
@@ -359,38 +364,35 @@ export function HomePage() {
                 {manageableFamilyWorkspace ? (
                   <div className="share-code-panel">
                     <div className="share-code-panel__top">
-                      <span className="share-code-panel__label">Code</span>
-                      <IconButton
-                        aria-label="Copy sharing code"
-                        className="share-code-panel__copy"
-                        disabled={!shareCode}
-                        onClick={() => void handleCopyShareCode()}
-                        size="small"
-                      >
-                        <ContentCopyRoundedIcon
-                          aria-hidden="true"
-                          focusable="false"
-                          fontSize="small"
-                        />
-                      </IconButton>
+                      <div className="share-code-panel__meta">
+                        <span className="share-code-panel__label">Invite code</span>
+                        <span className="share-code-panel__validity">
+                          <ShieldOutlinedIcon aria-hidden="true" fontSize="small" />
+                          Valid for 7 days
+                        </span>
+                      </div>
                     </div>
-                    <output className={shareCode ? "share-code-panel__code" : "share-code-panel__pending"}>
-                      {shareCode?.code ?? (shareStatus === "creating" ? "Getting code" : "Code loading")}
+                    <output
+                      className={shareCode ? "share-code-panel__code" : "share-code-panel__pending"}
+                    >
+                      {shareCode?.code ??
+                        (shareStatus === "creating" ? "Getting code" : "Code loading")}
                     </output>
-                    <small>Valid for 7 days. Others can view and edit.</small>
                     <div className="family-share-modal__actions">
                       <MuiButton
                         className="family-share-modal__compact-action"
                         disabled={shareStatus === "creating"}
                         onClick={() => void handleCreateShareCode(manageableFamilyWorkspace.id)}
+                        startIcon={<RefreshRoundedIcon />}
                         variant="outlined"
                       >
-                        New
+                        New code
                       </MuiButton>
                       <MuiButton
                         className="family-share-modal__compact-action family-share-modal__compact-action--primary"
                         disabled={!shareCode}
                         onClick={() => void handleCopyShareCode()}
+                        startIcon={<ContentCopyRoundedIcon />}
                         variant="contained"
                       >
                         Copy code
@@ -419,16 +421,27 @@ export function HomePage() {
                   className="family-share-modal__join"
                   onSubmit={(event) => void handleJoinWorkspace(event)}
                 >
-                  <label htmlFor="workspace-share-code">Join with code</label>
-                  <div className="field-row">
-                    <input
-                      autoComplete="off"
-                      id="workspace-share-code"
-                      inputMode="text"
-                      onChange={(event) => setJoinCode(event.target.value)}
-                      placeholder="ABCD-2345"
-                      value={joinCode}
-                    />
+                  <div className="family-share-modal__join-heading">
+                    <span aria-hidden="true">
+                      <LinkRoundedIcon />
+                    </span>
+                    <div>
+                      <label htmlFor="workspace-share-code">Join with code</label>
+                      <small>Enter a code shared by your team member.</small>
+                    </div>
+                  </div>
+                  <div className="family-share-modal__join-row">
+                    <div className="family-share-modal__join-input">
+                      <ConfirmationNumberOutlinedIcon aria-hidden="true" fontSize="small" />
+                      <input
+                        autoComplete="off"
+                        id="workspace-share-code"
+                        inputMode="text"
+                        onChange={(event) => setJoinCode(event.target.value)}
+                        placeholder="Enter code (e.g. ABCD-2345)"
+                        value={joinCode}
+                      />
+                    </div>
                     <MuiButton
                       className="family-share-modal__compact-action"
                       disabled={shareStatus === "joining"}
@@ -443,7 +456,7 @@ export function HomePage() {
             )}
 
             {shareMessage ? (
-              <p
+              <div
                 className={
                   shareStatus === "error"
                     ? "family-share-modal__message family-share-modal__message--error"
@@ -451,10 +464,21 @@ export function HomePage() {
                 }
                 role={shareStatus === "error" ? "alert" : "status"}
               >
-                {shareMessage}
-              </p>
+                {shareStatus === "error" ? (
+                  <span className="family-share-modal__message-icon" aria-hidden="true">
+                    <ErrorOutlineRoundedIcon />
+                  </span>
+                ) : null}
+                {shareMessage === "Share code could not be created. Please try again." ? (
+                  <span className="family-share-modal__message-copy">
+                    <strong>Share code could not be created.</strong>
+                    <span>Please try again.</span>
+                  </span>
+                ) : (
+                  <span>{shareMessage}</span>
+                )}
+              </div>
             ) : null}
-
           </section>
         </div>
       ) : null}

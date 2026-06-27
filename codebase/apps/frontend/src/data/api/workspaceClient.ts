@@ -1,7 +1,10 @@
 import { trackApiRequest } from "../../app/providers/apiLoadingState";
 import { environment } from "../../config/environment";
 import type { WorkspaceSummary } from "./authClient";
-import { ApiRequestError } from "./authClient";
+import { ApiRequestError, refreshAccessToken } from "./authClient";
+
+const sessionAccessTokenKey = "nidhiflow.accessToken";
+const sessionAuthSnapshotKey = "nidhiflow.authSession";
 
 interface ApiEnvelope<Data> {
   data: Data;
@@ -26,11 +29,27 @@ async function parseResponse<Data>(response: Response): Promise<ApiEnvelope<Data
   return body;
 }
 
-async function workspaceRequest<Data>(
+function storeRefreshedAccessToken(accessToken: string) {
+  try {
+    window.sessionStorage.setItem(sessionAccessTokenKey, accessToken);
+    const snapshot = window.sessionStorage.getItem(sessionAuthSnapshotKey);
+
+    if (snapshot) {
+      window.sessionStorage.setItem(
+        sessionAuthSnapshotKey,
+        JSON.stringify({ ...JSON.parse(snapshot), accessToken }),
+      );
+    }
+  } catch {
+    // The refresh cookie still carries the server session.
+  }
+}
+
+async function sendWorkspaceRequest<Data>(
   accessToken: string,
   path: string,
   options: RequestInit = {},
-): Promise<Data> {
+): Promise<ApiEnvelope<Data>> {
   return trackApiRequest(async () => {
     const response = await fetch(`${environment.NIDHIFLOW_API_BASE_URL}/api/v1${path}`, {
       ...options,
@@ -41,10 +60,31 @@ async function workspaceRequest<Data>(
         ...options.headers,
       },
     });
-    const envelope = await parseResponse<Data>(response);
+
+    return parseResponse<Data>(response);
+  });
+}
+
+async function workspaceRequest<Data>(
+  accessToken: string,
+  path: string,
+  options: RequestInit = {},
+): Promise<Data> {
+  try {
+    const envelope = await sendWorkspaceRequest<Data>(accessToken, path, options);
 
     return envelope.data;
-  });
+  } catch (error) {
+    if (!(error instanceof ApiRequestError) || error.status !== 401) {
+      throw error;
+    }
+
+    const refreshedAccessToken = await refreshAccessToken();
+    storeRefreshedAccessToken(refreshedAccessToken);
+    const envelope = await sendWorkspaceRequest<Data>(refreshedAccessToken, path, options);
+
+    return envelope.data;
+  }
 }
 
 export async function createFamilyWorkspace(

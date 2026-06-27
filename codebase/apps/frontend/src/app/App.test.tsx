@@ -483,7 +483,7 @@ describe("App", () => {
     expect(await screen.findByRole("heading", { name: "Flow" })).toBeDefined();
 
     await user.click(within(navigation).getByRole("button", { name: "You" }));
-    expect(await screen.findByRole("heading", { name: "You" })).toBeDefined();
+    expect(await screen.findByRole("heading", { name: "Profile" })).toBeDefined();
   });
 
   it("shows authenticated activity when API transactions include ISO timestamps", async () => {
@@ -622,7 +622,42 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "More options" }));
     await user.click(screen.getByRole("menuitem", { name: "Notification preferences" }));
 
-    expect(await screen.findByRole("heading", { name: "You" })).toBeDefined();
+    expect(await screen.findByRole("heading", { name: "Profile" })).toBeDefined();
+  });
+
+  it("applies report date presets and custom ranges from bottom sheets", async () => {
+    window.history.replaceState({}, "", "/reports");
+    const user = userEvent.setup();
+    render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Reports" })).toBeDefined();
+
+    await user.click(screen.getByRole("button", { name: /Date filter/ }));
+    let filterDialog = screen.getByRole("dialog", { name: "Date" });
+    expect(within(filterDialog).getByText("This month")).toBeDefined();
+    expect(within(filterDialog).getByText("Last month")).toBeDefined();
+    expect(within(filterDialog).getByText("Last year")).toBeDefined();
+
+    await user.click(within(filterDialog).getByText("Last year"));
+    await user.click(within(filterDialog).getByRole("button", { name: "Apply" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Date" })).toBeNull());
+    expect(screen.getByText("Last year")).toBeDefined();
+
+    await user.click(screen.getByRole("button", { name: "Custom date range" }));
+    filterDialog = screen.getByRole("dialog", { name: "Custom dates" });
+    await user.type(within(filterDialog).getByLabelText("From"), "2025-01-01");
+    await user.type(within(filterDialog).getByLabelText("To"), "2025-01-31");
+    await user.click(within(filterDialog).getByRole("button", { name: "Apply" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Custom dates" })).toBeNull());
+    expect(screen.getByText("Custom range")).toBeDefined();
+
+    await user.click(screen.getByRole("button", { name: "Custom date range" }));
+    filterDialog = screen.getByRole("dialog", { name: "Custom dates" });
+    await user.click(within(filterDialog).getByRole("button", { name: "Clear" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Custom dates" })).toBeNull());
+    expect(screen.getByText("This month")).toBeDefined();
   });
 
   it("gates family workspace sharing for guests from Home", async () => {
@@ -646,10 +681,21 @@ describe("App", () => {
   it("creates and joins family workspace share codes from Home", async () => {
     window.sessionStorage.setItem("nidhiflow.accessToken", "access-token-family");
     const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
+    let shareCodeAttempts = 0;
 
     fetchMock.mockImplementation((input, init) => {
       const url = getRequestUrl(input);
       const method = init?.method ?? "GET";
+
+      if (url.endsWith("/api/v1/auth/refresh") && method === "POST") {
+        return Promise.resolve(
+          createJsonResponse({
+            data: { accessToken: "access-token-refreshed" },
+            message: "Access token refreshed successfully.",
+            success: true,
+          }),
+        );
+      }
 
       if (url.endsWith("/api/v1/users/me") && method === "GET") {
         return Promise.resolve(
@@ -688,6 +734,29 @@ describe("App", () => {
       }
 
       if (url.endsWith("/api/v1/workspaces/wsp_family/share-codes") && method === "POST") {
+        shareCodeAttempts += 1;
+
+        if (shareCodeAttempts === 1) {
+          expect(new Headers(init?.headers).get("Authorization")).toBe(
+            "Bearer access-token-family",
+          );
+
+          return Promise.resolve(
+            createJsonResponse(
+              {
+                message: "Authentication is required for this resource.",
+                success: false,
+              },
+              false,
+              401,
+            ),
+          );
+        }
+
+        expect(new Headers(init?.headers).get("Authorization")).toBe(
+          "Bearer access-token-refreshed",
+        );
+
         return Promise.resolve(
           createJsonResponse(
             {
@@ -738,6 +807,7 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Shared workspace" }));
 
     expect(await screen.findByText("ABCD-2345")).toBeDefined();
+    expect(shareCodeAttempts).toBe(2);
     await user.type(screen.getByLabelText("Join with code"), "LMNO-6789");
     await user.click(screen.getByRole("button", { name: "Join" }));
 
@@ -1387,7 +1457,7 @@ describe("App", () => {
 
     expect(await screen.findByRole("heading", { name: "Budget" })).toBeDefined();
     expect(screen.queryByRole("dialog", { name: "Budget period" })).toBeNull();
-    expect(screen.getByText("Monthly budget required")).toBeDefined();
+    expect(screen.getByText("Budget missing")).toBeDefined();
     expect(screen.queryByText("No monthly budget yet")).toBeDefined();
     expect(screen.queryByRole("button", { name: "Monthly" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Yearly" })).toBeNull();
@@ -1412,7 +1482,7 @@ describe("App", () => {
     );
     expect(screen.getAllByRole("heading", { name: "₹250.00" })).toHaveLength(1);
     expect(screen.getByText("₹80.00 spent of ₹250.00")).toBeDefined();
-    expect(screen.getAllByText("32%")).toHaveLength(2);
+    expect(screen.getAllByText("32%")).toHaveLength(1);
     expect(screen.queryByRole("heading", { name: "Active goals" })).toBeNull();
 
     await user.click(screen.getByRole("button", { name: /Filter by date/ }));
@@ -1446,19 +1516,19 @@ describe("App", () => {
     expect(await screen.findByText("₹80.00 spent of ₹250.00")).toBeDefined();
 
     await user.click(screen.getByRole("button", { name: "Edit Food budget" }));
-    budgetDialog = screen.getByRole("dialog", { name: "Edit budget category" });
+    budgetDialog = screen.getByRole("dialog", { name: "Edit" });
     const amount = within(budgetDialog).getByLabelText("Amount");
     await user.clear(amount);
     await user.type(amount, "400");
-    await user.click(within(budgetDialog).getByRole("button", { name: "Save budget category" }));
+    await user.click(within(budgetDialog).getByRole("button", { name: "Save" }));
 
     expect(screen.getAllByRole("heading", { name: "₹400.00" })).toHaveLength(1);
     expect(screen.getByText("₹80.00 spent of ₹400.00")).toBeDefined();
-    expect(screen.getAllByText("20%")).toHaveLength(2);
+    expect(screen.getAllByText("20%")).toHaveLength(1);
 
     await user.click(screen.getByRole("button", { name: "Edit Food budget" }));
-    budgetDialog = screen.getByRole("dialog", { name: "Edit budget category" });
-    await user.click(within(budgetDialog).getByRole("button", { name: "Delete budget category" }));
+    budgetDialog = screen.getByRole("dialog", { name: "Edit" });
+    await user.click(within(budgetDialog).getByRole("button", { name: "Delete" }));
     expect(screen.getAllByRole("heading", { name: "₹0.00" })).toHaveLength(1);
     expect(screen.getByText("No monthly budget yet")).toBeDefined();
   });
@@ -1542,7 +1612,7 @@ describe("App", () => {
     );
     expect(await screen.findByText("₹0.00 spent of ₹10,000.00")).toBeDefined();
     expect(screen.getAllByText("₹0.00 spent of ₹10,000.00")).toHaveLength(1);
-    expect(screen.queryByText("Monthly budget required")).toBeNull();
+    expect(screen.queryByText("Budget missing")).toBeNull();
 
     await user.click(screen.getByRole("button", { name: "Previous month" }));
     expect(await screen.findByText("June 2026 categories")).toBeDefined();
@@ -1607,15 +1677,19 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App repository={repository} transactionRepository={createTransactionRepository()} />);
 
-    const displayName = await screen.findByLabelText("Display name");
+    await user.click(
+      await screen.findByRole("button", { name: /Edit display name, current name/ }),
+    );
+    const nameDialog = screen.getByRole("dialog", { name: "Edit name" });
+    const displayName = within(nameDialog).getByLabelText("Display name");
     await user.clear(displayName);
-    await user.click(screen.getByRole("button", { name: "Save" }));
+    await user.click(within(nameDialog).getByRole("button", { name: "Save" }));
 
     expect(screen.getByText("Enter a name between 1 and 80 characters.")).toBeDefined();
     expect(repository.save).not.toHaveBeenCalled();
 
     await user.type(displayName, "Maya");
-    await user.click(screen.getByRole("button", { name: "Save" }));
+    await user.click(within(nameDialog).getByRole("button", { name: "Save" }));
 
     await waitFor(() =>
       expect(repository.save).toHaveBeenCalledWith({
@@ -1693,14 +1767,19 @@ describe("App", () => {
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    const displayNameInput = await screen.findByLabelText("Display name");
+    await user.click(
+      await screen.findByRole("button", { name: /Edit display name, current name Nila/ }),
+    );
+    const nameDialog = screen.getByRole("dialog", { name: "Edit name" });
+    const displayNameInput = within(nameDialog).getByLabelText("Display name");
     expect((displayNameInput as HTMLInputElement).value).toBe("Nila");
 
     await user.clear(displayNameInput);
     await user.type(displayNameInput, "Priya");
-    await user.click(screen.getByRole("button", { name: "Save" }));
+    await user.click(within(nameDialog).getByRole("button", { name: "Save" }));
 
     await screen.findByText("Profile updated.");
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Edit name" })).toBeNull());
     expect(screen.getByRole("heading", { name: "Priya" })).toBeDefined();
 
     await user.click(
@@ -1876,16 +1955,32 @@ describe("App", () => {
     expect((await axe(container)).violations).toHaveLength(0);
   });
 
+  it("opens feedback from the Profile page in a modal", async () => {
+    window.history.replaceState({}, "", "/you");
+    const user = userEvent.setup();
+    render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    await screen.findByRole("heading", { name: "Profile" });
+    await user.click(screen.getByRole("button", { name: /Share feedback/ }));
+
+    const feedbackDialog = screen.getByRole("dialog", { name: "Feedback" });
+    expect(within(feedbackDialog).getByLabelText("Category")).toBeDefined();
+    expect(within(feedbackDialog).getByLabelText("Message")).toBeDefined();
+    expect(within(feedbackDialog).getByRole("button", { name: "Send feedback" })).toBeDefined();
+  });
+
   it("has no automated accessibility violations on the You page", async () => {
     window.history.replaceState({}, "", "/you");
     const { container } = render(
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    await screen.findByRole("heading", { name: "You" });
-    expect(screen.getByRole("link", { name: /Activity/ })).toBeDefined();
+    await screen.findByRole("heading", { name: "Profile" });
+    expect(screen.getAllByRole("link", { name: /Activity/ }).length).toBeGreaterThan(0);
     expect(screen.queryByText("Goals")).toBeNull();
-    expect(screen.queryByRole("link", { name: /Feedback/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "Feedback" })).toBeDefined();
     expect(screen.queryByText("Data-protection reminder")).toBeNull();
     expect(screen.queryByText("Repeat reminder")).toBeNull();
     expect((await axe(container)).violations).toHaveLength(0);

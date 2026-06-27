@@ -11,7 +11,7 @@
 ## Family Collaboration
 
 - Add a family budget sharing option so authenticated users can intentionally share
-  budget plans with family workspace members.
+  budget plans with family workspace members. - completed
 
 ## Transaction Entry
 
@@ -45,3 +45,38 @@
 - Add a full accessibility test pass covering automated checks, keyboard
   navigation, screen reader behavior, color contrast, focus states, and mobile
   accessibility.
+
+## UI Document
+
+List down components used
+Home page ui improvement needed
+
+- collobration modal and api fix /api/v1/workspaces/wrk_b3
+
+budget page ui improvement needed
+
+- Total budget section , add more border raduis to left and right arrow
+- Make styles changes according to device sizes below 350px
+- Match categories list with Home page list - done
+- Improve copy prev month section UI
+
+Report
+
+- change filter UI as per other pages
+- add more data relates section next to pie chat , add export feature
+
+you
+
+- Complete UI rewamp required
+
+Flow
+
+- Complete UI rewamp required
+
+Feedback from other APPS
+
+- Add splash screen
+- Add selection bar instead of text field
+- Add quick links , chips wherever possible
+- Need to add the bills section
+- from sms need to add application

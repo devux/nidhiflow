@@ -204,6 +204,10 @@ p {
   background: var(--color-surface);
 }
 
+.page--budget {
+  padding-inline: 0;
+}
+
 @media (max-width: 47.9375rem) {
   .page--home {
     padding-inline: 0;
@@ -799,7 +803,11 @@ p {
   border-radius: 50%;
   place-items: center;
   color: var(--transaction-avatar-color, var(--color-text-primary));
-  background: color-mix(in srgb, var(--transaction-avatar-bg, #eef2f7) 82%, var(--transaction-avatar-color, #334155));
+  background: color-mix(
+    in srgb,
+    var(--transaction-avatar-bg, #eef2f7) 82%,
+    var(--transaction-avatar-color, #334155)
+  );
   font-size: 1.25rem;
   font-weight: 600;
   line-height: 1;
@@ -807,7 +815,11 @@ p {
 
 .transaction-history-row__avatar--income {
   color: var(--transaction-avatar-color, #006b55);
-  background: color-mix(in srgb, var(--transaction-avatar-bg, #dff6ec) 82%, var(--transaction-avatar-color, #006b55));
+  background: color-mix(
+    in srgb,
+    var(--transaction-avatar-bg, #dff6ec) 82%,
+    var(--transaction-avatar-color, #006b55)
+  );
 }
 
 .transaction-history-row__details {
@@ -1657,6 +1669,10 @@ p {
   color: var(--color-brand);
 }
 
+.activity-filter-option .MuiRadio-root.Mui-checked {
+  color: var(--color-brand);
+}
+
 .activity-filter-sheet__actions {
   padding-top: var(--space-2);
   border-top: 1px solid var(--color-border);
@@ -1697,9 +1713,11 @@ p {
   background: var(--color-surface);
 }
 
-.report-custom-range {
+.report-custom-sheet {
   display: grid;
-  gap: var(--space-3);
+  align-content: start;
+  gap: var(--space-4);
+  padding-block: var(--space-2);
 }
 
 .filter-grid label {
@@ -1710,21 +1728,15 @@ p {
   font-weight: 800;
 }
 
-.report-custom-range label {
-  display: grid;
-  gap: var(--space-1);
-  color: var(--color-text-secondary);
-  font-size: 0.82rem;
-  font-weight: 800;
-}
-
-.report-custom-range input {
-  width: 100%;
-  min-height: 2.75rem;
-  padding: var(--space-3);
-  border: 1px solid var(--color-border);
+.report-custom-sheet .MuiOutlinedInput-root {
   border-radius: var(--radius-control);
   background: var(--color-surface);
+}
+
+.report-custom-sheet__error.MuiTypography-root {
+  color: var(--color-danger);
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 
 .text-button {
@@ -1753,10 +1765,6 @@ p {
 @media (min-width: 36rem) {
   .filter-grid {
     grid-template-columns: 1.4fr 1fr 1fr;
-  }
-
-  .report-custom-range {
-    grid-template-columns: 1fr 1fr;
   }
 }
 
@@ -1966,9 +1974,7 @@ p {
 
 .budget-summary-card.MuiCard-root {
   overflow: hidden;
-  background:
-    linear-gradient(135deg, rgb(34 197 94 / 5%), transparent 46%),
-    var(--color-surface);
+  background: linear-gradient(135deg, rgb(34 197 94 / 5%), transparent 46%), var(--color-surface);
 }
 
 .budget-summary-card .month-navigator {
@@ -1991,6 +1997,10 @@ p {
   color: var(--color-brand-strong);
 }
 
+.month-navigator__label-short {
+  display: none;
+}
+
 .budget-summary-card__amount {
   display: grid;
   min-width: 0;
@@ -1999,8 +2009,9 @@ p {
 }
 
 .budget-summary-card__amount h2 {
-  font-size: clamp(2.5rem, 10vw, 3rem);
+  font-size: clamp(2rem, 10vw, 2.5rem);
   line-height: 1.05;
+  white-space: nowrap;
 }
 
 .budget-summary-card__amount > span {
@@ -2016,21 +2027,21 @@ p {
 
 .budget-summary-card__usage {
   display: grid;
-  min-width: 7rem;
+  min-width: 0;
   align-items: center;
-  justify-items: center;
-  gap: 0.1rem;
-  padding: var(--space-3);
+  grid-template-columns: auto auto;
+  gap: var(--space-2);
+  padding: var(--space-2);
   border: 1px solid color-mix(in srgb, var(--color-brand) 18%, var(--color-border));
-  border-radius: 1.1rem;
+  border-radius: var(--radius-control);
   background: color-mix(in srgb, var(--color-brand-faint) 46%, var(--color-surface));
   box-shadow: 0 0.45rem 1rem rgb(15 23 42 / 6%);
 }
 
 .budget-summary-card__usage > span {
   display: inline-grid;
-  width: 2.35rem;
-  height: 2.35rem;
+  width: 2rem;
+  height: 2rem;
   border-radius: 50%;
   place-items: center;
   color: var(--color-brand-strong);
@@ -2039,15 +2050,12 @@ p {
 
 .budget-summary-card__usage strong {
   color: var(--color-brand-strong);
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   line-height: 1;
 }
 
 .budget-summary-card__usage small {
-  color: var(--color-text-secondary);
-  font-size: 0.75rem;
-  line-height: 1.1;
-  text-align: center;
+  display: none;
 }
 
 .budget-summary-card .budget-progress-chart {
@@ -2087,87 +2095,245 @@ p {
   text-align: right;
 }
 
-.budget-summary-card__stats {
+.budget-summary-card__encouragement {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-3);
-  padding-top: var(--space-4);
-  border-top: 1px dashed var(--color-border);
-}
-
-.monthly-card__totals.budget-summary-card__stats > div {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-width: 0;
   align-items: center;
   gap: var(--space-3);
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  margin-top: var(--space-4);
   padding: var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: 1rem;
-  background: color-mix(in srgb, var(--color-surface) 82%, var(--color-brand-faint));
+  border: 1px solid color-mix(in srgb, var(--color-brand) 16%, var(--color-border));
+  border-radius: var(--radius-control);
+  color: var(--color-text-primary);
+  background: color-mix(in srgb, var(--color-brand-faint) 42%, var(--color-surface));
+  text-decoration: none;
 }
 
-.monthly-card__totals.budget-summary-card__stats > div:last-child {
-  border-bottom: 1px solid var(--color-border);
+.budget-summary-card__encouragement:hover {
+  background: color-mix(in srgb, var(--color-brand-faint) 70%, var(--color-surface));
 }
 
-.budget-summary-card__stat--spent {
-  background: color-mix(in srgb, #fff1f2 72%, var(--color-surface)) !important;
-}
-
-.budget-summary-card__stat--available {
-  background: color-mix(in srgb, var(--color-brand-faint) 64%, var(--color-surface)) !important;
-}
-
-.budget-summary-card__stat-icon {
+.budget-summary-card__encouragement-icon {
   display: inline-grid;
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 2.5rem;
+  height: 2.5rem;
   border-radius: 50%;
   place-items: center;
+  color: #fff;
+  background: var(--color-brand-strong);
 }
 
-.budget-summary-card__stat--spent .budget-summary-card__stat-icon {
-  color: #dc2626;
-  background: #ffe4e6;
+.budget-summary-card__encouragement-copy {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
 }
 
-.budget-summary-card__stat--available .budget-summary-card__stat-icon {
-  color: var(--color-brand-strong);
-  background: color-mix(in srgb, var(--color-brand-faint) 64%, var(--color-brand));
+.budget-summary-card__encouragement-copy strong {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 0.95rem;
 }
 
-.budget-summary-card__stat dt,
-.budget-summary-card__stat dd {
-  margin: 0;
+.budget-summary-card__encouragement-copy strong svg {
+  flex: 0 0 auto;
+  color: var(--color-brand);
 }
 
-.budget-summary-card__stat dt {
+.budget-summary-card__encouragement-copy small {
+  display: none;
   color: var(--color-text-secondary);
-  font-size: 0.9rem;
-  font-weight: 700;
+  font-size: 0.85rem;
 }
 
-.budget-summary-card__stat dd {
-  color: var(--color-text-primary);
-  font-size: 1rem;
-  font-weight: 850;
-}
-
-.budget-summary-card__badge {
-  padding: 0.35rem 0.55rem;
-  border-radius: 0.55rem;
-  font-size: 0.75rem;
-  line-height: 1;
-}
-
-.budget-summary-card__badge--spent {
-  color: #be123c;
-  background: #ffe4e6;
-}
-
-.budget-summary-card__badge--available {
+.budget-summary-card__encouragement-chevron {
   color: var(--color-brand-strong);
-  background: color-mix(in srgb, var(--color-brand-faint) 72%, var(--color-surface));
+}
+
+.budget-summary-card__missing {
+  display: grid;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-3);
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-top: var(--space-4);
+  padding: var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 24%, var(--color-border));
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--color-warning) 6%, var(--color-surface));
+}
+
+.budget-summary-card__missing-status {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.budget-summary-card__missing-status > span:last-child {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.budget-summary-card__missing-status strong {
+  color: var(--color-text-primary);
+  font-size: 0.9rem;
+}
+
+.budget-summary-card__missing-icon {
+  display: inline-grid;
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  place-items: center;
+  color: var(--color-warning);
+  background: color-mix(in srgb, var(--color-warning) 12%, var(--color-surface));
+}
+
+.budget-summary-card__copy-previous.MuiButton-root {
+  min-height: 2.5rem;
+  border-color: color-mix(in srgb, var(--color-brand) 34%, var(--color-border));
+  border-radius: var(--radius-control);
+  color: var(--color-brand-strong);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+@media (max-width: 349px) {
+  .budget-summary-card.MuiCard-root {
+    padding: var(--space-4);
+  }
+
+  .budget-summary-card .month-navigator {
+    width: 100%;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+
+  .budget-summary-card .month-navigator__label {
+    min-height: 2.75rem;
+    padding-inline: var(--space-3);
+  }
+
+  .month-navigator__label-long {
+    display: none;
+  }
+
+  .month-navigator__label-short {
+    display: inline;
+  }
+
+  .budget-summary-card .monthly-card__summary-row {
+    flex-wrap: nowrap;
+    gap: var(--space-2);
+  }
+
+  .budget-summary-card__amount {
+    padding-block: var(--space-3);
+  }
+
+  .budget-summary-card__amount h2 {
+    font-size: 2rem;
+  }
+
+  .budget-summary-card__amount small {
+    display: none;
+  }
+
+  .budget-summary-card__usage {
+    min-width: 4rem;
+    justify-items: center;
+    grid-template-columns: 1fr;
+    gap: var(--space-1);
+  }
+
+  .budget-summary-card__usage strong {
+    font-size: 1.2rem;
+  }
+
+  .budget-summary-card__encouragement {
+    gap: var(--space-2);
+    padding: var(--space-2);
+  }
+
+  .budget-summary-card__encouragement-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .budget-summary-card__encouragement-copy strong {
+    font-size: 0.875rem;
+  }
+
+  .budget-summary-card__missing {
+    gap: var(--space-2);
+    padding: var(--space-2);
+  }
+
+  .budget-summary-card__missing-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .budget-summary-card__copy-previous.MuiButton-root {
+    min-width: 0;
+    padding-inline: var(--space-2);
+    font-size: 0.75rem;
+  }
+
+  .budget-summary-card__copy-previous .MuiButton-startIcon {
+    margin-right: var(--space-1);
+  }
+}
+
+@media (min-width: 768px) {
+  .budget-summary-card.MuiCard-root {
+    padding: var(--space-6);
+  }
+
+  .budget-summary-card__amount h2 {
+    font-size: 3rem;
+  }
+
+  .budget-summary-card__usage {
+    min-width: 10rem;
+    grid-template-columns: auto auto;
+    padding: var(--space-3);
+    border-radius: 1.1rem;
+  }
+
+  .budget-summary-card__usage > span {
+    width: 2.75rem;
+    height: 2.75rem;
+    grid-row: 1 / 3;
+  }
+
+  .budget-summary-card__usage strong {
+    font-size: 1.75rem;
+  }
+
+  .budget-summary-card__usage small {
+    display: block;
+    color: var(--color-text-secondary);
+    font-size: 0.75rem;
+    line-height: 1.1;
+    text-align: left;
+  }
+
+  .budget-summary-card__encouragement-copy small {
+    display: block;
+  }
+
+  .budget-summary-card__encouragement-chevron {
+    display: none;
+  }
 }
 
 .expense-overview-card {
@@ -2195,6 +2361,182 @@ p {
   font-size: 1rem;
   font-weight: 800;
   line-height: 1.5rem;
+}
+
+.report-card-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.report-card-heading h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.report-card-heading > span {
+  color: var(--color-brand-strong);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.spending-trend-card.MuiCard-root,
+.report-top-categories.MuiCard-root {
+  display: grid;
+  gap: var(--space-4);
+  box-shadow: none;
+}
+
+.spending-trend-chart {
+  position: relative;
+  min-width: 0;
+  height: 12rem;
+}
+
+.spending-trend-summary {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3);
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--color-brand-faint) 64%, var(--color-surface));
+}
+
+.spending-trend-summary > span {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.spending-trend-summary > span:last-child {
+  justify-items: end;
+  text-align: right;
+}
+
+.spending-trend-summary small {
+  color: var(--color-text-secondary);
+  font-size: 0.72rem;
+}
+
+.spending-trend-summary strong {
+  color: var(--color-text-primary);
+  font-size: 0.9rem;
+}
+
+.spending-trend-summary__increase,
+.spending-trend-summary__decrease {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.spending-trend-summary__increase {
+  color: var(--color-danger) !important;
+}
+
+.spending-trend-summary__decrease {
+  color: var(--color-success) !important;
+}
+
+.spending-trend-summary__increase svg {
+  transform: rotate(-90deg);
+}
+
+.spending-trend-summary__decrease svg {
+  transform: rotate(90deg);
+}
+
+.spending-trend-summary__neutral {
+  color: var(--color-text-secondary) !important;
+  font-size: 0.78rem !important;
+}
+
+.report-top-categories__toggle {
+  min-height: 2rem;
+  font-size: 0.78rem;
+}
+
+.report-top-categories__list {
+  display: grid;
+}
+
+.report-top-category-row {
+  display: grid;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding-block: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.report-top-category-row:last-child {
+  border-bottom: 0;
+}
+
+.report-top-category-row__icon {
+  display: inline-grid;
+  width: 2rem;
+  height: 2rem;
+  grid-row: 1 / 3;
+  border-radius: 50%;
+  place-items: center;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.report-top-category-row > strong {
+  overflow: hidden;
+  font-size: 0.85rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.report-top-category-row__bar {
+  display: block;
+  height: 0.3rem;
+  overflow: hidden;
+  grid-column: 2;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-subtle);
+}
+
+.report-top-category-row__bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.report-top-category-row__amount {
+  color: var(--color-text-primary);
+  font-size: 0.82rem;
+  font-weight: 850;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.report-top-category-row > small {
+  color: var(--color-text-secondary);
+  font-size: 0.72rem;
+  text-align: right;
+}
+
+@media (min-width: 768px) {
+  .report-top-category-row {
+    grid-template-columns: auto minmax(6rem, 0.8fr) minmax(8rem, 1.5fr) auto 3rem;
+  }
+
+  .report-top-category-row__icon {
+    grid-row: auto;
+  }
+
+  .report-top-category-row__bar {
+    grid-column: auto;
+  }
 }
 
 .expense-overview-card__header small,
@@ -2530,9 +2872,13 @@ p {
   .page-header,
   .section-heading,
   .expense-overview-card__header,
-  .monthly-card__summary-row,
   .profile-card__identity,
   .field-row {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .monthly-card:not(.budget-summary-card) .monthly-card__summary-row {
     align-items: stretch;
     flex-wrap: wrap;
   }
@@ -2703,7 +3049,12 @@ p {
 
 .family-share-modal {
   position: relative;
-  gap: var(--space-4);
+  width: min(100%, 42rem);
+  max-height: calc(100dvh - (var(--space-4) * 2));
+  gap: var(--space-5);
+  overflow-y: auto;
+  padding: var(--space-6);
+  border-radius: 1.75rem;
 }
 
 .family-share-modal__close.MuiIconButton-root,
@@ -2717,11 +3068,25 @@ p {
   background: color-mix(in srgb, var(--color-surface-subtle) 84%, var(--color-surface));
 }
 
+.family-share-modal__close.MuiIconButton-root {
+  top: var(--space-5);
+  right: var(--space-5);
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
 .family-share-modal__header {
   display: grid;
+  align-items: center;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--space-3);
-  padding-right: var(--space-8);
+  gap: var(--space-4);
+  padding-right: 3.5rem;
+}
+
+.family-share-modal__header .icon-tile {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 1.25rem;
 }
 
 .family-share-modal__header h2,
@@ -2732,7 +3097,7 @@ p {
 }
 
 .family-share-modal__header h2 {
-  font-size: 1.15rem;
+  font-size: 1.5rem;
 }
 
 .family-share-modal__header p,
@@ -2740,7 +3105,7 @@ p {
 .share-code-panel small,
 .family-share-modal__notice span {
   color: var(--color-text-secondary);
-  font-size: 0.88rem;
+  font-size: 0.95rem;
   line-height: 1.4;
 }
 
@@ -2754,12 +3119,12 @@ p {
 
 .family-share-modal__actions {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-3);
   grid-template-columns: 1fr 1fr;
 }
 
 .family-share-modal__compact-action.MuiButton-root {
-  min-height: 2.75rem;
+  min-height: 3rem;
   border-radius: 0.9rem;
   border-color: color-mix(in srgb, var(--color-brand) 40%, var(--color-border));
   color: var(--color-brand-strong);
@@ -2775,10 +3140,14 @@ p {
 
 .share-code-panel {
   position: relative;
-  padding: var(--space-3);
-  border: 1px dashed color-mix(in srgb, var(--color-brand) 50%, var(--color-border));
-  border-radius: var(--radius-control);
-  background: var(--color-brand-faint);
+  justify-items: stretch;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid color-mix(in srgb, var(--color-brand) 30%, var(--color-border));
+  border-radius: 1.1rem;
+  background:
+    linear-gradient(135deg, rgb(34 197 94 / 5%), transparent 60%),
+    color-mix(in srgb, var(--color-brand-faint) 42%, var(--color-surface));
 }
 
 .share-code-panel__top {
@@ -2789,35 +3158,47 @@ p {
   gap: var(--space-2);
 }
 
-.share-code-panel__copy.MuiIconButton-root {
-  width: 2rem;
-  height: 2rem;
-  color: var(--color-brand-strong);
-  background: color-mix(in srgb, var(--color-surface) 84%, var(--color-brand-faint));
+.share-code-panel__meta {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: space-between;
 }
 
 .share-code-panel__label {
   color: var(--color-text-secondary);
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.share-code-panel__validity {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-brand-strong);
+  font-size: 0.9rem;
 }
 
 .share-code-panel__code,
 .share-code-panel__pending {
   min-width: 0;
   overflow-wrap: anywhere;
-  color: var(--color-text-primary);
-  font-size: 1.35rem;
+  color: var(--color-brand-strong);
+  font-size: clamp(2rem, 10vw, 3rem);
   font-weight: 900;
-  letter-spacing: 0.08em;
+  letter-spacing: 0;
+  line-height: 1;
+  text-align: center;
 }
 
 .share-code-panel__pending {
   color: var(--color-text-secondary);
   font-size: 1rem;
-  letter-spacing: 0;
 }
 
 .family-share-modal__notice {
@@ -2826,37 +3207,71 @@ p {
   background: var(--color-surface-subtle);
 }
 
+.family-share-modal__join-heading {
+  display: grid;
+  align-items: center;
+  gap: var(--space-3);
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.family-share-modal__join-heading > span {
+  display: inline-grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  place-items: center;
+  color: var(--color-brand-strong);
+  background: var(--color-brand-faint);
+}
+
+.family-share-modal__join-heading > div {
+  display: grid;
+  gap: var(--space-1);
+}
+
 .family-share-modal__join label {
-  font-weight: 800;
+  color: var(--color-text-primary);
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.family-share-modal__join-heading small {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.family-share-modal__join-row {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-3);
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.family-share-modal__join-input {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-2);
+  padding-left: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  color: var(--color-brand-strong);
+  background: var(--color-surface);
 }
 
 .family-share-modal__join input {
   width: 100%;
-  min-height: 2.75rem;
-  padding: 0 var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-control);
-  background: var(--color-surface);
+  min-width: 0;
+  min-height: 3rem;
+  padding: 0 var(--space-3) 0 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
   text-transform: uppercase;
 }
 
 .budget-filter-bar {
   padding-bottom: var(--space-1);
-}
-
-.budget-copy-note {
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.budget-copy-note > span:first-child {
-  display: inline-grid;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 50%;
-  place-items: center;
-  color: var(--color-brand-strong);
-  background: color-mix(in srgb, var(--color-brand-faint) 72%, var(--color-brand));
 }
 
 .budget-category-dialog {
@@ -2868,15 +3283,81 @@ p {
 }
 
 .family-share-modal__message {
+  display: grid;
+  align-items: center;
+  gap: var(--space-3);
+  grid-template-columns: auto minmax(0, 1fr);
   padding: var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--color-brand) 20%, var(--color-border));
   border-radius: var(--radius-control);
   color: var(--color-brand-strong);
   background: var(--color-brand-faint);
 }
 
 .family-share-modal__message--error {
+  border-color: color-mix(in srgb, var(--color-danger) 18%, var(--color-border));
   color: var(--color-danger);
-  background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+  background: color-mix(in srgb, var(--color-danger) 8%, var(--color-surface));
+}
+
+.family-share-modal__message-icon {
+  display: inline-grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  place-items: center;
+  background: color-mix(in srgb, var(--color-danger) 10%, var(--color-surface));
+}
+
+.family-share-modal__message-copy {
+  display: grid;
+  gap: var(--space-1);
+}
+
+@media (max-width: 424px) {
+  .family-share-modal {
+    gap: var(--space-4);
+    padding: var(--space-4);
+    border-radius: 1.25rem;
+  }
+
+  .family-share-modal__close.MuiIconButton-root {
+    top: var(--space-3);
+    right: var(--space-3);
+  }
+
+  .family-share-modal__header {
+    gap: var(--space-3);
+  }
+
+  .family-share-modal__header .icon-tile {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 1rem;
+  }
+
+  .share-code-panel {
+    gap: var(--space-3);
+    padding: var(--space-4);
+  }
+
+  .family-share-modal__actions {
+    gap: var(--space-2);
+  }
+
+  .family-share-modal__compact-action.MuiButton-root {
+    min-width: 4rem;
+    padding-inline: var(--space-2);
+    font-size: 0.82rem;
+  }
+
+  .family-share-modal__compact-action .MuiButton-startIcon {
+    margin-right: var(--space-1);
+  }
+
+  .family-share-modal__join-row {
+    gap: var(--space-2);
+  }
 }
 
 .text-button--danger {
@@ -2946,33 +3427,330 @@ p {
   border-bottom: 0;
 }
 
-.profile-card > * + * {
-  margin-top: var(--space-5);
+.page--profile {
+  width: min(100%, 48rem);
+  background: color-mix(in srgb, var(--color-canvas) 68%, var(--color-surface));
 }
 
-.profile-card__identity {
+.profile-page-header {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.profile-page-header h1,
+.profile-page-header p {
+  margin: 0;
+}
+
+.profile-page-header h1 {
+  font-size: 2rem;
+  letter-spacing: 0;
+}
+
+.profile-page-header p {
+  margin-top: var(--space-2);
+  font-size: 0.95rem;
+}
+
+.profile-page-header__settings.MuiIconButton-root {
+  width: 3rem;
+  height: 3rem;
+  color: var(--color-brand-strong);
+  background: var(--color-brand-faint);
+}
+
+.profile-card.MuiCard-root {
+  border-color: color-mix(in srgb, var(--color-brand) 18%, var(--color-border));
+  box-shadow: none;
+}
+
+.profile-card > * + * {
+  margin-top: var(--space-4);
+}
+
+.profile-card__top {
+  display: grid;
   min-width: 0;
   gap: var(--space-4);
 }
 
+.profile-card__identity {
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: var(--space-3);
+  padding: 0;
+  color: var(--color-text-primary);
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+}
+
+.profile-card__identity-copy {
+  display: grid;
+  min-width: 0;
+  align-content: center;
+  gap: var(--space-2);
+}
+
+.profile-card__name-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 .profile-card__identity h2 {
   overflow-wrap: anywhere;
-  margin-bottom: var(--space-2);
-  font-size: 1.5rem;
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.profile-card__identity-copy > small {
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-card .local-badge {
+  min-height: 1.65rem;
+  padding-inline: var(--space-2);
+  color: var(--color-brand-strong);
+  background: var(--color-brand-faint);
+  font-size: 0.72rem;
 }
 
 .profile-avatar {
   display: grid;
   flex: 0 0 auto;
-  width: 5rem;
-  height: 5rem;
-  border: 0.35rem solid var(--color-brand-soft);
+  width: 4rem;
+  height: 4rem;
+  border: 0;
   border-radius: 50%;
   place-items: center;
   color: #fff;
-  background: linear-gradient(145deg, #4ade80, #08752f);
-  font-size: 2rem;
+  background: linear-gradient(145deg, #31b85f, #08752f);
+  font-size: 1.6rem;
   font-weight: 900;
+}
+
+.profile-card > .button--secondary {
+  min-height: 3rem;
+  border-color: color-mix(in srgb, var(--color-brand) 20%, var(--color-border));
+  color: var(--color-brand-strong);
+  background: transparent;
+}
+
+.profile-compact-menu {
+  display: none;
+}
+
+.profile-quick-access__list.MuiCard-root {
+  display: grid;
+  gap: 0;
+  padding-block: 0;
+}
+
+.profile-quick-access__list.settings-list a {
+  padding-inline: 0;
+}
+
+.profile-feedback-form__category {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.profile-feedback-form__category select {
+  min-height: 2.5rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--color-brand) 22%, var(--color-border));
+  border-radius: var(--radius-control);
+  color: var(--color-brand-strong);
+  background: var(--color-brand-faint);
+  font-weight: 750;
+}
+
+.profile-feedback-form .button {
+  width: 100%;
+  min-height: 3rem;
+}
+
+.profile-dialog.MuiDialog-paper {
+  position: relative;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-modal);
+  background: var(--color-surface);
+}
+
+.profile-dialog .MuiDialogTitle-root {
+  padding-right: 4rem;
+  color: var(--color-text-primary);
+  font-size: 1.2rem;
+  font-weight: 900;
+}
+
+.profile-dialog .MuiDialogContent-root {
+  padding-top: var(--space-2);
+}
+
+.profile-dialog__close.MuiIconButton-root {
+  position: absolute;
+  z-index: 1;
+  top: var(--space-3);
+  right: var(--space-3);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-subtle);
+}
+
+.profile-preferences-list.MuiCard-root {
+  padding-block: var(--space-1);
+  box-shadow: none;
+}
+
+.profile-preference-row {
+  display: grid;
+  min-width: 0;
+  min-height: 4rem;
+  align-items: center;
+  gap: var(--space-3);
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, auto);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.profile-preference-row:last-child {
+  border-bottom: 0;
+}
+
+.profile-preference-row .icon-tile {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.profile-preference-row strong {
+  font-size: 0.9rem;
+}
+
+.profile-preference-row select {
+  min-width: 0;
+  max-width: 12rem;
+  border: 0;
+  outline: 0;
+  color: var(--color-text-secondary);
+  background: transparent;
+  text-align: right;
+}
+
+.profile-preference-row__currency {
+  color: var(--color-brand-strong);
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+.profile-page-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-6) 0;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+}
+
+.profile-page-footer svg {
+  color: var(--color-brand-strong);
+}
+
+@media (max-width: 424px) {
+  .profile-page-header p {
+    display: none;
+  }
+
+  .profile-page-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .profile-page-header__settings.MuiIconButton-root {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+}
+
+@media (max-width: 349px) {
+  .profile-quick-access {
+    display: none;
+  }
+
+  .profile-compact-menu {
+    display: block;
+  }
+
+  .profile-compact-menu .card.MuiCard-root {
+    padding: 0 var(--space-3);
+  }
+
+  .profile-compact-menu .settings-list :is(a, button) {
+    min-height: 3.25rem;
+    padding-block: var(--space-2);
+  }
+
+  .profile-compact-menu .icon-tile {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .profile-card.MuiCard-root {
+    padding: var(--space-3);
+  }
+
+  .profile-avatar {
+    width: 3.25rem;
+    height: 3.25rem;
+    font-size: 1.25rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .profile-card__top {
+    align-items: center;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-avatar {
+    width: 5rem;
+    height: 5rem;
+    font-size: 2rem;
+  }
+
+  .profile-quick-access__list.MuiCard-root {
+    gap: var(--space-4);
+    padding: 0;
+    border: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    background: transparent;
+  }
+
+  .profile-quick-access__list.settings-list a {
+    min-height: 6rem;
+    padding: var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-control);
+    background: var(--color-surface);
+  }
+
+  .profile-feedback-form__category {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
 }
 
 .settings-form label {

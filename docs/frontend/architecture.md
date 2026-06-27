@@ -73,9 +73,49 @@ Implement and test in this order:
 2. Desktop
 3. Tablet
 
-Use content-driven breakpoints and responsive components. Desktop may use
-additional panels or denser presentation but must preserve behavior and
-terminology.
+Use the following project breakpoints for all new responsive layout work:
+
+| Viewport      | Minimum width |
+| ------------- | ------------: |
+| Small phones  |       `320px` |
+| Large phones  |       `425px` |
+| Tablets       |       `768px` |
+| Laptops       |      `1024px` |
+| Desktops      |      `1440px` |
+| Large screens |      `2560px` |
+
+Build the base styles for mobile first, then add enhancements with
+`min-width` media queries:
+
+```css
+/* Small phones */
+@media (min-width: 320px) {
+}
+
+/* Large phones */
+@media (min-width: 425px) {
+}
+
+/* Tablets */
+@media (min-width: 768px) {
+}
+
+/* Laptops */
+@media (min-width: 1024px) {
+}
+
+/* Desktops */
+@media (min-width: 1440px) {
+}
+
+/* Large screens */
+@media (min-width: 2560px) {
+}
+```
+
+Add a media query only when that viewport needs an actual layout change.
+Desktop may use additional panels or denser presentation but must preserve
+behavior and terminology.
 
 ## Theme and Localization
 

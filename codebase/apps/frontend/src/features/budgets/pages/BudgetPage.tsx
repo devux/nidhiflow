@@ -1,10 +1,13 @@
 import Chart from "chart.js/auto";
-import AccountBalanceWalletRoundedIcon from "@mui/icons-material/AccountBalanceWalletRounded";
 import CalendarMonthRoundedIcon from "@mui/icons-material/CalendarMonthRounded";
+import CelebrationRoundedIcon from "@mui/icons-material/CelebrationRounded";
+import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
+import FavoriteRoundedIcon from "@mui/icons-material/FavoriteRounded";
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
-import ShoppingBagRoundedIcon from "@mui/icons-material/ShoppingBagRounded";
 import TrendingUpRoundedIcon from "@mui/icons-material/TrendingUpRounded";
+import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
 import Box from "@mui/material/Box";
 import MuiButton from "@mui/material/Button";
 import Checkbox from "@mui/material/Checkbox";
@@ -659,6 +662,10 @@ export function BudgetPage() {
     month: "long",
     year: "numeric",
   }).format(selectedMonth);
+  const selectedMonthShortLabel = new Intl.DateTimeFormat(preferences.locale, {
+    month: "short",
+    year: "numeric",
+  }).format(selectedMonth);
   const budgetCategoryOptions = useMemo(
     () =>
       Array.from(
@@ -954,17 +961,21 @@ export function BudgetPage() {
       : yearlyMonthRows.reduce((total, row) => total + row.remainingMinor, 0n) /
         BigInt(yearlyMonthRows.length);
   const projectedYearlySavingsMinor = yearlyAverageRemainingMinor * 12n;
-  const availablePercent = Math.max(0, 100 - budgetTotals.progress);
-
   return (
-    <main className="page" id="main-content">
+    <main className="page page--budget" id="main-content">
       <PageHeader title="Budget" />
 
-      <Stack className="filter-dropdown-grid activity-filter-bar budget-filter-bar" direction="row" spacing={1.5}>
+      <Stack
+        className="filter-dropdown-grid activity-filter-bar budget-filter-bar"
+        direction="row"
+        spacing={1.5}
+      >
         <MuiButton
           aria-haspopup="dialog"
           aria-label={`Filter by category, current value ${categoryFilterLabel}`}
-          className={selectedCategoryFilters.length > 0 ? "filter-dropdown is-active" : "filter-dropdown"}
+          className={
+            selectedCategoryFilters.length > 0 ? "filter-dropdown is-active" : "filter-dropdown"
+          }
           endIcon={<KeyboardArrowDownRoundedIcon />}
           fullWidth
           onClick={() => openSheet("category")}
@@ -975,7 +986,9 @@ export function BudgetPage() {
         <MuiButton
           aria-haspopup="dialog"
           aria-label={`Filter by date, current value ${dateFilterLabel}`}
-          className={selectedDatePreset !== "this-month" ? "filter-dropdown is-active" : "filter-dropdown"}
+          className={
+            selectedDatePreset !== "this-month" ? "filter-dropdown is-active" : "filter-dropdown"
+          }
           endIcon={<KeyboardArrowDownRoundedIcon />}
           fullWidth
           onClick={() => openSheet("date")}
@@ -1014,7 +1027,11 @@ export function BudgetPage() {
                   selected={draftCategoryFilters.includes(option)}
                 >
                   <ListItemText primary={option} />
-                  <Checkbox checked={draftCategoryFilters.includes(option)} edge="end" tabIndex={-1} />
+                  <Checkbox
+                    checked={draftCategoryFilters.includes(option)}
+                    edge="end"
+                    tabIndex={-1}
+                  />
                 </ListItemButton>
               ))}
             </List>
@@ -1191,27 +1208,6 @@ export function BudgetPage() {
         </>
       ) : (
         <>
-          {isMonthlyBudgetMissing ? (
-            <InlineAlert title="Monthly budget required">
-              <span className="inline-alert__content budget-copy-note">
-                <span aria-hidden="true">
-                  <Icon name="plan" size={18} />
-                </span>
-                <span>Add {selectedMonthLabel} budget.</span>
-                {previousMonthBudgets.length > 0 ? (
-                  <button
-                    className="text-button"
-                    disabled={!canQuickFill || isQuickFillSaving}
-                    onClick={() => void quickFillFromPreviousMonth()}
-                    type="button"
-                  >
-                    {isQuickFillSaving ? "Copying" : "Copy previous month"}
-                  </button>
-                ) : null}
-              </span>
-            </InlineAlert>
-          ) : null}
-
           <Card className="monthly-card budget-summary-card">
             <div className="monthly-card__month-row">
               <div className="month-navigator">
@@ -1228,7 +1224,8 @@ export function BudgetPage() {
                 </button>
                 <strong className="month-navigator__label">
                   <CalendarMonthRoundedIcon aria-hidden="true" focusable="false" fontSize="small" />
-                  {selectedMonthLabel}
+                  <span className="month-navigator__label-long">{selectedMonthLabel}</span>
+                  <span className="month-navigator__label-short">{selectedMonthShortLabel}</span>
                 </strong>
                 <button
                   aria-label="Next month"
@@ -1265,35 +1262,48 @@ export function BudgetPage() {
               <span>{money(budgetTotals.spentMinor)} spent</span>
               <strong>{money(budgetTotals.remainingMinor)} left</strong>
             </div>
-            <dl className="monthly-card__totals budget-summary-card__stats">
-              <div className="budget-summary-card__stat budget-summary-card__stat--spent">
-                <span className="budget-summary-card__stat-icon" aria-hidden="true">
-                  <ShoppingBagRoundedIcon fontSize="small" />
+            {isMonthlyBudgetMissing ? (
+              <div className="budget-summary-card__missing">
+                <span className="budget-summary-card__missing-status">
+                  <span className="budget-summary-card__missing-icon" aria-hidden="true">
+                    <WarningAmberRoundedIcon fontSize="small" />
+                  </span>
+                  <span>
+                    <strong>Budget missing</strong>
+                  </span>
                 </span>
-                <span>
-                  <dt>Spent</dt>
-                  <dd>{money(budgetTotals.spentMinor)}</dd>
-                </span>
-                <strong className="budget-summary-card__badge budget-summary-card__badge--spent">
-                  {budgetTotals.progress}%
-                </strong>
+                <MuiButton
+                  aria-label="Copy previous month"
+                  className="budget-summary-card__copy-previous"
+                  disabled={!canQuickFill || isQuickFillSaving}
+                  onClick={() => void quickFillFromPreviousMonth()}
+                  startIcon={<ContentCopyRoundedIcon />}
+                  variant="outlined"
+                >
+                  {isQuickFillSaving ? "Copying" : "Copy previous month"}
+                </MuiButton>
               </div>
-              <div className="budget-summary-card__stat budget-summary-card__stat--available">
-                <span className="budget-summary-card__stat-icon" aria-hidden="true">
-                  <AccountBalanceWalletRoundedIcon fontSize="small" />
+            ) : (
+              <Link className="budget-summary-card__encouragement" to="/">
+                <span className="budget-summary-card__encouragement-icon" aria-hidden="true">
+                  <CelebrationRoundedIcon fontSize="small" />
                 </span>
-                <span>
-                  <dt>Available</dt>
-                  <dd>{money(budgetTotals.remainingMinor)}</dd>
+                <span className="budget-summary-card__encouragement-copy">
+                  <strong>
+                    You're all set!
+                    <FavoriteRoundedIcon aria-hidden="true" fontSize="inherit" />
+                  </strong>
+                  <small>Let's make this a great month.</small>
                 </span>
-                <strong className="budget-summary-card__badge budget-summary-card__badge--available">
-                  {availablePercent}%
-                </strong>
-              </div>
-            </dl>
+                <ChevronRightRoundedIcon
+                  aria-hidden="true"
+                  className="budget-summary-card__encouragement-chevron"
+                />
+              </Link>
+            )}
           </Card>
 
-          <Card className="budget-categories-card">
+          <Card className="budget-categories-card" id="budget-categories">
             <div className="section-heading">
               <span>
                 <h2>Categories</h2>
@@ -1423,7 +1433,7 @@ export function BudgetPage() {
                 </IconButton>
                 <div className="section-heading">
                   <h2 id="budget-category-dialog-title">
-                    {editingId ? "Edit budget category" : "Add budget category"}
+                    {editingId ? "Edit" : "Add budget category"}
                   </h2>
                 </div>
                 <form
@@ -1459,7 +1469,7 @@ export function BudgetPage() {
                     {isBudgetSaving
                       ? "Saving budget category"
                       : editingId
-                        ? "Save budget category"
+                        ? "Save"
                         : "Add budget category"}
                   </Button>
                   {editingId ? (
@@ -1473,7 +1483,7 @@ export function BudgetPage() {
                       type="button"
                       variant="secondary"
                     >
-                      Delete budget category
+                      Delete
                     </Button>
                   ) : null}
                 </form>

@@ -275,12 +275,7 @@ export function FlowPage() {
           <div aria-hidden="true" className="flow-orb">
             <Icon name="flow" size={58} />
           </div>
-          <p className="eyebrow">Phase 2</p>
-          <h2>Thoughtful finance help is coming soon.</h2>
-          <p>
-            Flow will explain patterns and answer finance questions. It will stay inside NidhiFlow's
-            read-only assistant scope until the feature is ready.
-          </p>
+          <p className="eyebrow">Coming soon</p>
         </section>
 
         <Card aria-labelledby="flow-preview-title" subtle>
@@ -351,7 +346,7 @@ export function FlowPage() {
             <div aria-hidden="true" className="flow-orb">
               <Icon name="flow" size={58} />
             </div>
-            <p className="eyebrow">Phase 2</p>
+            <p className="eyebrow">Coming soon</p>
             <h2>Chat with Flow after signing in.</h2>
             <p>
               Personalized Flow chat uses your authorized workspace data. Guest mode stays read-only
