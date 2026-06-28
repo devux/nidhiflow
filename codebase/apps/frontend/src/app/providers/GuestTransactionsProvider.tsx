@@ -102,6 +102,8 @@ export function GuestTransactionsProvider({
       };
     }
 
+    setTransactions(undefined);
+
     const load =
       isAuthenticated && accessToken && workspaceId
         ? listTransactions({ accessToken, workspaceId })
@@ -114,7 +116,7 @@ export function GuestTransactionsProvider({
       .catch(() => {
         if (!isActive) return;
         if (isAuthenticated) {
-          setTransactions([]);
+          setTransactions((current) => current ?? []);
           return;
         }
         setLoadError(true);

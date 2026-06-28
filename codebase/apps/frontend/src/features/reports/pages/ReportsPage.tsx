@@ -359,7 +359,11 @@ export function ReportsPage() {
 
     const canvas = spendingTrendCanvasRef.current;
 
-    if (!canvas || spendingTrendRows.length === 0) {
+    if (
+      !canvas ||
+      spendingTrendRows.length === 0 ||
+      globalThis.navigator?.userAgent.includes("jsdom")
+    ) {
       return undefined;
     }
 

@@ -147,6 +147,8 @@ workspace lifecycle actions. All members may view and edit ordinary shared
 finance resources. In non-production environments, invitation creation returns
 a `debugToken` so local development and automated tests can complete the join
 flow before email delivery infrastructure exists.
+Workspace responses include `ownerDisplayName`, sourced from the workspace
+creator's current profile, separately from the editable workspace `name`.
 
 ### Accounts
 

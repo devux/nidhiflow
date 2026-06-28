@@ -2022,12 +2022,21 @@ export const openApiDocument = {
       },
       Workspace: {
         type: "object",
-        required: ["id", "name", "type", "reportingCurrency", "timezone", "membershipRole"],
+        required: [
+          "id",
+          "name",
+          "ownerDisplayName",
+          "type",
+          "reportingCurrency",
+          "timezone",
+          "membershipRole",
+        ],
         properties: {
           id,
           membershipId: { type: "string" },
           membershipRole: { enum: ["manager", "member"], type: "string" },
           name: { type: "string" },
+          ownerDisplayName: { type: "string" },
           reportingCurrency: { pattern: "^[A-Z]{3}$", type: "string" },
           timezone: { type: "string" },
           type: { enum: ["personal", "family"], type: "string" },

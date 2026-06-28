@@ -12,6 +12,7 @@
 
 - Add a family budget sharing option so authenticated users can intentionally share
   budget plans with family workspace members. - completed
+  - remove switch button based on access 
 
 ## Transaction Entry
 
@@ -46,37 +47,49 @@
   navigation, screen reader behavior, color contrast, focus states, and mobile
   accessibility.
 
-## UI Document
 
-List down components used
+## UI Document 
+List down components used 
 Home page ui improvement needed
-
-- collobration modal and api fix /api/v1/workspaces/wrk_b3
+- collobration modal and api fix /api/v1/workspaces/wrk_b3 - Completed
 
 budget page ui improvement needed
-
-- Total budget section , add more border raduis to left and right arrow
-- Make styles changes according to device sizes below 350px
-- Match categories list with Home page list - done
-- Improve copy prev month section UI
+- Total budget section , add more border raduis to left and right arrow - Completed
+- Make styles changes according to device sizes below 350px- Completed
+- Match categories list with Home page list - Completed
+- Improve copy prev month section UI - Completed
 
 Report
+- change filter UI as per other pages - Completed
+- add more data relates section next to pie chat , add export feature - Completed
 
-- change filter UI as per other pages
-- add more data relates section next to pie chat , add export feature
+you 
+- Complete UI rewamp required 
+- Add option to category
+Flow  
+- Complete UI rewamp required 
 
-you
+Desktop Ui CHnages 
+- Fix the menu alignment 
+- add more section if needed
+- Modify all pages for desktop 
 
-- Complete UI rewamp required
+Loading screen
+- add loading screen as per screens 
+- add splash screen 
 
-Flow
+Landing screen
+- before login create landing page 
 
-- Complete UI rewamp required
+Notiifcation 
+- work notification , like if team member invites , updates edits etc
+- any general information from app 
+
 
 Feedback from other APPS
+- Add selection bar instead of text field 
+- Add quick links , chips wherever possible 
+- Need to add the bills section 
+- from sms need to add application 
 
-- Add splash screen
-- Add selection bar instead of text field
-- Add quick links , chips wherever possible
-- Need to add the bills section
-- from sms need to add application
+Add Option to Information details, assets , insurance plan and its , share holdings etc

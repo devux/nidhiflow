@@ -3,7 +3,7 @@ services:
     name: nidhiflow-backend
     runtime: node
     plan: free
-    buildCommand: cd codebase && npm install && npm run build --workspace @nidhiflow/backend
+    buildCommand: cd codebase && npm install && npm run build --workspace @nidhiflow/backend && npm run db:migrate:deploy --workspace @nidhiflow/backend
     startCommand: cd codebase && npm run start --workspace @nidhiflow/backend
     healthCheckPath: /health/ready
     envVars:

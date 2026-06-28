@@ -3109,12 +3109,90 @@ p {
   line-height: 1.4;
 }
 
+.family-share-modal__tabs {
+  min-height: 3rem;
+  padding: var(--space-1);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-subtle);
+}
+
+.family-share-modal__tabs .MuiTab-root {
+  min-height: 2.5rem;
+  border-radius: calc(var(--radius-control) - var(--space-1));
+  color: var(--color-text-secondary);
+  font-weight: 850;
+  text-transform: none;
+}
+
+.family-share-modal__tabs .Mui-selected {
+  color: var(--color-brand-strong);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.family-share-modal__tabs .MuiTabs-indicator {
+  display: none;
+}
+
+.family-share-modal__panel-content {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.family-share-modal__panel-content[hidden] {
+  display: none;
+}
+
 .family-share-modal__auth,
 .family-share-modal__notice,
+.family-share-modal__workspace,
 .share-code-panel,
 .family-share-modal__join {
   display: grid;
   gap: var(--space-3);
+}
+
+.family-share-modal__workspace {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-subtle);
+}
+
+.family-share-modal__workspace-label {
+  color: var(--color-brand-strong);
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.family-share-modal__workspace > strong {
+  overflow-wrap: anywhere;
+  font-size: 1.15rem;
+}
+
+.family-share-modal__workspace dl {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.family-share-modal__workspace dl > div {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.family-share-modal__workspace dt {
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+}
+
+.family-share-modal__workspace dd {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-weight: 800;
 }
 
 .family-share-modal__actions {

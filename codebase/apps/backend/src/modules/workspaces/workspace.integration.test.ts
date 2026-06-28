@@ -27,6 +27,7 @@ interface WorkspaceResponseBody {
   data: {
     id: string;
     membershipRole: "manager" | "member";
+    ownerDisplayName: string;
     type: "personal" | "family";
   };
 }
@@ -180,6 +181,7 @@ describe("family workspace integration", () => {
     expect(createWorkspaceResponse.status).toBe(201);
     expect(createWorkspaceBody.data).toMatchObject({
       membershipRole: "manager",
+      ownerDisplayName: "Maya",
       type: "family",
     });
 
@@ -205,6 +207,7 @@ describe("family workspace integration", () => {
     expect(acceptBody.data).toMatchObject({
       id: familyWorkspaceId,
       membershipRole: "member",
+      ownerDisplayName: "Maya",
       type: "family",
     });
 
@@ -327,6 +330,7 @@ describe("family workspace integration", () => {
     expect(joinShareCodeBody.data).toMatchObject({
       id: familyWorkspaceId,
       membershipRole: "member",
+      ownerDisplayName: "Maya",
       type: "family",
     });
 

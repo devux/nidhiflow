@@ -16,6 +16,7 @@ export interface WorkspaceSummary {
   id: string;
   membershipRole?: "manager" | "member";
   name: string;
+  ownerDisplayName?: string;
   reportingCurrency?: SupportedCurrency;
   type: string;
 }

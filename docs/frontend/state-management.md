@@ -33,6 +33,14 @@ delete finance records locally.
 
 A small store/context may hold session status, active workspace, connectivity,
 theme, locale, and pending authentication intent.
+Workspace-list refreshes preserve the current active workspace. The personal
+workspace is the safe default, and creating or discovering a shared workspace
+must not silently replace the finance data currently being viewed.
+An explicit workspace selection may switch between personal and shared finance
+data and is retained only for the current browser session. Successfully joining
+with a share code explicitly selects the joined workspace.
+Creating an invite code while viewing or belonging to another workspace creates
+a separate managed shared workspace; it never exposes the personal workspace.
 The browser session may retain the short-lived access token in `sessionStorage`
 as a fallback when the refresh cookie is unavailable, but it must be cleared on
 logout and must not be stored in `localStorage`.

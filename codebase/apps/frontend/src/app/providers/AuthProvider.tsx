@@ -29,7 +29,7 @@ interface AuthContextValue {
   isCheckingSession: boolean;
   login: (input: { email: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
-  refreshWorkspaces: () => Promise<WorkspaceSummary[]>;
+  refreshWorkspaces: (preferredWorkspaceId?: string) => Promise<WorkspaceSummary[]>;
   register: (input: {
     displayName: string;
     email: string;
@@ -44,6 +44,7 @@ interface AuthContextValue {
       Pick<AuthUser, "displayName" | "locale" | "preferredCurrency" | "theme" | "timezone">
     >,
   ) => Promise<AuthUser>;
+  setActiveWorkspace: (workspaceId: string) => void;
   user: AuthUser | null;
   verifyEmail: (token: string) => Promise<void>;
   workspaces: WorkspaceSummary[];
@@ -52,6 +53,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 const sessionAccessTokenKey = "nidhiflow.accessToken";
 const sessionAuthSnapshotKey = "nidhiflow.authSession";
+const sessionActiveWorkspaceKey = "nidhiflow.activeWorkspaceId";
 
 interface StoredAuthSession {
   accessToken: string;
@@ -102,23 +104,59 @@ function clearStoredAuthSession() {
   try {
     window.sessionStorage.removeItem(sessionAccessTokenKey);
     window.sessionStorage.removeItem(sessionAuthSnapshotKey);
+    window.sessionStorage.removeItem(sessionActiveWorkspaceKey);
   } catch {
     // Nothing to clear when browser storage is unavailable.
   }
 }
 
-function selectActiveWorkspace(workspaces: WorkspaceSummary[]): WorkspaceSummary | null {
-  return workspaces.find((workspace) => workspace.type === "family") ?? workspaces[0] ?? null;
+function readStoredActiveWorkspaceId(): string | null {
+  try {
+    return window.sessionStorage.getItem(sessionActiveWorkspaceKey);
+  } catch {
+    return null;
+  }
+}
+
+function storeActiveWorkspaceId(workspaceId: string | null) {
+  try {
+    if (workspaceId) {
+      window.sessionStorage.setItem(sessionActiveWorkspaceKey, workspaceId);
+    } else {
+      window.sessionStorage.removeItem(sessionActiveWorkspaceKey);
+    }
+  } catch {
+    // Workspace selection remains available for the current in-memory session.
+  }
+}
+
+function selectActiveWorkspace(
+  workspaces: WorkspaceSummary[],
+  preferredWorkspaceId?: string | null,
+): WorkspaceSummary | null {
+  const preferredWorkspace = preferredWorkspaceId
+    ? workspaces.find((workspace) => workspace.id === preferredWorkspaceId)
+    : null;
+
+  if (preferredWorkspace) return preferredWorkspace;
+
+  return workspaces.find((workspace) => workspace.type === "personal") ?? workspaces[0] ?? null;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([]);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
 
   useEffect(() => {
     let isActive = true;
+    const guestFirstFallback = window.setTimeout(() => {
+      if (isActive) {
+        setIsCheckingSession(false);
+      }
+    }, 1500);
 
     async function loadSession(accessTokenToLoad: string) {
       const [currentUser, currentWorkspaces] = await Promise.all([
@@ -137,6 +175,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAccessToken(session.accessToken);
         setUser(session.user);
         setWorkspaces(session.workspaces);
+        setActiveWorkspaceId((current) => {
+          const selectedWorkspace = selectActiveWorkspace(
+            session.workspaces,
+            current ?? readStoredActiveWorkspaceId(),
+          );
+          storeActiveWorkspaceId(selectedWorkspace?.id ?? null);
+          return selectedWorkspace?.id ?? null;
+        });
       }
     }
 
@@ -153,6 +199,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setAccessToken(storedSession.accessToken);
           setUser(storedSession.user);
           setWorkspaces(storedSession.workspaces);
+          setActiveWorkspaceId(
+            selectActiveWorkspace(storedSession.workspaces, readStoredActiveWorkspaceId())?.id ??
+              null,
+          );
           setIsCheckingSession(false);
         }
 
@@ -163,8 +213,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!isAuthFailure(storedSessionError) && storedSession.user) {
             return;
           }
+        }
 
-          clearStoredAuthSession();
+        try {
+          await refreshSession();
+          return;
+        } catch (refreshError) {
+          if (storedSession.user && !isAuthFailure(refreshError)) {
+            return;
+          }
+
+          throw refreshError;
         }
       }
 
@@ -172,15 +231,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     restoreSession()
-      .catch(() => {
+      .catch((error: unknown) => {
         if (isActive) {
-          clearStoredAuthSession();
+          if (isAuthFailure(error)) {
+            clearStoredAuthSession();
+          }
           setAccessToken(null);
+          setActiveWorkspaceId(null);
           setUser(null);
           setWorkspaces([]);
         }
       })
       .finally(() => {
+        window.clearTimeout(guestFirstFallback);
         if (isActive) {
           setIsCheckingSession(false);
         }
@@ -188,6 +251,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       isActive = false;
+      window.clearTimeout(guestFirstFallback);
     };
   }, []);
 
@@ -197,6 +261,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAccessToken(session.accessToken);
     setUser(session.user);
     setWorkspaces(session.workspaces);
+    const selectedWorkspace = selectActiveWorkspace(session.workspaces);
+    setActiveWorkspaceId(selectedWorkspace?.id ?? null);
+    storeActiveWorkspaceId(selectedWorkspace?.id ?? null);
   }, []);
 
   const handleRegister = useCallback(
@@ -214,6 +281,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAccessToken(session.accessToken);
       setUser(session.user);
       setWorkspaces(session.workspaces);
+      const selectedWorkspace = selectActiveWorkspace(session.workspaces);
+      setActiveWorkspaceId(selectedWorkspace?.id ?? null);
+      storeActiveWorkspaceId(selectedWorkspace?.id ?? null);
     },
     [],
   );
@@ -224,6 +294,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAccessToken(session.accessToken);
     setUser(session.user);
     setWorkspaces(session.workspaces);
+    const selectedWorkspace = selectActiveWorkspace(session.workspaces);
+    setActiveWorkspaceId(selectedWorkspace?.id ?? null);
+    storeActiveWorkspaceId(selectedWorkspace?.id ?? null);
   }, []);
 
   const handleUpdateProfile = useCallback(
@@ -252,29 +325,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [accessToken, workspaces],
   );
 
-  const handleRefreshWorkspaces = useCallback(async () => {
-    if (!accessToken) {
-      throw new ApiRequestError("Authentication is required.", 401);
-    }
+  const handleRefreshWorkspaces = useCallback(
+    async (preferredWorkspaceId?: string) => {
+      if (!accessToken) {
+        throw new ApiRequestError("Authentication is required.", 401);
+      }
 
-    const currentWorkspaces = await getWorkspaces(accessToken);
-    setWorkspaces(currentWorkspaces);
-
-    if (user) {
-      storeAuthSession({
-        accessToken,
-        user,
-        workspaces: currentWorkspaces,
+      const currentWorkspaces = await getWorkspaces(accessToken);
+      setWorkspaces(currentWorkspaces);
+      setActiveWorkspaceId((current) => {
+        const selectedWorkspace = selectActiveWorkspace(
+          currentWorkspaces,
+          preferredWorkspaceId ?? current,
+        );
+        storeActiveWorkspaceId(selectedWorkspace?.id ?? null);
+        return selectedWorkspace?.id ?? null;
       });
-    }
 
-    return currentWorkspaces;
-  }, [accessToken, user]);
+      if (user) {
+        storeAuthSession({
+          accessToken,
+          user,
+          workspaces: currentWorkspaces,
+        });
+      }
+
+      return currentWorkspaces;
+    },
+    [accessToken, user],
+  );
+
+  const handleSetActiveWorkspace = useCallback(
+    (workspaceId: string) => {
+      if (!workspaces.some((workspace) => workspace.id === workspaceId)) {
+        throw new Error("The selected workspace is not available.");
+      }
+
+      storeActiveWorkspaceId(workspaceId);
+      setActiveWorkspaceId(workspaceId);
+    },
+    [workspaces],
+  );
 
   const handleLogout = useCallback(async () => {
     await logout();
     clearStoredAuthSession();
     setAccessToken(null);
+    setActiveWorkspaceId(null);
     setUser(null);
     setWorkspaces([]);
   }, []);
@@ -282,13 +379,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const contextValue = useMemo<AuthContextValue>(
     () => ({
       accessToken,
-      activeWorkspace: selectActiveWorkspace(workspaces),
+      activeWorkspace:
+        workspaces.find((workspace) => workspace.id === activeWorkspaceId) ??
+        selectActiveWorkspace(workspaces),
       isAuthenticated: Boolean(user && accessToken),
       isCheckingSession,
       login: handleLogin,
       logout: handleLogout,
       register: handleRegister,
       refreshWorkspaces: handleRefreshWorkspaces,
+      setActiveWorkspace: handleSetActiveWorkspace,
       updateProfile: handleUpdateProfile,
       user,
       verifyEmail: handleVerifyEmail,
@@ -296,10 +396,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }),
     [
       accessToken,
+      activeWorkspaceId,
       handleLogin,
       handleLogout,
       handleRefreshWorkspaces,
       handleRegister,
+      handleSetActiveWorkspace,
       handleUpdateProfile,
       handleVerifyEmail,
       isCheckingSession,

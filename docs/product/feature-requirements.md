@@ -69,9 +69,11 @@
 - Accessible charts with text legends
 - Downloadable CSV reports
 
-## Family Workspace
+## Shared Workspace
 
-- Create/join one shared family workspace
+- Create a shared workspace to manage and invite others, even when already a
+  member of another shared workspace
+- Join shared workspaces without exposing the personal workspace
 - Invite, remove, and leave
 - Shared visibility and collaborative transaction editing
 - Shared budgets and goals

@@ -12,6 +12,7 @@ export interface WorkspaceMembershipRecord {
 
 export interface WorkspaceDetailRecord extends WorkspaceMembershipRecord {
   name: string;
+  ownerDisplayName: string;
 }
 
 export interface WorkspaceMemberRecord {
@@ -48,6 +49,7 @@ export class WorkspaceRepository {
               wm.id AS "membershipId",
               wm.membership_role AS "membershipRole",
               w.name,
+              owner.display_name AS "ownerDisplayName",
               w.type,
               w.reporting_currency AS "reportingCurrency",
               w.timezone,
@@ -55,6 +57,8 @@ export class WorkspaceRepository {
          FROM workspaces w
          JOIN workspace_members wm
            ON wm.workspace_id = w.id
+         JOIN users owner
+           ON owner.id = w.created_by_user_id
         WHERE wm.user_id = $1
           AND w.type = 'personal'
           AND w.deleted_at IS NULL
@@ -137,12 +141,15 @@ export class WorkspaceRepository {
               cm.id AS "membershipId",
               cm.membership_role AS "membershipRole",
               cw.name,
+              owner.display_name AS "ownerDisplayName",
               cw.type,
               cw.reporting_currency AS "reportingCurrency",
               cw.timezone,
               cw.created_at AS "createdAt"
          FROM created_workspace cw
-         CROSS JOIN created_membership cm`,
+         CROSS JOIN created_membership cm
+         JOIN users owner
+           ON owner.id = $6`,
       [
         input.id,
         input.name,
@@ -389,6 +396,7 @@ export class WorkspaceRepository {
               wm.id AS "membershipId",
               wm.membership_role AS "membershipRole",
               w.name,
+              owner.display_name AS "ownerDisplayName",
               w.type,
               w.reporting_currency AS "reportingCurrency",
               w.timezone,
@@ -396,6 +404,8 @@ export class WorkspaceRepository {
          FROM workspaces w
          JOIN workspace_members wm
            ON wm.workspace_id = w.id
+         JOIN users owner
+           ON owner.id = w.created_by_user_id
         WHERE wm.user_id = $1
           AND w.deleted_at IS NULL
         ORDER BY w.created_at ASC`,
@@ -415,6 +425,7 @@ export class WorkspaceRepository {
               wm.id AS "membershipId",
               wm.membership_role AS "membershipRole",
               w.name,
+              owner.display_name AS "ownerDisplayName",
               w.type,
               w.reporting_currency AS "reportingCurrency",
               w.timezone,
@@ -422,6 +433,8 @@ export class WorkspaceRepository {
          FROM workspaces w
          JOIN workspace_members wm
            ON wm.workspace_id = w.id
+         JOIN users owner
+           ON owner.id = w.created_by_user_id
         WHERE wm.user_id = $1
           AND w.id = $2
           AND w.deleted_at IS NULL

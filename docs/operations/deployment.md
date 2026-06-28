@@ -62,13 +62,21 @@ Do not configure Vercel with output directory `public`; this app builds to
 ## Render Backend Deployment
 
 Render deploys the backend using the repository-level `render.yaml` blueprint.
+The backend build runs `db:migrate:deploy` after a successful TypeScript build
+and before Render starts the new service version. A failed migration fails the
+deployment instead of starting code against an outdated production schema.
 The configured service is `nidhiflow-backend`.
 
 Render build command:
 
 ```bash
-cd codebase && npm install && npm run build --workspace @nidhiflow/backend
+cd codebase && npm install && npm run build --workspace @nidhiflow/backend && npm run db:migrate:deploy --workspace @nidhiflow/backend
 ```
+
+The free Render instance may spin down after 15 minutes without inbound
+traffic. Its first request after that idle period can take about one minute
+while the service starts. Use a paid instance for production latency that must
+not include cold starts.
 
 Render start command:
 
