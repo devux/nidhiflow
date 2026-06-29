@@ -5,7 +5,6 @@ import { z } from "zod";
 import type { Environment } from "../../app/config/environment.js";
 import { AppError } from "../../shared/errors/appError.js";
 import type { Database } from "../../shared/database/database.js";
-import { resolveReportRange } from "../reports/report.range.js";
 import { WorkspaceRepository } from "../workspaces/workspace.repository.js";
 import { FlowMcpToolRegistry, flowMcpTools, type FlowModelPlan } from "./flow.mcp.js";
 import type { FlowChatBody, FlowMessage } from "./flow.schemas.js";
@@ -14,36 +13,228 @@ interface OllamaResponse {
   response?: string;
 }
 
+export type FlowTrace = (stage: string, details?: Record<string, unknown>) => void;
+
+const noOpTrace: FlowTrace = () => undefined;
+
 const fallbackInstructions = `Flow stays inside NidhiFlow personal finance. Use only authorized context and tool results. Do not invent facts. Flow is read-only: transaction search and summaries are allowed, but create, update, and delete are refused. Return JSON only.`;
 
-const flowPlanSchema = z.object({
-  filters: z
-    .object({
-      from: z
-        .string()
-        .regex(/^\d{4}-\d{2}-\d{2}$/)
-        .optional(),
-      query: z.string().trim().max(200).optional(),
-      to: z
-        .string()
-        .regex(/^\d{4}-\d{2}-\d{2}$/)
-        .optional(),
-      type: z.enum(["expense", "income", "transfer"]).optional(),
-    })
-    .optional(),
-  intent: z.enum([
-    "create_budget",
-    "create_goal",
-    "create_transaction",
-    "delete_transaction",
-    "explain_spending",
-    "out_of_scope",
-    "search_transactions",
-    "unknown",
-    "update_transaction",
-  ]),
-  response: z.string().trim().min(1).max(1_000).optional(),
-});
+const filterEvidenceSchema = z
+  .object({
+    from: z.string().trim().min(1).max(100).optional(),
+    limit: z.string().trim().min(1).max(100).optional(),
+    period: z.string().trim().min(1).max(100).optional(),
+    query: z.string().trim().min(1).max(200).optional(),
+    to: z.string().trim().min(1).max(100).optional(),
+    type: z.string().trim().min(1).max(100).optional(),
+  })
+  .strict();
+
+const flowPlanSchema = z
+  .object({
+    evidence: filterEvidenceSchema.optional(),
+    filters: z
+      .object({
+        from: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional(),
+        limit: z.number().int().min(1).max(8).optional(),
+        period: z.enum(["last_month", "this_month", "this_year"]).optional(),
+        query: z.string().trim().min(1).max(200).optional(),
+        to: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional(),
+        type: z.enum(["expense", "income", "transfer"]).optional(),
+      })
+      .strict()
+      .optional(),
+    intent: z.enum([
+      "create_budget",
+      "create_goal",
+      "create_transaction",
+      "delete_transaction",
+      "explain_spending",
+      "out_of_scope",
+      "search_transactions",
+      "unknown",
+      "update_transaction",
+    ]),
+    response: z.string().trim().min(1).max(1_000).optional(),
+  })
+  .strict();
+
+const flowPlanJsonSchema = {
+  additionalProperties: false,
+  properties: {
+    evidence: {
+      additionalProperties: false,
+      properties: {
+        from: { minLength: 1, type: "string" },
+        limit: { minLength: 1, type: "string" },
+        period: { minLength: 1, type: "string" },
+        query: { minLength: 1, type: "string" },
+        to: { minLength: 1, type: "string" },
+        type: { minLength: 1, type: "string" },
+      },
+      type: "object",
+    },
+    filters: {
+      additionalProperties: false,
+      properties: {
+        from: { pattern: "^\\d{4}-\\d{2}-\\d{2}$", type: "string" },
+        limit: { maximum: 8, minimum: 1, type: "integer" },
+        period: {
+          enum: ["last_month", "this_month", "this_year"],
+          type: "string",
+        },
+        query: { minLength: 1, type: "string" },
+        to: { pattern: "^\\d{4}-\\d{2}-\\d{2}$", type: "string" },
+        type: {
+          enum: ["expense", "income", "transfer"],
+          type: "string",
+        },
+      },
+      type: "object",
+    },
+    intent: {
+      enum: [
+        "create_budget",
+        "create_goal",
+        "create_transaction",
+        "delete_transaction",
+        "explain_spending",
+        "out_of_scope",
+        "search_transactions",
+        "unknown",
+        "update_transaction",
+      ],
+      type: "string",
+    },
+    response: { minLength: 1, type: "string" },
+  },
+  required: ["intent", "response", "filters", "evidence"],
+  type: "object",
+} as const;
+
+type FilterKey = keyof NonNullable<FlowModelPlan["filters"]>;
+
+const numberWords: Record<string, number> = {
+  eight: 8,
+  five: 5,
+  four: 4,
+  one: 1,
+  seven: 7,
+  six: 6,
+  three: 3,
+  two: 2,
+};
+
+function getLatestUserMessage(messages: FlowMessage[]) {
+  return (
+    [...messages]
+      .reverse()
+      .find((message) => message.role === "user")
+      ?.content.trim() ?? ""
+  );
+}
+
+function evidenceAppearsInMessage(message: string, evidence: string | undefined) {
+  const normalize = (value: string) =>
+    value.toLocaleLowerCase().replaceAll("_", " ").replace(/\s+/g, " ").trim();
+
+  return Boolean(evidence && normalize(message).includes(normalize(evidence)));
+}
+
+function evidenceSupportsFilter(
+  key: FilterKey,
+  value: NonNullable<FlowModelPlan["filters"]>[FilterKey],
+  evidence: string | undefined,
+  message: string,
+) {
+  if (!evidenceAppearsInMessage(message, evidence) || !evidence) {
+    return false;
+  }
+
+  const normalizedEvidence = evidence.toLocaleLowerCase().replaceAll("_", " ");
+
+  if (key === "from" || key === "to") {
+    return normalizedEvidence.includes(String(value));
+  }
+
+  if (key === "limit") {
+    const numericEvidence = Number(normalizedEvidence.match(/\b[1-8]\b/)?.[0]);
+    const wordValue = Object.entries(numberWords).find(([word]) =>
+      new RegExp(`\\b${word}\\b`).test(normalizedEvidence),
+    )?.[1];
+    const recencyImpliesOne =
+      value === 1 && /\b(last|latest|most recent)\b/.test(normalizedEvidence);
+
+    return numericEvidence === value || wordValue === value || recencyImpliesOne;
+  }
+
+  if (key === "period") {
+    const periodEvidence = {
+      last_month: /\blast month\b/,
+      this_month: /\b(this|current) month\b/,
+      this_year: /\b(this|current) year\b/,
+    }[String(value)];
+
+    return periodEvidence?.test(normalizedEvidence) ?? false;
+  }
+
+  if (key === "type") {
+    const typeEvidence = {
+      expense: /\b(expense|expenses|spend|spending|spendings|purchase|purchases|paid)\b/,
+      income: /\b(income|salary|earning|earnings|earned)\b/,
+      transfer: /\b(transfer|transfers|transferred)\b/,
+    }[String(value)];
+
+    return typeEvidence?.test(normalizedEvidence) ?? false;
+  }
+
+  return key === "query";
+}
+
+function groundPlanFilters(plan: FlowModelPlan, messages: FlowMessage[]) {
+  if (plan.intent !== "search_transactions" || !plan.filters) {
+    return { plan, removedFilters: [] as FilterKey[] };
+  }
+
+  const latestUserMessage = getLatestUserMessage(messages);
+  const groundedFilters: NonNullable<FlowModelPlan["filters"]> = {};
+  const removedFilters: FilterKey[] = [];
+
+  for (const [key, value] of Object.entries(plan.filters) as Array<
+    [FilterKey, NonNullable<FlowModelPlan["filters"]>[FilterKey]]
+  >) {
+    if (evidenceSupportsFilter(key, value, plan.evidence?.[key], latestUserMessage)) {
+      Object.assign(groundedFilters, { [key]: value });
+    } else {
+      removedFilters.push(key);
+    }
+  }
+
+  if (groundedFilters.period) {
+    if (groundedFilters.from) removedFilters.push("from");
+    if (groundedFilters.to) removedFilters.push("to");
+    delete groundedFilters.from;
+    delete groundedFilters.to;
+  }
+
+  return {
+    plan: {
+      ...plan,
+      filters: groundedFilters,
+      response:
+        removedFilters.length > 0
+          ? "I will search using only the details provided in your request."
+          : plan.response,
+    },
+    removedFilters: [...new Set(removedFilters)],
+  };
+}
 
 function notFound() {
   return new AppError({
@@ -69,172 +260,90 @@ function loadFlowInstructions() {
   }
 }
 
-function copyDefinedProperties<Source extends Record<string, unknown>>(source: Source) {
-  const output: Record<string, unknown> = {};
-
-  for (const [key, value] of Object.entries(source)) {
-    if (value !== undefined) {
-      output[key] = value;
-    }
-  }
-
-  return output;
-}
-
-function getLatestUserMessage(messages: FlowMessage[]) {
-  return (
-    [...messages]
-      .reverse()
-      .find((message) => message.role === "user")
-      ?.content.trim() ?? ""
-  );
-}
-
-function hasSearchIntent(message: string) {
-  return /\b(search|show|find|list)\b/i.test(message);
-}
-
-function hasWriteIntent(message: string) {
-  return /\b(add|create|record|save|delete|remove|change|update|edit)\b/i.test(message);
-}
-
-function hasSummaryIntent(message: string) {
-  return /\b(summarize|summary|explain|report|this month|month)\b/i.test(message);
-}
-
-function getCurrentMonthFilters(timezone: string) {
-  const range = resolveReportRange({ period: "thisMonth" }, timezone);
-
-  return {
-    from: range.from,
-    to: range.to,
-  };
-}
-
-function extractSearchQuery(message: string) {
-  const normalized = message.toLowerCase();
-  const knownTerms = [
-    "food",
-    "shopping",
-    "transport",
-    "bills",
-    "entertainment",
-    "health",
-    "education",
-    "travel",
-    "home",
-    "salary",
-    "freelance",
-    "business",
-    "interest",
-  ];
-  const categoryTerm = knownTerms.find((term) => normalized.includes(term));
-
-  if (categoryTerm) {
-    return categoryTerm;
-  }
-
-  const query = normalized
-    .replace(/\b(search|show|find|list|my|all|this|month|transactions?|expenses?|income)\b/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  return query || undefined;
-}
-
-function createSearchPlan(
-  latestUserMessage: string,
-  workspace: { timezone: string },
-): FlowModelPlan {
-  const normalized = latestUserMessage.toLowerCase();
-  const filters: NonNullable<FlowModelPlan["filters"]> = {};
-  const query = extractSearchQuery(latestUserMessage);
-
-  if (query) {
-    filters.query = query;
-  }
-
-  if (normalized.includes("income")) {
-    filters.type = "income";
-  } else if (/\b(expense|expenses|spent|spending)\b/.test(normalized)) {
-    filters.type = "expense";
-  }
-
-  if (/\b(this month|month)\b/.test(normalized)) {
-    Object.assign(filters, getCurrentMonthFilters(workspace.timezone));
-  }
-
-  return {
-    filters,
-    intent: "search_transactions",
-    response: "I will show matching transactions from your authorized workspace.",
-  };
-}
-
-function createFallbackPlan(messages: FlowMessage[]): FlowModelPlan {
-  const latestUserMessage = getLatestUserMessage(messages);
-  const normalized = latestUserMessage.toLowerCase();
-
-  if (hasSearchIntent(latestUserMessage)) {
-    return createSearchPlan(latestUserMessage, { timezone: "UTC" });
-  }
-
-  if (hasSummaryIntent(latestUserMessage) && !hasWriteIntent(latestUserMessage)) {
-    return {
-      intent: "explain_spending",
-      response: "I will summarize this month using your authorized workspace data.",
-    };
-  }
-
-  if (hasWriteIntent(normalized) && /\b(add|create|record|save)\b/.test(normalized)) {
-    return {
-      intent: "create_transaction",
-      response: "Flow is read-only right now. Use the transaction form to add income or expenses.",
-    };
-  }
-
-  if (/\b(delete|remove|change|update|edit)\b/.test(normalized)) {
-    return {
-      intent: /\b(delete|remove)\b/.test(normalized) ? "delete_transaction" : "update_transaction",
-      response:
-        "I cannot update or delete transactions through Flow yet. Open the transaction form to review and confirm that change safely.",
-    };
-  }
-
+function createFallbackPlan(): FlowModelPlan {
   return {
     intent: "unknown",
-    response: "I can help with read-only transaction search and spending summaries.",
+    response:
+      "I could not safely classify that request. Please rephrase it as a transaction search or monthly summary.",
   };
 }
 
-function normalizePlanForLatestMessage(
-  plan: FlowModelPlan,
-  messages: FlowMessage[],
-  workspace: { timezone: string },
-): FlowModelPlan {
-  const latestUserMessage = getLatestUserMessage(messages);
-
-  if (hasSearchIntent(latestUserMessage)) {
-    return createSearchPlan(latestUserMessage, workspace);
-  }
-
-  return plan;
+function summarizeClassificationForTrace(plan: FlowModelPlan) {
+  return {
+    filterFrom: plan.filters?.from ?? null,
+    filterLimit: plan.filters?.limit ?? null,
+    filterPeriod: plan.filters?.period ?? null,
+    filterTo: plan.filters?.to ?? null,
+    filterType: plan.filters?.type ?? null,
+    hasQuery: Boolean(plan.filters?.query),
+    hasResponse: Boolean(plan.response),
+    intent: plan.intent,
+  };
 }
 
-function parsePlan(raw: string, messages: FlowMessage[]): FlowModelPlan {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function normalizeModelAliases(value: unknown) {
+  if (!isRecord(value)) {
+    return value;
+  }
+
+  const filters = isRecord(value.filters) ? { ...value.filters } : {};
+  const evidence = isRecord(value.evidence) ? { ...value.evidence } : {};
+
+  if (typeof filters.category === "string" && filters.query === undefined) {
+    filters.query = filters.category;
+  }
+  if (typeof evidence.category === "string" && evidence.query === undefined) {
+    evidence.query = evidence.category;
+  }
+
+  const periodAliases: Record<string, NonNullable<FlowModelPlan["filters"]>["period"]> = {
+    last_month: "last_month",
+    this_month: "this_month",
+    this_year: "this_year",
+  };
+
+  if (typeof filters.timeframe === "string" && filters.period === undefined) {
+    filters.period = periodAliases[filters.timeframe];
+  }
+  if (typeof evidence.timeframe === "string" && evidence.period === undefined) {
+    evidence.period = evidence.timeframe;
+  }
+
+  const supportedPeriods = new Set(["last_month", "this_month", "this_year"]);
+
+  if (typeof filters.period === "string" && !supportedPeriods.has(filters.period)) {
+    delete filters.period;
+    delete evidence.period;
+  }
+
+  delete filters.category;
+  delete filters.timeframe;
+  delete evidence.category;
+  delete evidence.timeframe;
+
+  return { ...value, evidence, filters };
+}
+
+function parsePlan(raw: string): FlowModelPlan {
   const firstBrace = raw.indexOf("{");
   const lastBrace = raw.lastIndexOf("}");
 
   if (firstBrace < 0 || lastBrace <= firstBrace) {
-    return createFallbackPlan(messages);
+    return createFallbackPlan();
   }
 
   let parsed: z.infer<typeof flowPlanSchema>;
 
   try {
-    parsed = flowPlanSchema.parse(JSON.parse(raw.slice(firstBrace, lastBrace + 1)));
+    parsed = flowPlanSchema.parse(
+      normalizeModelAliases(JSON.parse(raw.slice(firstBrace, lastBrace + 1))),
+    );
   } catch {
-    return createFallbackPlan(messages);
+    return createFallbackPlan();
   }
 
   const plan: FlowModelPlan = {
@@ -244,9 +353,29 @@ function parsePlan(raw: string, messages: FlowMessage[]): FlowModelPlan {
   };
 
   if (parsed.filters) {
-    plan.filters = copyDefinedProperties(parsed.filters);
+    plan.filters = Object.fromEntries(
+      Object.entries(parsed.filters).filter(([, value]) => value !== undefined),
+    ) as NonNullable<FlowModelPlan["filters"]>;
+  }
+  if (parsed.evidence) {
+    plan.evidence = Object.fromEntries(
+      Object.entries(parsed.evidence).filter(([, value]) => value !== undefined),
+    ) as NonNullable<FlowModelPlan["evidence"]>;
   }
   return plan;
+}
+
+function getCurrentDate(timezone: string) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: timezone,
+    year: "numeric",
+  }).formatToParts(new Date());
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+
+  return `${value("year")}-${value("month")}-${value("day")}`;
 }
 
 function buildPrompt(
@@ -254,27 +383,27 @@ function buildPrompt(
   workspace: { reportingCurrency: string; timezone: string },
 ) {
   const instructions = loadFlowInstructions();
-  const conversation = messages
-    .map((message) => `${message.role.toUpperCase()}: ${message.content}`)
+  const recentMessages = messages.slice(-3);
+  const conversation = recentMessages
+    .map((message, index) => {
+      const isLatest = index === recentMessages.length - 1;
+      const contentLimit = isLatest ? 800 : 250;
+
+      return `${message.role.toUpperCase()}: ${message.content.slice(0, contentLimit)}`;
+    })
     .join("\n");
 
-  return `You are Flow, NidhiFlow's finance assistant.
-Follow these runtime instructions exactly:
+  return `You are Flow.
 ${instructions}
 
-Return only JSON. Do not include markdown.
-You may classify these intents: search_transactions, explain_spending, create_transaction, update_transaction, delete_transaction, create_budget, create_goal, out_of_scope, unknown.
-You can only use these MCP tools: ${flowMcpTools.map((tool) => tool.name).join(", ")}.
-Never claim that you created, edited, deleted, or moved financial data.
-For create_transaction, update_transaction, or delete_transaction, refuse politely. Do not provide proposal fields.
-Use decimal strings for money. Currency defaults to ${workspace.reportingCurrency}.
-Use date-only YYYY-MM-DD. The workspace timezone is ${workspace.timezone}.
-Schema:
-{
-  "intent": "search_transactions|explain_spending|create_transaction|update_transaction|delete_transaction|create_budget|create_goal|out_of_scope|unknown",
-  "response": "short user-facing reply",
-  "filters": { "query": "optional", "type": "income|expense|transfer", "from": "YYYY-MM-DD", "to": "YYYY-MM-DD" }
-}
+Context: today=${getCurrentDate(workspace.timezone)}, timezone=${workspace.timezone}, currency=${workspace.reportingCurrency}.
+Intents: search_transactions, explain_spending, create_transaction, update_transaction, delete_transaction, create_budget, create_goal, out_of_scope, unknown.
+Tools: ${flowMcpTools.map((tool) => tool.name).join(", ")}.
+Return one object matching the provided JSON Schema. Use empty objects when no filters or evidence apply.
+Example: "recent five spendings" => {"intent":"search_transactions","response":"I will show your five most recent expenses.","filters":{"limit":5,"type":"expense"},"evidence":{"limit":"five","type":"spendings"}}.
+Example: "last transaction" => {"intent":"search_transactions","response":"I will show your latest transaction.","filters":{"limit":1},"evidence":{"limit":"last"}}.
+Example: "food expenses this month" => {"intent":"search_transactions","response":"I will show your food expenses this month.","filters":{"query":"food","type":"expense","period":"this_month"},"evidence":{"query":"food","type":"expenses","period":"this month"}}.
+Example: "last two food expenses" => {"intent":"search_transactions","response":"I will show your two most recent food expenses.","filters":{"query":"food","type":"expense","limit":2},"evidence":{"query":"food","type":"expenses","limit":"two"}}.
 
 Conversation:
 ${conversation}`;
@@ -334,11 +463,7 @@ function buildReportSummaryMessage(report: unknown) {
 }
 
 function buildSearchResultMessage(result: unknown) {
-  if (!Array.isArray(result)) {
-    return "I searched your authorized transactions.";
-  }
-
-  if (result.length === 0) {
+  if (!Array.isArray(result) || result.length === 0) {
     return "I could not find matching transactions for that question.";
   }
 
@@ -367,10 +492,12 @@ export class FlowService {
 
     const response = await fetch(`${this.environment.OLLAMA_BASE_URL}/api/generate`, {
       body: JSON.stringify({
-        format: "json",
+        format: flowPlanJsonSchema,
+        keep_alive: "10m",
         model: this.environment.FLOW_MODEL,
         options: {
-          num_predict: 384,
+          num_ctx: 1_536,
+          num_predict: 128,
           temperature: 0,
         },
         prompt: buildPrompt(messages, workspace),
@@ -391,10 +518,15 @@ export class FlowService {
       throw unavailable();
     }
 
-    return parsePlan(body.response, messages);
+    return parsePlan(body.response);
   }
 
-  async chat(userId: string, workspaceId: string, input: FlowChatBody) {
+  async chat(
+    userId: string,
+    workspaceId: string,
+    input: FlowChatBody,
+    trace: FlowTrace = noOpTrace,
+  ) {
     const workspace = await this.workspaceRepository.findWorkspaceForUser(userId, workspaceId);
 
     if (!workspace) {
@@ -402,17 +534,59 @@ export class FlowService {
     }
 
     let plan: FlowModelPlan;
+    const modelStartedAt = performance.now();
 
     try {
-      plan = await this.askOllama(input.messages, workspace);
+      trace("ollama.request", {
+        api: {
+          format: "json-schema",
+          keepAlive: "10m",
+          method: "POST",
+          model: this.environment.FLOW_MODEL,
+          numContext: 1_536,
+          numPredict: 128,
+          stream: false,
+          temperature: 0,
+          timeoutMs: this.environment.FLOW_AI_TIMEOUT_MS,
+          url: `${this.environment.OLLAMA_BASE_URL}/api/generate`,
+        },
+        input: {
+          contentLengths: input.messages.map((message) => message.content.length),
+          messageCount: input.messages.length,
+          roles: input.messages.map((message) => message.role),
+          reportingCurrency: workspace.reportingCurrency,
+          timezone: workspace.timezone,
+        },
+      });
+      const modelPlan = await this.askOllama(input.messages, workspace);
+      const grounded = groundPlanFilters(modelPlan, input.messages);
+      plan = grounded.plan;
+      trace("ollama.response", {
+        classification: summarizeClassificationForTrace(modelPlan),
+        decision: {
+          filtersGroundedByApplication: grounded.removedFilters.length > 0,
+          normalizedByApplication: false,
+          removedFilterNames: grounded.removedFilters,
+          selectedIntent: plan.intent,
+        },
+        durationMs: Math.round(performance.now() - modelStartedAt),
+        model: this.environment.FLOW_MODEL,
+        status: "success",
+      });
     } catch (error) {
+      trace("ollama.response", {
+        durationMs: Math.round(performance.now() - modelStartedAt),
+        errorCode: error instanceof AppError ? error.code : "UNEXPECTED_ERROR",
+        model: this.environment.FLOW_MODEL,
+        status: "failed",
+      });
+
       if (error instanceof AppError) {
         throw error;
       }
 
       throw unavailable();
     }
-    plan = normalizePlanForLatestMessage(plan, input.messages, workspace);
 
     const tools = new FlowMcpToolRegistry({
       database: this.database,
@@ -422,6 +596,17 @@ export class FlowService {
     const toolResults: Array<{ name: string; result: unknown }> = [];
 
     if (plan.intent === "search_transactions") {
+      trace("tool.request", {
+        queryParams: {
+          from: plan.filters?.from ?? null,
+          hasQuery: Boolean(plan.filters?.query),
+          limit: plan.filters?.limit ?? 8,
+          period: plan.filters?.period ?? null,
+          to: plan.filters?.to ?? null,
+          type: plan.filters?.type ?? null,
+        },
+        toolName: "flow.searchTransactions",
+      });
       const result = await tools.searchTransactions(plan.filters);
 
       toolResults.push({
@@ -432,6 +617,10 @@ export class FlowService {
     }
 
     if (plan.intent === "explain_spending") {
+      trace("tool.request", {
+        queryParams: { period: "thisMonth" },
+        toolName: "flow.summarizeMonth",
+      });
       const result = await tools.summarizeMonth();
 
       toolResults.push({

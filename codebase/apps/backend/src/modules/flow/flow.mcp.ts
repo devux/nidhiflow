@@ -1,6 +1,7 @@
 import { AccountRepository } from "../accounts/account.repository.js";
 import { WorkspaceCategoryRepository } from "../categories/workspace-category.repository.js";
 import { ReportService } from "../reports/report.service.js";
+import { resolveReportRange } from "../reports/report.range.js";
 import { TransactionRepository } from "../transactions/transaction.repository.js";
 import type { Database } from "../../shared/database/database.js";
 
@@ -16,8 +17,18 @@ export type FlowIntent =
   | "unknown";
 
 export interface FlowModelPlan {
+  evidence?: {
+    from?: string;
+    limit?: string;
+    period?: string;
+    query?: string;
+    to?: string;
+    type?: string;
+  };
   filters?: {
     from?: string;
+    limit?: number;
+    period?: "last_month" | "this_month" | "this_year";
     query?: string;
     to?: string;
     type?: "expense" | "income" | "transfer";
@@ -62,8 +73,20 @@ export class FlowMcpToolRegistry {
     const accountRepository = new AccountRepository(this.context.database);
     const repositoryFilters: Parameters<TransactionRepository["listByWorkspace"]>[1] = {};
 
-    if (filters.from) repositoryFilters.from = filters.from;
-    if (filters.to) repositoryFilters.to = filters.to;
+    if (filters.period) {
+      const period = {
+        last_month: "lastMonth",
+        this_month: "thisMonth",
+        this_year: "thisYear",
+      }[filters.period] as "lastMonth" | "thisMonth" | "thisYear";
+      const range = resolveReportRange({ period }, this.context.workspace.timezone);
+
+      repositoryFilters.from = range.from;
+      repositoryFilters.to = range.to;
+    } else {
+      if (filters.from) repositoryFilters.from = filters.from;
+      if (filters.to) repositoryFilters.to = filters.to;
+    }
     if (filters.type) repositoryFilters.type = filters.type;
 
     const [transactions, categories, accounts] = await Promise.all([
@@ -87,7 +110,7 @@ export class FlowMcpToolRegistry {
           includesText(account?.name, query)
         );
       })
-      .slice(0, 8)
+      .slice(0, filters.limit ?? 8)
       .map((transaction) => {
         const category = visibleCategories.find((item) => item.id === transaction.categoryId);
         const account = visibleAccounts.find((item) => item.id === transaction.accountId);

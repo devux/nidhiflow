@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { Environment } from "../../app/config/environment.js";
 import type { Database } from "../../shared/database/database.js";
-import { FlowService } from "./flow.service.js";
+import { FlowService, type FlowTrace } from "./flow.service.js";
 
 const environment: Environment = {
   APP_ENV: "test",
@@ -183,15 +183,22 @@ describe("FlowService read-only transaction policy", () => {
 
   it("reads transactions through the allowlisted search tool", async () => {
     const { database } = createDatabase();
+    const trace = vi.fn<FlowTrace>();
     mockOllamaPlan({
+      evidence: { query: "food", type: "expenses" },
       filters: { query: "food", type: "expense" },
       intent: "search_transactions",
       response: "I found matching transactions.",
     });
 
-    const result = await new FlowService(database, environment).chat("usr_flow", "wsp_flow", {
-      messages: [{ content: "Show food expenses", role: "user" }],
-    });
+    const result = await new FlowService(database, environment).chat(
+      "usr_flow",
+      "wsp_flow",
+      {
+        messages: [{ content: "Show food expenses", role: "user" }],
+      },
+      trace,
+    );
 
     expect(result).not.toHaveProperty("proposal");
     expect(result.toolResults).toHaveLength(1);
@@ -209,9 +216,57 @@ describe("FlowService read-only transaction policy", () => {
         },
       ],
     });
+    expect(trace.mock.calls.map(([stage]) => stage)).toEqual([
+      "ollama.request",
+      "ollama.response",
+      "tool.request",
+    ]);
+    const requestTrace = trace.mock.calls.find(([stage]) => stage === "ollama.request");
+    expect(requestTrace?.[1]).toMatchObject({
+      api: {
+        method: "POST",
+        model: "llama3.2:3b",
+        url: "http://127.0.0.1:11434/api/generate",
+      },
+      input: {
+        contentLengths: [18],
+        messageCount: 1,
+        roles: ["user"],
+      },
+    });
+    expect(JSON.stringify(requestTrace?.[1])).not.toContain("Show food expenses");
+    const classificationTrace = trace.mock.calls.find(([stage]) => stage === "ollama.response");
+    expect(classificationTrace?.[1]).toMatchObject({
+      classification: {
+        filterFrom: null,
+        filterLimit: null,
+        filterTo: null,
+        filterType: "expense",
+        hasQuery: true,
+        hasResponse: true,
+        intent: "search_transactions",
+      },
+      decision: {
+        normalizedByApplication: false,
+        selectedIntent: "search_transactions",
+      },
+      model: "llama3.2:3b",
+      status: "success",
+    });
+    const toolTrace = trace.mock.calls.find(([stage]) => stage === "tool.request");
+    expect(toolTrace?.[1]).toMatchObject({
+      queryParams: {
+        from: null,
+        hasQuery: true,
+        limit: 8,
+        to: null,
+        type: "expense",
+      },
+      toolName: "flow.searchTransactions",
+    });
   });
 
-  it("prefers explicit search requests over monthly summary classification", async () => {
+  it("uses the intent returned by Ollama without application keyword overrides", async () => {
     const { database } = createDatabase();
     mockOllamaPlan({
       intent: "explain_spending",
@@ -222,21 +277,183 @@ describe("FlowService read-only transaction policy", () => {
       messages: [{ content: "Show my food expenses this month", role: "user" }],
     });
 
-    expect(result.message).toBe("I found 1 matching transaction in your authorized workspace.");
+    expect(result.message).toContain("This month:");
     expect(result.toolResults).toHaveLength(1);
+    expect(result.toolResults[0]?.name).toBe("flow.summarizeMonth");
+  });
+
+  it("supports Ollama classifying a latest transaction request with a one-record limit", async () => {
+    const { database } = createDatabase();
+    const trace = vi.fn<FlowTrace>();
+    mockOllamaPlan({
+      evidence: { limit: "last" },
+      filters: { limit: 1 },
+      intent: "search_transactions",
+      response: "I will show your latest transaction.",
+    });
+
+    const result = await new FlowService(database, environment).chat(
+      "usr_flow",
+      "wsp_flow",
+      {
+        messages: [{ content: "What is my last transaction?", role: "user" }],
+      },
+      trace,
+    );
+
+    expect(result.message).toBe("I found 1 matching transaction in your authorized workspace.");
     expect(result.toolResults[0]).toMatchObject({
       name: "flow.searchTransactions",
-      result: [
-        {
-          accountName: "Cash",
-          amount: "500.0000",
-          categoryName: "Food",
-          currency: "INR",
-          date: "2026-06-19",
-          note: "Lunch",
-          type: "expense",
-        },
-      ],
+      result: [{ note: "Lunch" }],
+    });
+    const classificationTrace = trace.mock.calls.find(([stage]) => stage === "ollama.response");
+    expect(classificationTrace?.[1]).toMatchObject({
+      classification: {
+        filterLimit: 1,
+        intent: "search_transactions",
+      },
+      decision: {
+        normalizedByApplication: false,
+        selectedIntent: "search_transactions",
+      },
+    });
+    const toolTrace = trace.mock.calls.find(([stage]) => stage === "tool.request");
+    expect(toolTrace?.[1]).toMatchObject({
+      queryParams: { hasQuery: false, limit: 1 },
+      toolName: "flow.searchTransactions",
+    });
+
+    const ollamaRequest = vi.mocked(fetch).mock.calls[0]?.[1];
+    const ollamaBody = JSON.parse(String(ollamaRequest?.body)) as {
+      format: {
+        properties: {
+          filters: {
+            properties: {
+              limit: { type: string };
+            };
+          };
+        };
+      };
+      prompt: string;
+    };
+    expect(ollamaBody.prompt).toContain("recent five spendings");
+    expect(ollamaBody.format.properties.filters.properties.limit.type).toBe("integer");
+  });
+
+  it("removes hallucinated dates while keeping grounded recent-spending filters", async () => {
+    const { database } = createDatabase();
+    const trace = vi.fn<FlowTrace>();
+    mockOllamaPlan({
+      evidence: {
+        from: "recent",
+        limit: "five",
+        to: "recent",
+        type: "spendings",
+      },
+      filters: {
+        from: "2023-01-01",
+        limit: 5,
+        to: "2023-01-31",
+        type: "expense",
+      },
+      intent: "search_transactions",
+      response: "I will show your five most recent expenses.",
+    });
+
+    const result = await new FlowService(database, environment).chat(
+      "usr_flow",
+      "wsp_flow",
+      {
+        messages: [{ content: "show my recent five spendings", role: "user" }],
+      },
+      trace,
+    );
+
+    expect(result.toolResults[0]).toMatchObject({
+      name: "flow.searchTransactions",
+      result: [{ note: "Lunch" }],
+    });
+    const classificationTrace = trace.mock.calls.find(([stage]) => stage === "ollama.response");
+    expect(classificationTrace?.[1]).toMatchObject({
+      decision: {
+        filtersGroundedByApplication: true,
+        normalizedByApplication: false,
+        removedFilterNames: ["from", "to"],
+        selectedIntent: "search_transactions",
+      },
+    });
+    const toolTrace = trace.mock.calls.find(([stage]) => stage === "tool.request");
+    expect(toolTrace?.[1]).toMatchObject({
+      queryParams: {
+        from: null,
+        hasQuery: false,
+        limit: 5,
+        period: null,
+        to: null,
+        type: "expense",
+      },
+    });
+  });
+
+  it("normalizes grounded category and timeframe aliases returned by Ollama", async () => {
+    const { database } = createDatabase();
+    const trace = vi.fn<FlowTrace>();
+    mockOllamaPlan({
+      evidence: { category: "food", timeframe: "this_month" },
+      filters: { category: "food", timeframe: "this_month" },
+      intent: "search_transactions",
+      response: "I will show your food expenses this month.",
+    });
+
+    const result = await new FlowService(database, environment).chat(
+      "usr_flow",
+      "wsp_flow",
+      {
+        messages: [{ content: "Show my food expenses this month", role: "user" }],
+      },
+      trace,
+    );
+
+    expect(result.toolResults[0]).toMatchObject({
+      name: "flow.searchTransactions",
+      result: [{ categoryName: "Food" }],
+    });
+    const toolTrace = trace.mock.calls.find(([stage]) => stage === "tool.request");
+    expect(toolTrace?.[1]).toMatchObject({
+      queryParams: {
+        hasQuery: true,
+        period: "this_month",
+      },
+    });
+  });
+
+  it("drops an invalid last-two period without rejecting the valid intent", async () => {
+    const { database } = createDatabase();
+    const trace = vi.fn<FlowTrace>();
+    mockOllamaPlan({
+      evidence: { limit: "two", type: "food expense" },
+      filters: { limit: 2, period: "last_two", type: "expense" },
+      intent: "search_transactions",
+      response: "I will show your two most recent food expenses.",
+    });
+
+    const result = await new FlowService(database, environment).chat(
+      "usr_flow",
+      "wsp_flow",
+      {
+        messages: [{ content: "what is last two food expense", role: "user" }],
+      },
+      trace,
+    );
+
+    expect(result.toolResults[0]?.name).toBe("flow.searchTransactions");
+    const toolTrace = trace.mock.calls.find(([stage]) => stage === "tool.request");
+    expect(toolTrace?.[1]).toMatchObject({
+      queryParams: {
+        limit: 2,
+        period: null,
+        type: "expense",
+      },
     });
   });
 
@@ -272,7 +489,7 @@ describe("FlowService read-only transaction policy", () => {
     expect(result.toolResults).toEqual([]);
   });
 
-  it("falls back to deterministic monthly summary when model JSON is malformed", async () => {
+  it("returns unknown without keyword classification when model JSON is malformed", async () => {
     const { database } = createDatabase();
     mockMalformedOllamaResponse();
 
@@ -287,14 +504,11 @@ describe("FlowService read-only transaction policy", () => {
       ],
     });
 
-    expect(result.message).toBe(
-      "This month: income ₹0.00, expenses ₹0.00, net savings ₹0.00, across 0 transactions.",
-    );
-    expect(result.toolResults).toHaveLength(1);
-    expect(result.toolResults[0]?.name).toBe("flow.summarizeMonth");
+    expect(result.message).toContain("could not safely classify");
+    expect(result.toolResults).toEqual([]);
   });
 
-  it("falls back to deterministic read-only refusal for creates when model JSON is malformed", async () => {
+  it("does not infer a write intent when model JSON is malformed", async () => {
     const { database } = createDatabase();
     mockMalformedOllamaResponse();
 
@@ -315,7 +529,7 @@ describe("FlowService read-only transaction policy", () => {
       ],
     });
 
-    expect(result.message).toContain("Flow is read-only right now");
+    expect(result.message).toContain("could not safely classify");
     expect(result).not.toHaveProperty("proposal");
     expect(result.toolResults).toEqual([]);
   });

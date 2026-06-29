@@ -15,8 +15,9 @@ import { Icon } from "../../../shared/components/Icon";
 import { InlineAlert } from "../../../shared/components/InlineAlert";
 import { PageHeader } from "../../../shared/components/PageHeader";
 
-interface ChatEntry extends FlowChatMessage {
+export interface ChatEntry extends FlowChatMessage {
   id: string;
+  isWelcome?: boolean;
   toolResults?: FlowChatResponse["toolResults"];
 }
 
@@ -51,6 +52,13 @@ function createEntry(role: ChatEntry["role"], content: string): ChatEntry {
     id: crypto.randomUUID(),
     role,
   };
+}
+
+export function buildFlowConversation(chatEntries: ChatEntry[]): FlowChatMessage[] {
+  return chatEntries
+    .filter((entry) => !entry.isWelcome && (entry.role === "assistant" || entry.role === "user"))
+    .slice(-12)
+    .map(({ content, role }) => ({ content, role }));
 }
 
 function summarizeToolResult(result: unknown) {
@@ -171,20 +179,19 @@ export function FlowPage() {
   const [input, setInput] = useState("");
   const [chatState, setChatState] = useState<"error" | "idle" | "sending">("idle");
   const [chatEntries, setChatEntries] = useState<ChatEntry[]>([
-    createEntry(
-      "assistant",
-      "Ask me to search transactions or explain this month. Flow is read-only right now.",
-    ),
+    {
+      ...createEntry(
+        "assistant",
+        "Ask me to search transactions or explain this month. Flow is read-only right now.",
+      ),
+      isWelcome: true,
+    },
   ]);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const primaryWorkspace = activeWorkspace;
   const canChat = Boolean(isAuthenticated && accessToken && primaryWorkspace);
   const conversation = useMemo<FlowChatMessage[]>(
-    () =>
-      chatEntries
-        .filter((entry) => entry.role === "assistant" || entry.role === "user")
-        .slice(-12)
-        .map(({ content, role }) => ({ content, role })),
+    () => buildFlowConversation(chatEntries),
     [chatEntries],
   );
 
