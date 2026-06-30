@@ -1,5 +1,5 @@
 import { Suspense, lazy } from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import type { GuestPreferencesRepository } from "../data/guest/guestPreferencesRepository";
 import type { GuestTransactionRepository } from "../data/guest/guestTransactionRepository";
@@ -46,6 +46,11 @@ interface AppProps {
   transactionRepository?: GuestTransactionRepository;
 }
 
+function RouteLoadingFallback() {
+  const location = useLocation();
+  return <LoadingScreen routePath={location.pathname} />;
+}
+
 export function App({ repository, transactionRepository }: AppProps) {
   return (
     <GuestPreferencesProvider repository={repository}>
@@ -53,7 +58,7 @@ export function App({ repository, transactionRepository }: AppProps) {
         <GuestTransactionsProvider repository={transactionRepository}>
           <ThemeProvider>
             <BrowserRouter>
-              <Suspense fallback={<LoadingScreen />}>
+              <Suspense fallback={<RouteLoadingFallback />}>
                 <Routes>
                   <Route element={<AppShell />}>
                     <Route element={<HomePage />} index />

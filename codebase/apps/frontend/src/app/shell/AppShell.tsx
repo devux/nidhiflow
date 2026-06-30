@@ -31,7 +31,7 @@ export function AppShell() {
   }, [isAuthRoute, isAuthenticated, isCheckingSession]);
 
   if (isCheckingSession) {
-    return <LoadingScreen />;
+    return <LoadingScreen routePath={location.pathname} />;
   }
 
   return (
@@ -51,7 +51,7 @@ export function AppShell() {
       >
         <Outlet />
       </div>
-      {isApiLoading ? <LoadingScreen variant="overlay" /> : null}
+      {isApiLoading ? <LoadingScreen routePath={location.pathname} variant="overlay" /> : null}
       {showGuestChoice ? (
         <aside aria-labelledby="guest-choice-title" className="guest-reminder" role="dialog">
           <span className="icon-tile" aria-hidden="true">
