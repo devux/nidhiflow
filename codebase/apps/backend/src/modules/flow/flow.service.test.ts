@@ -329,7 +329,9 @@ describe("FlowService read-only transaction policy", () => {
         properties: {
           filters: {
             properties: {
+              from: { pattern: string };
               limit: { type: string };
+              to: { pattern: string };
             };
           };
         };
@@ -337,7 +339,13 @@ describe("FlowService read-only transaction policy", () => {
       prompt: string;
     };
     expect(ollamaBody.prompt).toContain("recent five spendings");
+    expect(ollamaBody.format.properties.filters.properties.from.pattern).toBe(
+      "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+    );
     expect(ollamaBody.format.properties.filters.properties.limit.type).toBe("integer");
+    expect(ollamaBody.format.properties.filters.properties.to.pattern).toBe(
+      "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+    );
   });
 
   it("removes hallucinated dates while keeping grounded recent-spending filters", async () => {

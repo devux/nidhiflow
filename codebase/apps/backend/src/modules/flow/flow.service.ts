@@ -83,14 +83,14 @@ const flowPlanJsonSchema = {
     filters: {
       additionalProperties: false,
       properties: {
-        from: { pattern: "^\\d{4}-\\d{2}-\\d{2}$", type: "string" },
+        from: { pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$", type: "string" },
         limit: { maximum: 8, minimum: 1, type: "integer" },
         period: {
           enum: ["last_month", "this_month", "this_year"],
           type: "string",
         },
         query: { minLength: 1, type: "string" },
-        to: { pattern: "^\\d{4}-\\d{2}-\\d{2}$", type: "string" },
+        to: { pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$", type: "string" },
         type: {
           enum: ["expense", "income", "transfer"],
           type: "string",
