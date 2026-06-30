@@ -49,8 +49,11 @@ Never store plain-text passwords or provider tokens.
 - minimal `membership_role` for membership administration
 - `joined_at`, timestamps
 - unique `(workspace_id, user_id)`
+- unique `user_id`, enforcing one active workspace membership per user
 
 Role must not restrict ordinary Phase 1 finance collaboration.
+Ownership transfer updates the successor to `manager` and the workspace creator
+reference in the same transaction.
 
 ### workspace_invitations
 

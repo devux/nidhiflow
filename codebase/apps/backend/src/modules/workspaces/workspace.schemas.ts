@@ -64,6 +64,14 @@ export const createWorkspaceInvitationBodySchema = z.object({
     .transform((value) => value.toLowerCase()),
 });
 
+export const workspaceMembershipMoveBodySchema = z
+  .object({
+    transferOwnership: z.boolean().optional().default(false),
+  })
+  .strict()
+  .default({ transferOwnership: false });
+
 export type CreateWorkspaceBody = z.infer<typeof createWorkspaceBodySchema>;
 export type UpdateWorkspaceBody = z.infer<typeof updateWorkspaceBodySchema>;
 export type CreateWorkspaceInvitationBody = z.infer<typeof createWorkspaceInvitationBodySchema>;
+export type WorkspaceMembershipMoveBody = z.infer<typeof workspaceMembershipMoveBodySchema>;

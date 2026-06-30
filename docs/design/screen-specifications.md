@@ -7,15 +7,13 @@
 - Personal/family budget card: total, spent, remaining, progress
 - Prominent Add Expense and Add Income actions
 - Recent transactions: source/merchant, category, signed amount, date
-- Shared-space dialog uses Personal and Shared tabs
-- Personal contains only invitation-code management for the user's managed
-  shared space
-- Shared contains joined workspace identity for members, shared workspace
-  switching, and code-based joining; managers do not see their own workspace
-  repeated as a current shared-space card
-- Shared provides one explicit control to switch between personal and shared
-  finance data
-- Shared workspace identity shows the creator's current profile display name
+- Shared-space dialog shows the single current workspace, membership role,
+  invite-code management for managers, and code-based joining
+- Do not show Personal/Shared tabs or workspace switching controls
+- Joining replaces the current workspace membership
+- If joining would move a manager away from remaining members, show a
+  confirmation with Transfer ownership and join, and Stay in current workspace
+- Member workspace identity shows the manager's current profile display name
   separately from the editable workspace name
 
 ## Activity

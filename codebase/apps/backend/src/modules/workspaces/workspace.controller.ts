@@ -7,6 +7,7 @@ import type {
   CreateWorkspaceBody,
   CreateWorkspaceInvitationBody,
   UpdateWorkspaceBody,
+  WorkspaceMembershipMoveBody,
 } from "./workspace.schemas.js";
 
 function getAuthContext(response: Response) {
@@ -130,11 +131,15 @@ export class WorkspaceController {
     });
   };
 
-  acceptInvitation = async (request: Request<{ token: string }>, response: Response) => {
+  acceptInvitation = async (
+    request: Request<{ token: string }, never, WorkspaceMembershipMoveBody>,
+    response: Response,
+  ) => {
     const auth = getAuthContext(response);
     const workspace = await this.service.acceptInvitation(
       auth.userId,
       request.params.token,
+      request.body,
       response.locals.requestId as string,
     );
 
@@ -144,11 +149,15 @@ export class WorkspaceController {
     });
   };
 
-  joinShareCode = async (request: Request<{ code: string }>, response: Response) => {
+  joinShareCode = async (
+    request: Request<{ code: string }, never, WorkspaceMembershipMoveBody>,
+    response: Response,
+  ) => {
     const auth = getAuthContext(response);
     const workspace = await this.service.joinShareCode(
       auth.userId,
       request.params.code,
+      request.body,
       response.locals.requestId as string,
     );
 
@@ -176,17 +185,21 @@ export class WorkspaceController {
     });
   };
 
-  leaveWorkspace = async (request: Request<{ workspaceId: string }>, response: Response) => {
+  leaveWorkspace = async (
+    request: Request<{ workspaceId: string }, never, WorkspaceMembershipMoveBody>,
+    response: Response,
+  ) => {
     const auth = getAuthContext(response);
     const result = await this.service.leaveWorkspace(
       auth.userId,
       request.params.workspaceId,
+      request.body,
       response.locals.requestId as string,
     );
 
     sendSuccess(response, {
       data: result,
-      message: "Workspace left successfully.",
+      message: "New workspace created successfully.",
     });
   };
 }

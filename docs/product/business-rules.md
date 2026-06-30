@@ -55,7 +55,13 @@
 
 ## Family Collaboration
 
-- A family shares one workspace instance.
+- Every authenticated user belongs to exactly one active workspace.
+- Registration creates the user's initial workspace and manager membership.
+- Sharing does not create a second workspace or a separate personal copy.
+- Joining another workspace atomically removes the user's previous membership
+  and adds membership in the destination workspace.
+- Leaving a joined workspace atomically creates a new workspace managed by the
+  departing user.
 - All Phase 1 family members can view shared workspace data.
 - All members can add and edit shared transactions.
 - Budgets and goals are collaborative workspace resources.
@@ -63,11 +69,14 @@
 - Confirm destructive actions and audit them.
 - Do not add per-account, per-category, or per-feature permissions in Phase 1.
 - Joining or accessing a family workspace requires authentication.
+- If a manager would leave members behind while joining or leaving, block the
+  operation until the manager explicitly confirms ownership transfer. On
+  confirmation, promote the longest-standing remaining member before moving
+  the manager. Cancelling leaves all memberships unchanged.
 
 Membership administration needs a minimal distinction: a workspace creator or
-designated manager may invite/remove members and delete the workspace; this
-does not restrict ordinary finance collaboration. Final naming and transfer of
-this responsibility are listed as future decisions.
+designated manager may invite/remove members; this does not restrict ordinary
+finance collaboration.
 
 ## Feature Gating
 

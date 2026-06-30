@@ -3147,7 +3147,8 @@ p {
 .family-share-modal__notice,
 .family-share-modal__workspace,
 .share-code-panel,
-.family-share-modal__join {
+.family-share-modal__join,
+.workspace-transfer-confirmation {
   display: grid;
   gap: var(--space-3);
 }
@@ -3346,6 +3347,27 @@ p {
   outline: 0;
   background: transparent;
   text-transform: uppercase;
+}
+
+.workspace-transfer-confirmation {
+  padding: var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 35%, var(--color-border));
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--color-warning) 8%, var(--color-surface));
+}
+
+.workspace-transfer-confirmation h3,
+.workspace-transfer-confirmation p {
+  margin: 0;
+}
+
+.workspace-transfer-confirmation h3 {
+  font-size: 1.05rem;
+}
+
+.workspace-transfer-confirmation p {
+  color: var(--color-text-secondary);
+  line-height: 1.5;
 }
 
 .budget-filter-bar {

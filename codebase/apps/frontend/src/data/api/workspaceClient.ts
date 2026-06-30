@@ -8,6 +8,9 @@ const sessionAuthSnapshotKey = "nidhiflow.authSession";
 
 interface ApiEnvelope<Data> {
   data: Data;
+  error?: {
+    code?: string;
+  };
   message: string;
   success: boolean;
 }
@@ -23,7 +26,7 @@ async function parseResponse<Data>(response: Response): Promise<ApiEnvelope<Data
   const body = (await response.json()) as ApiEnvelope<Data>;
 
   if (!response.ok) {
-    throw new ApiRequestError(body.message || "Request failed.", response.status);
+    throw new ApiRequestError(body.message || "Request failed.", response.status, body.error?.code);
   }
 
   return body;
@@ -87,23 +90,6 @@ async function workspaceRequest<Data>(
   }
 }
 
-export async function createFamilyWorkspace(
-  accessToken: string,
-  input: {
-    name: string;
-    reportingCurrency: string;
-    timezone: string;
-  },
-): Promise<WorkspaceSummary> {
-  return workspaceRequest<WorkspaceSummary>(accessToken, "/workspaces", {
-    body: JSON.stringify({
-      ...input,
-      type: "family",
-    }),
-    method: "POST",
-  });
-}
-
 export async function createWorkspaceShareCode(
   accessToken: string,
   workspaceId: string,
@@ -120,12 +106,29 @@ export async function createWorkspaceShareCode(
 export async function joinWorkspaceByShareCode(
   accessToken: string,
   code: string,
+  options: { transferOwnership?: boolean } = {},
 ): Promise<WorkspaceSummary> {
   return workspaceRequest<WorkspaceSummary>(
     accessToken,
     `/workspace-invitations/share-codes/${encodeURIComponent(code)}/join`,
     {
+      body: JSON.stringify({
+        transferOwnership: options.transferOwnership ?? false,
+      }),
       method: "POST",
     },
   );
+}
+
+export async function leaveCurrentWorkspace(
+  accessToken: string,
+  workspaceId: string,
+  options: { transferOwnership?: boolean } = {},
+): Promise<WorkspaceSummary> {
+  return workspaceRequest<WorkspaceSummary>(accessToken, `/workspaces/${workspaceId}/leave`, {
+    body: JSON.stringify({
+      transferOwnership: options.transferOwnership ?? false,
+    }),
+    method: "POST",
+  });
 }

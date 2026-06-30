@@ -816,7 +816,7 @@ const paths = {
       tags: ["Workspace Members"],
       summary: "Invite workspace member",
       description:
-        "Creates a family workspace invitation. Non-production responses may include debugToken.",
+        "Creates an invitation for the current workspace. Non-production responses may include debugToken.",
       operationId: "createWorkspaceInvitation",
       security: bearerSecurity,
       parameters: [parameterRef("workspaceId")],
@@ -832,7 +832,7 @@ const paths = {
       tags: ["Workspace Members"],
       summary: "Create workspace share code",
       description:
-        "Creates a short-lived family workspace share code. The code is returned once and stored only as a hash.",
+        "Creates a short-lived code for the current workspace. The code is returned once and stored only as a hash.",
       operationId: "createWorkspaceShareCode",
       security: bearerSecurity,
       parameters: [parameterRef("workspaceId")],
@@ -847,7 +847,7 @@ const paths = {
       tags: ["Workspace Members"],
       summary: "Remove workspace member",
       description:
-        "Removes a member from a family workspace when the authenticated user has manager capability.",
+        "Moves a member out of the current workspace and creates a new workspace for that member.",
       operationId: "removeWorkspaceMember",
       security: bearerSecurity,
       parameters: [parameterRef("workspaceId"), parameterRef("userId")],
@@ -861,12 +861,14 @@ const paths = {
     post: operation({
       tags: ["Workspace Members"],
       summary: "Leave workspace",
-      description: "Allows the authenticated user to leave a family workspace.",
+      description:
+        "Leaves the current workspace and creates a new workspace. Managers must explicitly confirm ownership transfer when members remain.",
       operationId: "leaveWorkspace",
       security: bearerSecurity,
       parameters: [parameterRef("workspaceId")],
+      requestBody: requestBody(ref("WorkspaceMembershipMoveRequest"), false),
       responses: responseSet(
-        { "200": successResponse("Workspace left.", emptyStatus) },
+        { "200": successResponse("New workspace created.", ref("Workspace")) },
         { auth: true, conflict: true, notFound: true, validation: true },
       ),
     }),
@@ -875,10 +877,12 @@ const paths = {
     post: operation({
       tags: ["Workspace Members"],
       summary: "Accept workspace invitation",
-      description: "Accepts a pending workspace invitation for the authenticated user.",
+      description:
+        "Moves the authenticated user into the invited workspace. Managers must explicitly confirm ownership transfer when members remain.",
       operationId: "acceptWorkspaceInvitation",
       security: bearerSecurity,
       parameters: [parameterRef("token")],
+      requestBody: requestBody(ref("WorkspaceMembershipMoveRequest"), false),
       responses: responseSet(
         { "200": successResponse("Workspace invitation accepted.", ref("Workspace")) },
         { auth: true, conflict: true, notFound: true, validation: true },
@@ -890,7 +894,7 @@ const paths = {
       tags: ["Workspace Members"],
       summary: "Join workspace by share code",
       description:
-        "Lets an authenticated user join a family workspace with a pending, unexpired share code.",
+        "Moves the authenticated user into the coded workspace. Managers must explicitly confirm ownership transfer when members remain.",
       operationId: "joinWorkspaceByShareCode",
       security: bearerSecurity,
       parameters: [
@@ -901,6 +905,7 @@ const paths = {
           schema: { example: "ABCD-2345", maxLength: 12, minLength: 8, type: "string" },
         },
       ],
+      requestBody: requestBody(ref("WorkspaceMembershipMoveRequest"), false),
       responses: responseSet(
         { "200": successResponse("Workspace joined.", ref("Workspace")) },
         { auth: true, conflict: true, forbidden: true, notFound: true, validation: true },
@@ -2075,6 +2080,18 @@ export const openApiDocument = {
           id,
           workspaceId: { type: "string" },
         },
+      },
+      WorkspaceMembershipMoveRequest: {
+        additionalProperties: false,
+        properties: {
+          transferOwnership: {
+            default: false,
+            description:
+              "Must be true when a manager confirms transfer to the longest-standing remaining member.",
+            type: "boolean",
+          },
+        },
+        type: "object",
       },
       Account: {
         type: "object",

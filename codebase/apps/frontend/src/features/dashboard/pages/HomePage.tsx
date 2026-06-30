@@ -30,8 +30,6 @@ import ListItemText from "@mui/material/ListItemText";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
-import Tab from "@mui/material/Tab";
-import Tabs from "@mui/material/Tabs";
 import Typography from "@mui/material/Typography";
 import { type CSSProperties, type FormEvent, type MouseEvent, useMemo, useState } from "react";
 
@@ -39,11 +37,12 @@ import { useAuth } from "../../../app/providers/AuthProvider";
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
 import { useGuestTransactions } from "../../../app/providers/GuestTransactionsProvider";
 import {
-  createFamilyWorkspace,
   createWorkspaceShareCode,
   joinWorkspaceByShareCode,
+  leaveCurrentWorkspace,
   type WorkspaceShareCode,
 } from "../../../data/api/workspaceClient";
+import { ApiRequestError } from "../../../data/api/authClient";
 import { formatMoney } from "../../../domain/money/money";
 import type { SupportedLocale } from "../../../domain/preferences/guestPreferences";
 import { calculateTransactionTotals } from "../../../domain/transactions/transaction";
@@ -130,15 +129,7 @@ function TransactionHistoryRow({ locale, transaction }: TransactionHistoryRowPro
 }
 
 export function HomePage() {
-  const {
-    accessToken,
-    activeWorkspace,
-    isAuthenticated,
-    refreshWorkspaces,
-    setActiveWorkspace,
-    user,
-    workspaces,
-  } = useAuth();
+  const { accessToken, activeWorkspace, isAuthenticated, refreshWorkspaces } = useAuth();
   const { preferences } = useGuestPreferences();
   const { transactions } = useGuestTransactions();
   const [headerMenuAnchor, setHeaderMenuAnchor] = useState<HTMLElement | null>(null);
@@ -149,7 +140,7 @@ export function HomePage() {
     "copied" | "creating" | "error" | "idle" | "joining" | "joined"
   >("idle");
   const [shareMessage, setShareMessage] = useState("");
-  const [workspaceTab, setWorkspaceTab] = useState<"personal" | "shared">("personal");
+  const [pendingJoinCode, setPendingJoinCode] = useState<string | null>(null);
   const currentMonthRange = useMemo(() => getCurrentMonthRange(), []);
   const currentMonthTransactions = useMemo(
     () =>
@@ -181,12 +172,6 @@ export function HomePage() {
     ? "Tip: You're saving better than 68% of users!"
     : "Tip: Expenses are above income. Review spending.";
   const isHeaderMenuOpen = Boolean(headerMenuAnchor);
-  const familyWorkspace = workspaces.find((workspace) => workspace.type === "family");
-  const personalWorkspace = workspaces.find((workspace) => workspace.type === "personal");
-  const manageableFamilyWorkspace = workspaces.find(
-    (workspace) => workspace.type === "family" && workspace.membershipRole === "manager",
-  );
-
   function openHeaderMenu(event: MouseEvent<HTMLButtonElement>) {
     setHeaderMenuAnchor(event.currentTarget);
   }
@@ -199,10 +184,10 @@ export function HomePage() {
     setIsShareModalOpen(true);
     setShareStatus("idle");
     setShareMessage("");
-    setWorkspaceTab(activeWorkspace?.type === "family" ? "shared" : "personal");
+    setPendingJoinCode(null);
 
-    if (isAuthenticated && accessToken && manageableFamilyWorkspace) {
-      void handleCreateShareCode(manageableFamilyWorkspace.id);
+    if (isAuthenticated && accessToken && activeWorkspace?.membershipRole === "manager") {
+      void handleCreateShareCode(activeWorkspace.id);
     }
   }
 
@@ -210,6 +195,7 @@ export function HomePage() {
     setIsShareModalOpen(false);
     setShareStatus("idle");
     setShareMessage("");
+    setPendingJoinCode(null);
   }
 
   async function handleCreateShareCode(workspaceId: string) {
@@ -225,26 +211,6 @@ export function HomePage() {
     } catch {
       setShareStatus("error");
       setShareMessage("Share code could not be created. Please try again.");
-    }
-  }
-
-  async function handleCreateFamilyWorkspace() {
-    if (!accessToken) return;
-
-    setShareStatus("creating");
-    setShareMessage("");
-
-    try {
-      const workspace = await createFamilyWorkspace(accessToken, {
-        name: `${user?.displayName ?? preferences.displayName}'s Shared Space`,
-        reportingCurrency: user?.preferredCurrency ?? preferences.currency,
-        timezone: user?.timezone ?? preferences.timezone,
-      });
-      await refreshWorkspaces();
-      await handleCreateShareCode(workspace.id);
-    } catch {
-      setShareStatus("error");
-      setShareMessage("Shared space could not be created. Please try again.");
     }
   }
 
@@ -264,18 +230,48 @@ export function HomePage() {
       return;
     }
 
+    await moveToWorkspace(normalizedCode, false);
+  }
+
+  async function moveToWorkspace(code: string, transferOwnership: boolean) {
+    if (!accessToken) return;
+
     setShareStatus("joining");
     setShareMessage("");
 
     try {
-      const joinedWorkspace = await joinWorkspaceByShareCode(accessToken, normalizedCode);
-      await refreshWorkspaces(joinedWorkspace.id);
+      await joinWorkspaceByShareCode(accessToken, code, { transferOwnership });
+      await refreshWorkspaces();
       setJoinCode("");
+      setPendingJoinCode(null);
       setShareStatus("joined");
-      setShareMessage("Joined. You are now viewing the shared workspace.");
-    } catch {
+      setShareMessage("Joined. This is now your current workspace.");
+    } catch (error) {
+      if (error instanceof ApiRequestError && error.code === "OWNERSHIP_TRANSFER_REQUIRED") {
+        setPendingJoinCode(code);
+        setShareStatus("idle");
+        return;
+      }
+
       setShareStatus("error");
       setShareMessage("Code did not work. Ask for a new one.");
+    }
+  }
+
+  async function handleLeaveWorkspace() {
+    if (!accessToken || !activeWorkspace) return;
+
+    setShareStatus("joining");
+    setShareMessage("");
+
+    try {
+      await leaveCurrentWorkspace(accessToken, activeWorkspace.id);
+      await refreshWorkspaces();
+      setShareStatus("joined");
+      setShareMessage("You left the workspace. A new workspace is ready for you.");
+    } catch {
+      setShareStatus("error");
+      setShareMessage("The workspace could not be left. Please try again.");
     }
   }
 
@@ -290,11 +286,6 @@ export function HomePage() {
       setShareStatus("error");
       setShareMessage("Copy failed. Select the code instead.");
     }
-  }
-
-  function handleSwitchWorkspace(workspaceId: string) {
-    closeShareModal();
-    setActiveWorkspace(workspaceId);
   }
 
   return (
@@ -378,180 +369,150 @@ export function HomePage() {
                 </div>
               </div>
             ) : (
-              <>
-                <Tabs
-                  aria-label="Workspace sections"
-                  className="family-share-modal__tabs"
-                  onChange={(_event, value: "personal" | "shared") => setWorkspaceTab(value)}
-                  value={workspaceTab}
-                  variant="fullWidth"
-                >
-                  <Tab
-                    aria-controls="personal-workspace-panel"
-                    id="personal-workspace-tab"
-                    label="Personal"
-                    value="personal"
-                  />
-                  <Tab
-                    aria-controls="shared-workspace-panel"
-                    id="shared-workspace-tab"
-                    label="Shared"
-                    value="shared"
-                  />
-                </Tabs>
-
-                <div
-                  aria-labelledby="personal-workspace-tab"
-                  className="family-share-modal__panel-content"
-                  hidden={workspaceTab !== "personal"}
-                  id="personal-workspace-panel"
-                  role="tabpanel"
-                >
-                  {manageableFamilyWorkspace ? (
-                    <div className="share-code-panel">
-                      <div className="share-code-panel__top">
-                        <div className="share-code-panel__meta">
-                          <span className="share-code-panel__label">Invite code</span>
-                          <span className="share-code-panel__validity">
-                            <ShieldOutlinedIcon aria-hidden="true" fontSize="small" />
-                            Valid for 7 days
-                          </span>
-                        </div>
+              <div className="family-share-modal__panel-content">
+                {activeWorkspace ? (
+                  <section
+                    aria-label="Current workspace details"
+                    className="family-share-modal__workspace"
+                  >
+                    <span className="family-share-modal__workspace-label">Current workspace</span>
+                    <strong>{activeWorkspace.name}</strong>
+                    <span>
+                      Managed by {activeWorkspace.ownerDisplayName ?? activeWorkspace.name}
+                    </span>
+                    <dl>
+                      <div>
+                        <dt>Your role</dt>
+                        <dd>
+                          {activeWorkspace.membershipRole === "manager" ? "Manager" : "Member"}
+                        </dd>
                       </div>
-                      <small>For {manageableFamilyWorkspace.name}</small>
-                      <output
-                        className={
-                          shareCode ? "share-code-panel__code" : "share-code-panel__pending"
-                        }
-                      >
-                        {shareCode?.code ??
-                          (shareStatus === "creating" ? "Getting code" : "Code loading")}
-                      </output>
-                      <div className="family-share-modal__actions">
-                        <MuiButton
-                          className="family-share-modal__compact-action"
-                          disabled={shareStatus === "creating"}
-                          onClick={() => void handleCreateShareCode(manageableFamilyWorkspace.id)}
-                          startIcon={<RefreshRoundedIcon />}
-                          variant="outlined"
-                        >
-                          New code
-                        </MuiButton>
-                        <MuiButton
-                          className="family-share-modal__compact-action family-share-modal__compact-action--primary"
-                          disabled={!shareCode}
-                          onClick={() => void handleCopyShareCode()}
-                          startIcon={<ContentCopyRoundedIcon />}
-                          variant="contained"
-                        >
-                          Copy code
-                        </MuiButton>
+                      <div>
+                        <dt>Currency</dt>
+                        <dd>{activeWorkspace.reportingCurrency ?? "Not set"}</dd>
+                      </div>
+                    </dl>
+                  </section>
+                ) : null}
+
+                {activeWorkspace?.membershipRole === "manager" ? (
+                  <div className="share-code-panel">
+                    <div className="share-code-panel__top">
+                      <div className="share-code-panel__meta">
+                        <span className="share-code-panel__label">Invite code</span>
+                        <span className="share-code-panel__validity">
+                          <ShieldOutlinedIcon aria-hidden="true" fontSize="small" />
+                          Valid for 7 days
+                        </span>
                       </div>
                     </div>
-                  ) : (
-                    <div className="share-code-panel">
-                      <div className="share-code-panel__top">
-                        <div className="share-code-panel__meta">
-                          <span className="share-code-panel__label">Invite code</span>
-                        </div>
-                      </div>
-                      <strong>Create a shared space you manage.</strong>
-                      <small>Your personal records and other shared spaces stay separate.</small>
-                      <Button
+                    <small>For {activeWorkspace.name}</small>
+                    <output
+                      className={shareCode ? "share-code-panel__code" : "share-code-panel__pending"}
+                    >
+                      {shareCode?.code ??
+                        (shareStatus === "creating" ? "Getting code" : "Code loading")}
+                    </output>
+                    <div className="family-share-modal__actions">
+                      <MuiButton
+                        className="family-share-modal__compact-action"
                         disabled={shareStatus === "creating"}
-                        onClick={() => void handleCreateFamilyWorkspace()}
+                        onClick={() => void handleCreateShareCode(activeWorkspace.id)}
+                        startIcon={<RefreshRoundedIcon />}
+                        variant="outlined"
                       >
-                        {shareStatus === "creating" ? "Creating" : "Create invite code"}
+                        New code
+                      </MuiButton>
+                      <MuiButton
+                        className="family-share-modal__compact-action family-share-modal__compact-action--primary"
+                        disabled={!shareCode}
+                        onClick={() => void handleCopyShareCode()}
+                        startIcon={<ContentCopyRoundedIcon />}
+                        variant="contained"
+                      >
+                        Copy code
+                      </MuiButton>
+                    </div>
+                  </div>
+                ) : null}
+
+                {pendingJoinCode ? (
+                  <section
+                    aria-labelledby="ownership-transfer-title"
+                    className="workspace-transfer-confirmation"
+                    role="alertdialog"
+                  >
+                    <h3 id="ownership-transfer-title">Transfer workspace ownership?</h3>
+                    <p>
+                      Members remain in your current workspace. Transfer management to the
+                      longest-standing member before joining the new workspace.
+                    </p>
+                    <div className="family-share-modal__actions">
+                      <Button
+                        onClick={() => {
+                          setPendingJoinCode(null);
+                          setShareStatus("idle");
+                        }}
+                        variant="secondary"
+                      >
+                        Stay in current workspace
+                      </Button>
+                      <Button
+                        onClick={() => void moveToWorkspace(pendingJoinCode, true)}
+                        variant="primary"
+                      >
+                        Transfer ownership and join
                       </Button>
                     </div>
-                  )}
-                </div>
-
-                <div
-                  aria-labelledby="shared-workspace-tab"
-                  hidden={workspaceTab !== "shared"}
-                  id="shared-workspace-panel"
-                  role="tabpanel"
-                >
-                  <div className="family-share-modal__panel-content">
-                    {familyWorkspace?.membershipRole === "member" ? (
-                      <section
-                        aria-label="Shared workspace details"
-                        className="family-share-modal__workspace"
+                  </section>
+                ) : (
+                  <form
+                    className="family-share-modal__join"
+                    onSubmit={(event) => void handleJoinWorkspace(event)}
+                  >
+                    <div className="family-share-modal__join-heading">
+                      <span aria-hidden="true">
+                        <LinkRoundedIcon />
+                      </span>
+                      <div>
+                        <label htmlFor="workspace-share-code">Join with code</label>
+                        <small>Joining replaces your current workspace membership.</small>
+                      </div>
+                    </div>
+                    <div className="family-share-modal__join-row">
+                      <div className="family-share-modal__join-input">
+                        <ConfirmationNumberOutlinedIcon aria-hidden="true" fontSize="small" />
+                        <input
+                          autoComplete="off"
+                          id="workspace-share-code"
+                          inputMode="text"
+                          onChange={(event) => setJoinCode(event.target.value)}
+                          placeholder="Enter code (e.g. ABCD-2345)"
+                          value={joinCode}
+                        />
+                      </div>
+                      <MuiButton
+                        className="family-share-modal__compact-action"
+                        disabled={shareStatus === "joining"}
+                        type="submit"
+                        variant="outlined"
                       >
-                        <span className="family-share-modal__workspace-label">
-                          Current shared space
-                        </span>
-                        <strong>{familyWorkspace.ownerDisplayName ?? familyWorkspace.name}</strong>
-                        {familyWorkspace.ownerDisplayName &&
-                        familyWorkspace.ownerDisplayName !== familyWorkspace.name ? (
-                          <span>{familyWorkspace.name}</span>
-                        ) : null}
-                        <dl>
-                          <div>
-                            <dt>Your role</dt>
-                            <dd>Member</dd>
-                          </div>
-                          <div>
-                            <dt>Currency</dt>
-                            <dd>{familyWorkspace.reportingCurrency ?? "Not set"}</dd>
-                          </div>
-                        </dl>
-                      </section>
-                    ) : null}
+                        {shareStatus === "joining" ? "Joining" : "Join"}
+                      </MuiButton>
+                    </div>
+                  </form>
+                )}
 
-                    {familyWorkspace ? (
-                      activeWorkspace?.id === familyWorkspace.id ? (
-                        personalWorkspace ? (
-                          <Button onClick={() => handleSwitchWorkspace(personalWorkspace.id)}>
-                            Switch to personal workspace
-                          </Button>
-                        ) : null
-                      ) : (
-                        <Button onClick={() => handleSwitchWorkspace(familyWorkspace.id)}>
-                          Switch to shared workspace
-                        </Button>
-                      )
-                    ) : null}
-
-                    <form
-                      className="family-share-modal__join"
-                      onSubmit={(event) => void handleJoinWorkspace(event)}
-                    >
-                      <div className="family-share-modal__join-heading">
-                        <span aria-hidden="true">
-                          <LinkRoundedIcon />
-                        </span>
-                        <div>
-                          <label htmlFor="workspace-share-code">Join with code</label>
-                          <small>Enter a code shared by another workspace member.</small>
-                        </div>
-                      </div>
-                      <div className="family-share-modal__join-row">
-                        <div className="family-share-modal__join-input">
-                          <ConfirmationNumberOutlinedIcon aria-hidden="true" fontSize="small" />
-                          <input
-                            autoComplete="off"
-                            id="workspace-share-code"
-                            inputMode="text"
-                            onChange={(event) => setJoinCode(event.target.value)}
-                            placeholder="Enter code (e.g. ABCD-2345)"
-                            value={joinCode}
-                          />
-                        </div>
-                        <MuiButton
-                          className="family-share-modal__compact-action"
-                          disabled={shareStatus === "joining"}
-                          type="submit"
-                          variant="outlined"
-                        >
-                          {shareStatus === "joining" ? "Joining" : "Join"}
-                        </MuiButton>
-                      </div>
-                    </form>
-                  </div>
-                </div>
-              </>
+                {activeWorkspace?.membershipRole === "member" ? (
+                  <Button
+                    disabled={shareStatus === "joining"}
+                    onClick={() => void handleLeaveWorkspace()}
+                    variant="secondary"
+                  >
+                    Leave and create my workspace
+                  </Button>
+                ) : null}
+              </div>
             )}
 
             {shareMessage ? (

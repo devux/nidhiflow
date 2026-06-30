@@ -10,6 +10,7 @@ import {
   createWorkspaceBodySchema,
   createWorkspaceInvitationBodySchema,
   updateWorkspaceBodySchema,
+  workspaceMembershipMoveBodySchema,
   workspaceMemberParamsSchema,
   workspaceParamsSchema,
 } from "./workspace.schemas.js";
@@ -60,7 +61,7 @@ export function createWorkspacesRouter({
   );
   router.post(
     "/:workspaceId/leave",
-    validate({ params: workspaceParamsSchema }),
+    validate({ params: workspaceParamsSchema, body: workspaceMembershipMoveBodySchema }),
     controller.leaveWorkspace,
   );
 

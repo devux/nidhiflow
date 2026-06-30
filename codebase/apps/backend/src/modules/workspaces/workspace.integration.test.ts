@@ -32,6 +32,10 @@ interface WorkspaceResponseBody {
   };
 }
 
+interface WorkspacesResponseBody {
+  data: WorkspaceResponseBody["data"][];
+}
+
 interface InvitationResponseBody {
   data: {
     debugToken: string;
@@ -80,7 +84,7 @@ let database: Database;
 let environment: Environment;
 let adminClient: Client;
 
-describe("family workspace integration", () => {
+describe("single workspace membership integration", () => {
   beforeAll(async () => {
     const migrationDatabaseName = `nidhiflow_m10_${Date.now()}`;
     const adminUrl = new URL(baseEnvironment.DATABASE_URL);
@@ -166,24 +170,24 @@ describe("family workspace integration", () => {
     const manager = await registerAndVerify("Maya", `maya-${unique}@example.com`);
     const member = await registerAndVerify("Arun", `arun-${unique}@example.com`);
 
-    const createWorkspaceResponse = await request(manager.app)
-      .post("/api/v1/workspaces")
-      .set("Authorization", `Bearer ${manager.accessToken}`)
-      .send({
-        name: "Family Money",
-        reportingCurrency: "INR",
-        timezone: "Asia/Kolkata",
-        type: "family",
-      });
-    const createWorkspaceBody = createWorkspaceResponse.body as WorkspaceResponseBody;
-    const familyWorkspaceId = createWorkspaceBody.data.id;
+    const managerWorkspacesResponse = await request(manager.app)
+      .get("/api/v1/workspaces")
+      .set("Authorization", `Bearer ${manager.accessToken}`);
+    const managerWorkspacesBody = managerWorkspacesResponse.body as WorkspacesResponseBody;
+    const familyWorkspaceId = managerWorkspacesBody.data[0]?.id;
 
-    expect(createWorkspaceResponse.status).toBe(201);
-    expect(createWorkspaceBody.data).toMatchObject({
+    expect(managerWorkspacesResponse.status).toBe(200);
+    expect(managerWorkspacesBody.data).toHaveLength(1);
+    expect(managerWorkspacesBody.data[0]).toMatchObject({
       membershipRole: "manager",
       ownerDisplayName: "Maya",
-      type: "family",
+      type: "personal",
     });
+    expect(familyWorkspaceId).toEqual(expect.any(String));
+
+    if (!familyWorkspaceId) {
+      throw new Error("Expected the manager's initial workspace.");
+    }
 
     const invitationResponse = await request(manager.app)
       .post(`/api/v1/workspaces/${familyWorkspaceId}/invitations`)
@@ -208,7 +212,7 @@ describe("family workspace integration", () => {
       id: familyWorkspaceId,
       membershipRole: "member",
       ownerDisplayName: "Maya",
-      type: "family",
+      type: "personal",
     });
 
     const membersResponse = await request(manager.app)
@@ -331,14 +335,41 @@ describe("family workspace integration", () => {
       id: familyWorkspaceId,
       membershipRole: "member",
       ownerDisplayName: "Maya",
-      type: "family",
+      type: "personal",
     });
+
+    const leaveResponse = await request(shareMember.app)
+      .post(`/api/v1/workspaces/${familyWorkspaceId}/leave`)
+      .set("Authorization", `Bearer ${shareMember.accessToken}`)
+      .send({ transferOwnership: false });
+    const leaveBody = leaveResponse.body as WorkspaceResponseBody;
+
+    expect(leaveResponse.status).toBe(200);
+    expect(leaveBody.data).toMatchObject({
+      membershipRole: "manager",
+      ownerDisplayName: "Sara",
+      type: "personal",
+    });
+    expect(leaveBody.data.id).not.toBe(familyWorkspaceId);
 
     const removeResponse = await request(manager.app)
       .delete(`/api/v1/workspaces/${familyWorkspaceId}/members/${member.user.id}`)
       .set("Authorization", `Bearer ${manager.accessToken}`);
 
     expect(removeResponse.status).toBe(200);
+
+    const removedMemberWorkspacesResponse = await request(member.app)
+      .get("/api/v1/workspaces")
+      .set("Authorization", `Bearer ${member.accessToken}`);
+    const removedMemberWorkspacesBody =
+      removedMemberWorkspacesResponse.body as WorkspacesResponseBody;
+
+    expect(removedMemberWorkspacesBody.data).toHaveLength(1);
+    expect(removedMemberWorkspacesBody.data[0]).toMatchObject({
+      membershipRole: "manager",
+      ownerDisplayName: "Arun",
+    });
+    expect(removedMemberWorkspacesBody.data[0]?.id).not.toBe(familyWorkspaceId);
 
     const deniedAfterRemovalResponse = await request(member.app)
       .get(`/api/v1/workspaces/${familyWorkspaceId}`)
@@ -351,7 +382,6 @@ describe("family workspace integration", () => {
          FROM audit_logs
         WHERE workspace_id = $1
           AND action IN (
-            'workspace.family.created',
             'workspace.invitation.created',
             'workspace.share_code.created',
             'workspace.member.joined',
@@ -362,12 +392,106 @@ describe("family workspace integration", () => {
     );
 
     expect(auditActions.rows.map((row) => row.action)).toEqual([
-      "workspace.family.created",
       "workspace.invitation.created",
       "workspace.member.joined",
       "workspace.share_code.created",
       "workspace.member.joined",
       "workspace.member.removed",
     ]);
+  });
+
+  it("requires confirmation before transferring ownership and moving a manager", async () => {
+    const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const owner = await registerAndVerify("Owner", `owner-${unique}@example.com`);
+    const remainingMember = await registerAndVerify(
+      "Remaining Member",
+      `remaining-${unique}@example.com`,
+    );
+    const destinationOwner = await registerAndVerify(
+      "Destination Owner",
+      `destination-${unique}@example.com`,
+    );
+
+    const ownerWorkspacesResponse = await request(owner.app)
+      .get("/api/v1/workspaces")
+      .set("Authorization", `Bearer ${owner.accessToken}`);
+    const ownerWorkspaces = (ownerWorkspacesResponse.body as WorkspacesResponseBody).data;
+    const sourceWorkspaceId = ownerWorkspaces[0]?.id;
+
+    const destinationWorkspacesResponse = await request(destinationOwner.app)
+      .get("/api/v1/workspaces")
+      .set("Authorization", `Bearer ${destinationOwner.accessToken}`);
+    const destinationWorkspaces = (destinationWorkspacesResponse.body as WorkspacesResponseBody)
+      .data;
+    const destinationWorkspaceId = destinationWorkspaces[0]?.id;
+
+    if (!sourceWorkspaceId || !destinationWorkspaceId) {
+      throw new Error("Expected initial workspaces.");
+    }
+
+    const memberInvitationResponse = await request(owner.app)
+      .post(`/api/v1/workspaces/${sourceWorkspaceId}/invitations`)
+      .set("Authorization", `Bearer ${owner.accessToken}`)
+      .send({ email: remainingMember.user.email });
+    const memberInvitation = memberInvitationResponse.body as InvitationResponseBody;
+
+    await request(remainingMember.app)
+      .post(`/api/v1/workspace-invitations/${memberInvitation.data.debugToken}/accept`)
+      .set("Authorization", `Bearer ${remainingMember.accessToken}`)
+      .send({ transferOwnership: false })
+      .expect(200);
+
+    const destinationCodeResponse = await request(destinationOwner.app)
+      .post(`/api/v1/workspaces/${destinationWorkspaceId}/share-codes`)
+      .set("Authorization", `Bearer ${destinationOwner.accessToken}`)
+      .send();
+    const destinationCode = (destinationCodeResponse.body as ShareCodeResponseBody).data.code;
+
+    const blockedJoinResponse = await request(owner.app)
+      .post(`/api/v1/workspace-invitations/share-codes/${destinationCode}/join`)
+      .set("Authorization", `Bearer ${owner.accessToken}`)
+      .send({ transferOwnership: false });
+
+    expect(blockedJoinResponse.status).toBe(409);
+    expect(blockedJoinResponse.body).toMatchObject({
+      error: { code: "OWNERSHIP_TRANSFER_REQUIRED" },
+    });
+
+    const sourceBeforeConfirmation = await request(owner.app)
+      .get(`/api/v1/workspaces/${sourceWorkspaceId}`)
+      .set("Authorization", `Bearer ${owner.accessToken}`);
+
+    expect(sourceBeforeConfirmation.status).toBe(200);
+
+    const confirmedJoinResponse = await request(owner.app)
+      .post(`/api/v1/workspace-invitations/share-codes/${destinationCode}/join`)
+      .set("Authorization", `Bearer ${owner.accessToken}`)
+      .send({ transferOwnership: true });
+
+    expect(confirmedJoinResponse.status).toBe(200);
+    expect((confirmedJoinResponse.body as WorkspaceResponseBody).data).toMatchObject({
+      id: destinationWorkspaceId,
+      membershipRole: "member",
+      ownerDisplayName: "Destination Owner",
+    });
+
+    const ownerMembershipsResponse = await request(owner.app)
+      .get("/api/v1/workspaces")
+      .set("Authorization", `Bearer ${owner.accessToken}`);
+    const ownerMemberships = (ownerMembershipsResponse.body as WorkspacesResponseBody).data;
+
+    expect(ownerMemberships).toHaveLength(1);
+    expect(ownerMemberships[0]?.id).toBe(destinationWorkspaceId);
+
+    const promotedMemberWorkspaceResponse = await request(remainingMember.app)
+      .get(`/api/v1/workspaces/${sourceWorkspaceId}`)
+      .set("Authorization", `Bearer ${remainingMember.accessToken}`);
+
+    expect(promotedMemberWorkspaceResponse.status).toBe(200);
+    expect((promotedMemberWorkspaceResponse.body as WorkspaceResponseBody).data).toMatchObject({
+      id: sourceWorkspaceId,
+      membershipRole: "manager",
+      ownerDisplayName: "Remaining Member",
+    });
   });
 });

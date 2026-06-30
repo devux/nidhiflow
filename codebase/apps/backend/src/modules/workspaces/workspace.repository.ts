@@ -266,6 +266,44 @@ export class WorkspaceRepository {
     return result.rows[0] ?? null;
   }
 
+  async transferOwnership(
+    workspaceId: string,
+    successorUserId: string,
+    queryable: Queryable = this.database,
+  ) {
+    await queryable.query(
+      `UPDATE workspace_members
+          SET membership_role = 'manager',
+              updated_at = CURRENT_TIMESTAMP
+        WHERE workspace_id = $1
+          AND user_id = $2`,
+      [workspaceId, successorUserId],
+    );
+
+    await queryable.query(
+      `UPDATE workspaces
+          SET created_by_user_id = $2,
+              updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1`,
+      [workspaceId, successorUserId],
+    );
+  }
+
+  async archiveWorkspaceIfEmpty(workspaceId: string, queryable: Queryable = this.database) {
+    await queryable.query(
+      `UPDATE workspaces w
+          SET deleted_at = COALESCE(w.deleted_at, CURRENT_TIMESTAMP),
+              updated_at = CURRENT_TIMESTAMP
+        WHERE w.id = $1
+          AND NOT EXISTS (
+            SELECT 1
+              FROM workspace_members wm
+             WHERE wm.workspace_id = w.id
+          )`,
+      [workspaceId],
+    );
+  }
+
   async createInvitation(
     input: {
       expiresAt: string;
@@ -413,6 +451,33 @@ export class WorkspaceRepository {
     );
 
     return result.rows;
+  }
+
+  async findCurrentWorkspaceForUser(userId: string, queryable: Queryable = this.database) {
+    const result = await queryable.query<WorkspaceDetailRecord>(
+      `SELECT w.id,
+              wm.id AS "membershipId",
+              wm.membership_role AS "membershipRole",
+              w.name,
+              owner.display_name AS "ownerDisplayName",
+              w.type,
+              w.reporting_currency AS "reportingCurrency",
+              w.timezone,
+              w.created_at AS "createdAt"
+         FROM workspace_members wm
+         JOIN workspaces w
+           ON w.id = wm.workspace_id
+         JOIN users owner
+           ON owner.id = w.created_by_user_id
+        WHERE wm.user_id = $1
+          AND w.deleted_at IS NULL
+        ORDER BY wm.joined_at DESC, wm.created_at DESC, wm.id DESC
+        LIMIT 1
+        FOR UPDATE OF wm, w`,
+      [userId],
+    );
+
+    return result.rows[0] ?? null;
   }
 
   async findWorkspaceForUser(

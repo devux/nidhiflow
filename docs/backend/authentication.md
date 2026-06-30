@@ -11,7 +11,8 @@
 1. Register with normalized email and password.
 2. Hash password using Argon2id or an approved adaptive alternative.
 3. Create the account as active while email verification is parked.
-4. Create a personal workspace during registration.
+4. Create the user's initial workspace and sole manager membership during
+   registration.
 5. Issue short-lived access credentials and a rotating refresh session.
 
 Temporary production policy: NidhiFlow does not require email verification to

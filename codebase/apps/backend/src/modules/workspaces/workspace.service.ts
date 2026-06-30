@@ -11,6 +11,7 @@ import type {
   CreateWorkspaceBody,
   CreateWorkspaceInvitationBody,
   UpdateWorkspaceBody,
+  WorkspaceMembershipMoveBody,
 } from "./workspace.schemas.js";
 
 function notFound() {
@@ -33,6 +34,15 @@ function conflict(message: string) {
   return new AppError({
     code: "CONFLICT",
     message,
+    status: 409,
+  });
+}
+
+function ownershipTransferRequired() {
+  return new AppError({
+    code: "OWNERSHIP_TRANSFER_REQUIRED",
+    message:
+      "Transfer workspace ownership before joining another workspace, or stay in the current workspace.",
     status: 409,
   });
 }
@@ -110,12 +120,10 @@ export class WorkspaceService {
     return this.database.transaction(async (transaction) => {
       const repository = new WorkspaceRepository(transaction);
 
-      if (input.type === "personal") {
-        const existingPersonal = await repository.findPersonalWorkspaceForUser(userId, transaction);
+      const existingWorkspace = await repository.findCurrentWorkspaceForUser(userId, transaction);
 
-        if (existingPersonal) {
-          throw conflict("A personal workspace already exists for this account.");
-        }
+      if (existingWorkspace) {
+        throw conflict("This account already belongs to a workspace.");
       }
 
       const workspaceId = createId("wrk");
@@ -227,10 +235,6 @@ export class WorkspaceService {
   ) {
     const workspace = await this.ensureManager(userId, workspaceId);
 
-    if (workspace.type !== "family") {
-      throw conflict("Invitations are available only for family workspaces.");
-    }
-
     const token = createOpaqueToken(48);
     const invitationId = createId("wsi");
     const invitation = await this.database.transaction(async (transaction) => {
@@ -272,10 +276,6 @@ export class WorkspaceService {
 
   async createShareCode(userId: string, workspaceId: string, requestId: string | null) {
     const workspace = await this.ensureManager(userId, workspaceId);
-
-    if (workspace.type !== "family") {
-      throw conflict("Share codes are available only for family workspaces.");
-    }
 
     for (let attempt = 0; attempt < 5; attempt += 1) {
       const code = createShareCode();
@@ -337,11 +337,16 @@ export class WorkspaceService {
     });
   }
 
-  async acceptInvitation(userId: string, token: string, requestId: string | null) {
+  async acceptInvitation(
+    userId: string,
+    token: string,
+    input: WorkspaceMembershipMoveBody,
+    requestId: string | null,
+  ) {
     const user = await this.authRepository.findUserById(userId);
     const invitation = await this.repository.findInvitationByTokenHash(hashToken(token));
 
-    if (!user || !invitation || invitation.workspaceType !== "family") {
+    if (!user || !invitation) {
       throw notFound();
     }
 
@@ -363,6 +368,49 @@ export class WorkspaceService {
 
     return this.database.transaction(async (transaction) => {
       const repository = new WorkspaceRepository(transaction);
+      const authRepository = new AuthRepository(transaction);
+      const currentWorkspace = await repository.findCurrentWorkspaceForUser(userId, transaction);
+
+      if (currentWorkspace?.id === invitation.workspaceId) {
+        throw conflict("You already belong to this workspace.");
+      }
+
+      if (currentWorkspace) {
+        const remainingMembers = (
+          await repository.listMembers(currentWorkspace.id, transaction)
+        ).filter((member) => member.userId !== userId);
+
+        if (currentWorkspace.membershipRole === "manager" && remainingMembers.length > 0) {
+          if (!input.transferOwnership) {
+            throw ownershipTransferRequired();
+          }
+
+          const successor = remainingMembers[0];
+
+          if (!successor) {
+            throw conflict("Workspace ownership could not be transferred.");
+          }
+
+          await repository.transferOwnership(currentWorkspace.id, successor.userId, transaction);
+          await authRepository.insertAuditLog(
+            {
+              action: "workspace.ownership.transferred",
+              actorUserId: userId,
+              changeMetadata: { successorUserId: successor.userId },
+              id: createId("aud"),
+              requestId,
+              resourceId: currentWorkspace.id,
+              resourceType: "workspace",
+              workspaceId: currentWorkspace.id,
+            },
+            transaction,
+          );
+        }
+
+        await repository.removeMember(currentWorkspace.id, userId, transaction);
+        await repository.archiveWorkspaceIfEmpty(currentWorkspace.id, transaction);
+      }
+
       await repository.addMember(
         {
           membershipId: createId("wsm"),
@@ -373,7 +421,7 @@ export class WorkspaceService {
         transaction,
       );
       await repository.acceptInvitation(invitation.id, userId, transaction);
-      await new AuthRepository(transaction).insertAuditLog(
+      await authRepository.insertAuditLog(
         {
           action: "workspace.member.joined",
           actorUserId: userId,
@@ -394,8 +442,13 @@ export class WorkspaceService {
     });
   }
 
-  async joinShareCode(userId: string, code: string, requestId: string | null) {
-    return this.acceptInvitation(userId, code.toUpperCase(), requestId);
+  async joinShareCode(
+    userId: string,
+    code: string,
+    input: WorkspaceMembershipMoveBody,
+    requestId: string | null,
+  ) {
+    return this.acceptInvitation(userId, code.toUpperCase(), input, requestId);
   }
 
   async removeMember(
@@ -405,10 +458,6 @@ export class WorkspaceService {
     requestId: string | null,
   ) {
     const workspace = await this.ensureManager(actorUserId, workspaceId);
-
-    if (workspace.type !== "family") {
-      throw conflict("Membership removal is available only for family workspaces.");
-    }
 
     const members = await this.repository.listMembers(workspaceId);
     const target = members.find((member) => member.userId === targetUserId);
@@ -421,17 +470,40 @@ export class WorkspaceService {
       target.membershipRole === "manager" &&
       (await this.repository.countManagers(workspaceId)) <= 1
     ) {
-      throw conflict("A family workspace must keep at least one manager.");
+      throw conflict("A workspace must keep at least one manager.");
     }
 
-    await this.database.transaction(async (transaction) => {
+    const targetUser = await this.authRepository.findUserById(targetUserId);
+
+    if (!targetUser) {
+      throw notFound();
+    }
+
+    return this.database.transaction(async (transaction) => {
       const repository = new WorkspaceRepository(transaction);
+      const authRepository = new AuthRepository(transaction);
       await repository.removeMember(workspaceId, targetUserId, transaction);
-      await new AuthRepository(transaction).insertAuditLog(
+
+      const newWorkspaceId = createId("wrk");
+      await repository.createWorkspace(
+        {
+          createdByUserId: targetUserId,
+          id: newWorkspaceId,
+          membershipId: createId("wsm"),
+          name: `${targetUser.displayName}'s Workspace`,
+          reportingCurrency: targetUser.preferredCurrency,
+          timezone: targetUser.timezone,
+          type: "personal",
+        },
+        transaction,
+      );
+
+      await authRepository.insertAuditLog(
         {
           action: "workspace.member.removed",
           actorUserId,
           changeMetadata: {
+            newWorkspaceId,
             removedUserId: targetUserId,
             removedRole: target.membershipRole,
           },
@@ -443,33 +515,89 @@ export class WorkspaceService {
         },
         transaction,
       );
-    });
 
-    return { removed: true, userId: targetUserId };
+      return { newWorkspaceId, removed: true, userId: targetUserId };
+    });
   }
 
-  async leaveWorkspace(userId: string, workspaceId: string, requestId: string | null) {
+  async leaveWorkspace(
+    userId: string,
+    workspaceId: string,
+    input: WorkspaceMembershipMoveBody,
+    requestId: string | null,
+  ) {
     const workspace = await this.ensureWorkspaceAccess(userId, workspaceId);
+    const user = await this.authRepository.findUserById(userId);
 
-    if (workspace.type !== "family") {
-      throw conflict("Personal workspaces cannot be left.");
+    if (!user) {
+      throw notFound();
     }
 
-    if (
-      workspace.membershipRole === "manager" &&
-      (await this.repository.countManagers(workspaceId)) <= 1
-    ) {
-      throw conflict("A family workspace must keep at least one manager.");
-    }
-
-    await this.database.transaction(async (transaction) => {
+    return this.database.transaction(async (transaction) => {
       const repository = new WorkspaceRepository(transaction);
+      const authRepository = new AuthRepository(transaction);
+      const currentWorkspace = await repository.findCurrentWorkspaceForUser(userId, transaction);
+
+      if (!currentWorkspace || currentWorkspace.id !== workspaceId) {
+        throw notFound();
+      }
+
+      const remainingMembers = (await repository.listMembers(workspaceId, transaction)).filter(
+        (member) => member.userId !== userId,
+      );
+
+      if (workspace.membershipRole === "manager" && remainingMembers.length > 0) {
+        if (!input.transferOwnership) {
+          throw ownershipTransferRequired();
+        }
+
+        const successor = remainingMembers[0];
+
+        if (!successor) {
+          throw conflict("Workspace ownership could not be transferred.");
+        }
+
+        await repository.transferOwnership(workspaceId, successor.userId, transaction);
+        await authRepository.insertAuditLog(
+          {
+            action: "workspace.ownership.transferred",
+            actorUserId: userId,
+            changeMetadata: { successorUserId: successor.userId },
+            id: createId("aud"),
+            requestId,
+            resourceId: workspaceId,
+            resourceType: "workspace",
+            workspaceId,
+          },
+          transaction,
+        );
+      }
+
       await repository.removeMember(workspaceId, userId, transaction);
-      await new AuthRepository(transaction).insertAuditLog(
+      await repository.archiveWorkspaceIfEmpty(workspaceId, transaction);
+
+      const newWorkspaceId = createId("wrk");
+      const newWorkspace = await repository.createWorkspace(
+        {
+          createdByUserId: userId,
+          id: newWorkspaceId,
+          membershipId: createId("wsm"),
+          name: `${user.displayName}'s Workspace`,
+          reportingCurrency: user.preferredCurrency,
+          timezone: user.timezone,
+          type: "personal",
+        },
+        transaction,
+      );
+
+      await authRepository.insertAuditLog(
         {
           action: "workspace.member.left",
           actorUserId: userId,
-          changeMetadata: { role: workspace.membershipRole },
+          changeMetadata: {
+            newWorkspaceId,
+            role: workspace.membershipRole,
+          },
           id: createId("aud"),
           requestId,
           resourceId: userId,
@@ -478,8 +606,25 @@ export class WorkspaceService {
         },
         transaction,
       );
-    });
 
-    return { left: true, workspaceId };
+      await authRepository.insertAuditLog(
+        {
+          action: "workspace.personal.created_after_leave",
+          actorUserId: userId,
+          changeMetadata: {
+            reportingCurrency: user.preferredCurrency,
+            timezone: user.timezone,
+          },
+          id: createId("aud"),
+          requestId,
+          resourceId: newWorkspaceId,
+          resourceType: "workspace",
+          workspaceId: newWorkspaceId,
+        },
+        transaction,
+      );
+
+      return newWorkspace;
+    });
   }
 }

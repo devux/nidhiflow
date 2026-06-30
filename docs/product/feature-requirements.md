@@ -71,9 +71,12 @@
 
 ## Shared Workspace
 
-- Create a shared workspace to manage and invite others, even when already a
-  member of another shared workspace
-- Join shared workspaces without exposing the personal workspace
+- Start with one workspace and one active workspace membership
+- Generate a code for the current workspace without creating another workspace
+- Join another workspace by moving the user's sole membership to it
+- Require explicit ownership-transfer confirmation when a manager would leave
+  members behind
+- Leave a joined workspace by creating a new workspace for the departing user
 - Invite, remove, and leave
 - Shared visibility and collaborative transaction editing
 - Shared budgets and goals

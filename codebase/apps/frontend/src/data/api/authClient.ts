@@ -23,16 +23,21 @@ export interface WorkspaceSummary {
 
 interface ApiEnvelope<Data> {
   data: Data;
+  error?: {
+    code?: string;
+  };
   message: string;
   success: boolean;
 }
 
 export class ApiRequestError extends Error {
+  code: string | undefined;
   status: number;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, code?: string) {
     super(message);
     this.name = "ApiRequestError";
+    this.code = code;
     this.status = status;
   }
 }
@@ -49,7 +54,7 @@ async function parseResponse<Data>(response: Response): Promise<ApiEnvelope<Data
   const body = (await response.json()) as ApiEnvelope<Data>;
 
   if (!response.ok) {
-    throw new ApiRequestError(body.message || "Request failed.", response.status);
+    throw new ApiRequestError(body.message || "Request failed.", response.status, body.error?.code);
   }
 
   return body;

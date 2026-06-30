@@ -142,11 +142,15 @@ Migration request example:
 | DELETE | `/workspaces/:workspaceId/members/:userId` | Manager   | Remove member                    |
 | POST   | `/workspaces/:workspaceId/leave`           | Protected | Leave workspace                  |
 
-Family workspaces use the minimal manager role only for membership and
-workspace lifecycle actions. All members may view and edit ordinary shared
-finance resources. In non-production environments, invitation creation returns
-a `debugToken` so local development and automated tests can complete the join
-flow before email delivery infrastructure exists.
+Join requests accept `{ "transferOwnership": true }` only when the user's
+current workspace still has other members. Without explicit confirmation the
+API returns `409 OWNERSHIP_TRANSFER_REQUIRED` and changes nothing. A successful
+join atomically transfers ownership when required, removes the prior
+membership, and creates the destination membership. Leaving a workspace creates
+and returns a new workspace for the departing user. In non-production
+environments, invitation creation returns a `debugToken` so local development
+and automated tests can complete the join flow before email delivery
+infrastructure exists.
 Workspace responses include `ownerDisplayName`, sourced from the workspace
 creator's current profile, separately from the editable workspace `name`.
 

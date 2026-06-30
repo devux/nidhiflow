@@ -29,10 +29,11 @@ Membership is checked before service operations. IDs alone never grant access.
 
 ## Users and Workspaces
 
-A user may belong to multiple workspaces over time, though Phase 1 UI centers
-on a personal workspace or one active family workspace. Membership is a join
-table. The minimal administrative role only governs invitation/removal and
-workspace lifecycle; finance resources remain collaborative.
+A user belongs to exactly one active workspace through one membership row.
+Joining another workspace moves that membership atomically. Leaving creates a
+new workspace and manager membership atomically. The minimal administrative
+role governs invitation, removal, and confirmed ownership transfer; finance
+resources remain collaborative.
 
 ## Transactions
 
