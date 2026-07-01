@@ -213,7 +213,7 @@ Unique active budget per workspace/category/period.
 - `payee_upi_id`, nullable `payee_name`
 - positive `numeric(19,2)` amount and `INR` currency
 - nullable note, unique server-generated `transaction_ref`
-- selected UPI app, `QR_SCAN|MANUAL_ENTRY` source, canonical `upi_uri`
+- selected UPI app, `QR_SCAN|MANUAL_ENTRY` source, validated launch `upi_uri`
 - app-reported status and independent verification status
 - bounded raw callback, nullable approval reference and response code
 - launch, callback, create, and update timestamps

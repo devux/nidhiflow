@@ -42,6 +42,7 @@ export function createPayment(
     note?: string;
     payeeName?: string;
     payeeUpiId: string;
+    qrUpiUri?: string;
     selectedUpiApp: string;
     source: "QR_SCAN" | "MANUAL_ENTRY";
   },

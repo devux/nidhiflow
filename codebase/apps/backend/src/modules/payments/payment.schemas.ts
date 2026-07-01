@@ -28,15 +28,34 @@ export const paymentUserParamsSchema = z.object({
   userId: z.string().trim().min(1),
 });
 
-export const createPaymentBodySchema = z.object({
-  amount: amountSchema,
-  currency: z.literal("INR"),
-  note: z.string().trim().max(80).optional(),
-  payeeName: z.string().trim().max(100).optional(),
-  payeeUpiId: upiIdSchema,
-  selectedUpiApp: z.string().trim().min(1).max(100),
-  source: z.enum(["QR_SCAN", "MANUAL_ENTRY"]),
-});
+export const createPaymentBodySchema = z
+  .object({
+    amount: amountSchema,
+    currency: z.literal("INR"),
+    note: z.string().trim().max(80).optional(),
+    payeeName: z.string().trim().max(100).optional(),
+    payeeUpiId: upiIdSchema,
+    qrUpiUri: z.string().trim().min(1).max(2048).optional(),
+    selectedUpiApp: z.string().trim().min(1).max(100),
+    source: z.enum(["QR_SCAN", "MANUAL_ENTRY"]),
+  })
+  .strict()
+  .superRefine((input, context) => {
+    if (input.source === "QR_SCAN" && !input.qrUpiUri) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "The original UPI QR value is required for scanned payments.",
+        path: ["qrUpiUri"],
+      });
+    }
+    if (input.source === "MANUAL_ENTRY" && input.qrUpiUri) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "A QR value is not accepted for manually entered payments.",
+        path: ["qrUpiUri"],
+      });
+    }
+  });
 
 export const updatePaymentStatusBodySchema = z.object({
   appReportedStatus: z.enum(["SUCCESS", "FAILURE", "CANCELLED", "UNKNOWN"]),

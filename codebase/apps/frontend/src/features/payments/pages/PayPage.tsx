@@ -24,11 +24,23 @@ export function PayPage() {
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [source, setSource] = useState<Source>("MANUAL_ENTRY");
+  const [qrUpiUri, setQrUpiUri] = useState("");
+  const [qrHasFixedAmount, setQrHasFixedAmount] = useState(false);
   const [apps, setApps] = useState<UpiApp[]>([]);
   const [payment, setPayment] = useState<PaymentResource | null>(null);
   const [step, setStep] = useState<"details" | "apps" | "result">("details");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+
+  function useManualDetails() {
+    setPayeeUpiId("");
+    setPayeeName("");
+    setAmount("");
+    setNote("");
+    setQrUpiUri("");
+    setQrHasFixedAmount(false);
+    setSource("MANUAL_ENTRY");
+  }
 
   async function scanQr() {
     setError("");
@@ -43,6 +55,8 @@ export function PayPage() {
       setPayeeName(parsed.payeeName);
       setAmount(parsed.amount);
       setNote(parsed.note);
+      setQrUpiUri(parsed.upiUri);
+      setQrHasFixedAmount(parsed.hasFixedAmount);
       setSource("QR_SCAN");
     } catch (scanError) {
       setError(
@@ -85,6 +99,7 @@ export function PayPage() {
         note: note.trim() || undefined,
         payeeName: payeeName.trim() || undefined,
         payeeUpiId: payeeUpiId.trim(),
+        qrUpiUri: source === "QR_SCAN" ? qrUpiUri : undefined,
         selectedUpiApp: app.name,
         source,
       });
@@ -147,6 +162,17 @@ export function PayPage() {
           <Button onClick={() => void scanQr()} type="button" variant="secondary">
             <QrCodeScannerRoundedIcon /> Scan UPI QR
           </Button>
+          {source === "QR_SCAN" ? (
+            <>
+              <p>
+                QR merchant details are locked to keep its payment and security information intact.
+                Confirm the amount again in your UPI app before paying.
+              </p>
+              <Button onClick={useManualDetails} type="button" variant="secondary">
+                Enter details manually instead
+              </Button>
+            </>
+          ) : null}
           <div className="payment-form__divider">
             <span>or enter details</span>
           </div>
@@ -157,8 +183,11 @@ export function PayPage() {
               onChange={(event) => {
                 setPayeeUpiId(event.target.value);
                 setSource("MANUAL_ENTRY");
+                setQrUpiUri("");
+                setQrHasFixedAmount(false);
               }}
               placeholder="name@bank"
+              readOnly={source === "QR_SCAN"}
               value={payeeUpiId}
             />
           </label>
@@ -167,6 +196,7 @@ export function PayPage() {
             <input
               maxLength={100}
               onChange={(event) => setPayeeName(event.target.value)}
+              readOnly={source === "QR_SCAN"}
               value={payeeName}
             />
           </label>
@@ -176,12 +206,18 @@ export function PayPage() {
               inputMode="decimal"
               onChange={(event) => setAmount(event.target.value)}
               placeholder="0.00"
+              readOnly={source === "QR_SCAN" && qrHasFixedAmount}
               value={amount}
             />
           </label>
           <label>
             Note <span>(optional)</span>
-            <input maxLength={80} onChange={(event) => setNote(event.target.value)} value={note} />
+            <input
+              maxLength={80}
+              onChange={(event) => setNote(event.target.value)}
+              readOnly={source === "QR_SCAN"}
+              value={note}
+            />
           </label>
           <Button disabled={busy} type="submit" variant="primary">
             {busy ? "Checking apps…" : "Choose UPI app"}

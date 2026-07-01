@@ -1,17 +1,36 @@
 export interface ParsedUpiQr {
   amount: string;
   currency: string;
+  hasFixedAmount: boolean;
   note: string;
   payeeName: string;
   payeeUpiId: string;
+  upiUri: string;
 }
 
 export const upiIdPattern = /^[A-Za-z0-9._-]+@[A-Za-z][A-Za-z0-9.-]+$/;
 
 export function parseUpiQr(value: string): ParsedUpiQr {
-  const url = new URL(value);
-  if (url.protocol !== "upi:" || url.hostname !== "pay") {
+  const upiUri = value.trim();
+  if (!upiUri || upiUri.length > 2048) {
+    throw new Error("This QR code is not a valid UPI payment request.");
+  }
+  const url = new URL(upiUri);
+  if (
+    url.protocol !== "upi:" ||
+    url.hostname !== "pay" ||
+    url.username ||
+    url.password ||
+    url.port ||
+    url.hash ||
+    (url.pathname !== "" && url.pathname !== "/")
+  ) {
     throw new Error("This QR code is not a UPI payment request.");
+  }
+  for (const key of ["pa", "pn", "am", "tn", "cu"]) {
+    if (url.searchParams.getAll(key).length > 1) {
+      throw new Error("The QR code contains duplicate UPI payment details.");
+    }
   }
   const payeeUpiId = (url.searchParams.get("pa") ?? "").trim().toLowerCase();
   const currency = (url.searchParams.get("cu") ?? "INR").trim().toUpperCase();
@@ -25,9 +44,11 @@ export function parseUpiQr(value: string): ParsedUpiQr {
   return {
     amount,
     currency,
+    hasFixedAmount: Boolean(amount),
     note: (url.searchParams.get("tn") ?? "").slice(0, 80),
     payeeName: (url.searchParams.get("pn") ?? "").slice(0, 100),
     payeeUpiId,
+    upiUri,
   };
 }
 

@@ -1808,7 +1808,7 @@ const paths = {
       tags: ["Payments"],
       summary: "Create a Direct UPI payment intent",
       description:
-        "Creates an owner-scoped UPI URI and server transaction reference. This does not move or verify money.",
+        "Creates an owner-scoped payment attempt and internal server reference. Scanned merchant QR parameters and references are preserved; manual entries receive a generated UPI transaction reference. This does not move or verify money.",
       operationId: "createPayment",
       security: bearerSecurity,
       requestBody: requestBody(ref("CreatePaymentRequest")),
@@ -2708,6 +2708,12 @@ export const openApiDocument = {
           amount: { pattern: "^\\d{1,13}(\\.\\d{1,2})?$", type: "string" },
           currency: { enum: ["INR"], type: "string" },
           note: { maxLength: 80, type: "string" },
+          qrUpiUri: {
+            description:
+              "Original upi://pay value. Required only for QR_SCAN and rejected for MANUAL_ENTRY.",
+            maxLength: 2048,
+            type: "string",
+          },
           selectedUpiApp: { maxLength: 100, minLength: 1, type: "string" },
           source: { enum: ["QR_SCAN", "MANUAL_ENTRY"], type: "string" },
         },

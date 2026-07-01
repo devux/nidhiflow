@@ -6,6 +6,7 @@ import type { Database } from "../../shared/database/database.js";
 import { AuthRepository } from "../auth/auth.repository.js";
 import { PaymentRepository } from "./payment.repository.js";
 import type { CreatePaymentBody, UpdatePaymentStatusBody } from "./payment.schemas.js";
+import { prepareUpiPayment } from "./paymentUpiUri.js";
 
 function notFound() {
   return new AppError({
@@ -30,15 +31,7 @@ export class PaymentService {
 
   async create(userId: string, input: CreatePaymentBody, requestId: string | null) {
     const transactionRef = createTransactionRef();
-    const query = new URLSearchParams({
-      pa: input.payeeUpiId,
-      am: input.amount,
-      cu: "INR",
-      tr: transactionRef,
-    });
-    if (input.payeeName) query.set("pn", input.payeeName);
-    if (input.note) query.set("tn", input.note);
-    const upiUri = `upi://pay?${query.toString()}`;
+    const prepared = prepareUpiPayment(input, transactionRef);
 
     return this.database.transaction(async (transaction) => {
       const repository = new PaymentRepository(transaction);
@@ -47,13 +40,13 @@ export class PaymentService {
           amount: input.amount,
           currency: "INR",
           id: createId("pay"),
-          note: input.note ?? null,
-          payeeName: input.payeeName ?? null,
-          payeeUpiId: input.payeeUpiId,
+          note: prepared.note,
+          payeeName: prepared.payeeName,
+          payeeUpiId: prepared.payeeUpiId,
           selectedUpiApp: input.selectedUpiApp,
           source: input.source,
           transactionRef,
-          upiUri,
+          upiUri: prepared.upiUri,
           userId,
         },
         transaction,

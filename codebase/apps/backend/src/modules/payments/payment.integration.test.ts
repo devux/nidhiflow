@@ -97,17 +97,20 @@ describe("Direct UPI payment workflow", () => {
       .send({
         amount: "125.50",
         currency: "INR",
-        note: "Lunch",
-        payeeName: "Cafe",
-        payeeUpiId: "cafe@bank",
+        note: "Changed client note",
+        payeeName: "Changed client name",
+        payeeUpiId: "merchant@bank",
+        qrUpiUri:
+          "upi://pay?pa=merchant%40bank&pn=Cafe&am=125.50&tn=Lunch&cu=INR&mc=5812&mode=02&orgid=000000&tr=MERCHANT-1&sign=abc%2B123",
         selectedUpiApp: "Google Pay",
         source: "QR_SCAN",
       });
 
     expect(created.status).toBe(201);
     const createdBody = created.body as PaymentBody;
-    expect(createdBody.data.upiUri).toContain("upi://pay?");
-    expect(createdBody.data.upiUri).toContain("tr=");
+    expect(createdBody.data.upiUri).toBe(
+      "upi://pay?pa=merchant%40bank&pn=Cafe&am=125.50&tn=Lunch&cu=INR&mc=5812&mode=02&orgid=000000&tr=MERCHANT-1&sign=abc%2B123",
+    );
     expect(createdBody.data.verificationStatus).toBe("UNVERIFIED");
 
     const mismatch = await request(app)
@@ -140,6 +143,19 @@ describe("Direct UPI payment workflow", () => {
     expect(list.status).toBe(200);
     expect((list.body as { data: unknown[] }).data).toHaveLength(1);
 
+    const manual = await request(app)
+      .post("/api/v1/payments/create")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        amount: "10.00",
+        currency: "INR",
+        payeeUpiId: "friend@bank",
+        selectedUpiApp: "BHIM",
+        source: "MANUAL_ENTRY",
+      });
+    expect(manual.status).toBe(201);
+    expect((manual.body as PaymentBody).data.upiUri).toContain("tr=NDF");
+
     const invalid = await request(app)
       .post("/api/v1/payments/create")
       .set("Authorization", `Bearer ${token}`)
@@ -151,5 +167,17 @@ describe("Direct UPI payment workflow", () => {
         source: "MANUAL_ENTRY",
       });
     expect(invalid.status).toBe(422);
+
+    const missingOriginalQr = await request(app)
+      .post("/api/v1/payments/create")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        amount: "10.00",
+        currency: "INR",
+        payeeUpiId: "merchant@bank",
+        selectedUpiApp: "PhonePe",
+        source: "QR_SCAN",
+      });
+    expect(missingOriginalQr.status).toBe(422);
   });
 });

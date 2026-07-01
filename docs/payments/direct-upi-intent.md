@@ -16,8 +16,9 @@ financial and recipient data and need an owner-scoped audit trail.
 3. NidhiFlow validates the details and shows only installed applications that
    handle `upi://pay`.
 4. The user selects an application.
-5. The backend creates an opaque payment ID, unique transaction reference, and
-   canonical UPI URI.
+5. The backend creates an opaque payment ID and unique internal transaction
+   reference. Manual entry receives a generated UPI URI. QR scan preserves the
+   merchant payment URI and its reference/security parameters.
 6. Android opens the exact selected package.
 7. NidhiFlow captures the activity result and stores its status as app-reported
    and unverified.
@@ -37,9 +38,16 @@ Accepted QR values use `upi://pay` with:
 - `tn`: optional note, at most 80 characters
 - `cu`: optional and defaults to `INR`; other currencies are rejected
 
-The backend adds `tr`, a unique server-generated transaction reference. Client
-input cannot provide or override it. UPI IDs are trimmed and normalized to
-lowercase.
+Merchant QR parameters such as `mc`, `mode`, `orgid`, `paytmqr`, `tr`, and
+`sign` are retained. A QR-provided `tr` is never replaced, and a QR containing
+`sign` is never mutated. For an unsigned dynamic QR without `am`, the validated
+amount is added without removing its other parameters. A signed QR without
+`am` is launched unchanged so the selected UPI app can collect the amount.
+
+For manual entry, the backend generates the `upi://pay` URI and adds `tr`.
+Every attempt still receives a separate server-generated internal transaction
+reference for audit and display. Client input cannot provide or override that
+internal reference. UPI IDs are trimmed and normalized to lowercase.
 
 ## Android Integration
 
@@ -82,12 +90,12 @@ integrity checks.
 or `UNKNOWN`. `verification_status` is separately stored and starts as
 `UNVERIFIED`. A callback never updates verification status.
 
-| Activity result | Stored app-reported status |
-| --- | --- |
-| Explicit `Status=SUCCESS` | `SUCCESS` |
-| Explicit failure/failed | `FAILURE` |
-| Android cancellation with no response | `CANCELLED` |
-| Missing, malformed, or unfamiliar response | `UNKNOWN` |
+| Activity result                            | Stored app-reported status |
+| ------------------------------------------ | -------------------------- |
+| Explicit `Status=SUCCESS`                  | `SUCCESS`                  |
+| Explicit failure/failed                    | `FAILURE`                  |
+| Android cancellation with no response      | `CANCELLED`                |
+| Missing, malformed, or unfamiliar response | `UNKNOWN`                  |
 
 Even `SUCCESS` means only “reported by the selected UPI app.” Bank or PSP
 verification is a future, separately reviewed capability.
@@ -97,8 +105,8 @@ verification is a future, separately reviewed capability.
 All endpoints are under `/api/v1/payments` and require a bearer access token.
 Ownership comes from the token, never from a create body.
 
-- `POST /create`: validates payment details, stores a pending attempt, and
-  returns the canonical UPI URI.
+- `POST /create`: validates payment details and the original QR URI when
+  `source=QR_SCAN`, stores a pending attempt, and returns the safe launch URI.
 - `POST /update-status`: records a bounded raw callback and parsed fields. The
   selected app must match the create request.
 - `GET /:paymentId`: returns an owner-scoped payment.
