@@ -48,7 +48,8 @@ The React application is packaged with Capacitor under
 
 - declares Android package visibility for browsable `upi` handlers;
 - queries compatible installed apps and identifies Google Pay, PhonePe, Paytm,
-  and BHIM by package name while retaining other compatible handlers;
+  and BHIM through explicit Android package visibility and package-targeted
+  UPI capability checks while retaining other compatible handlers;
 - scans QR codes with Google Code Scanner;
 - launches an explicit package when the user selects one;
 - receives the result through the Activity Result API;

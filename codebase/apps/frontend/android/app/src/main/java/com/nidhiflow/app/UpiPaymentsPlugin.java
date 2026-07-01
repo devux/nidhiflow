@@ -19,13 +19,17 @@ import com.google.mlkit.vision.codescanner.GmsBarcodeScanner;
 import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions;
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 @CapacitorPlugin(name = "UpiPayments")
 public class UpiPaymentsPlugin extends Plugin {
-  private static final Map<String, String> KNOWN_APPS = new HashMap<>();
+  private static final Map<String, String> KNOWN_APPS = new LinkedHashMap<>();
+  private static final Uri DISCOVERY_URI = Uri.parse(
+    "upi://pay?pa=nidhiflow%40upi&pn=NidhiFlow&am=1.00&cu=INR&tr=NIDHIFLOWDISCOVERY"
+  );
 
   static {
     KNOWN_APPS.put("com.google.android.apps.nbu.paisa.user", "Google Pay");
@@ -37,16 +41,39 @@ public class UpiPaymentsPlugin extends Plugin {
   @PluginMethod
   public void getInstalledApps(PluginCall call) {
     PackageManager manager = getContext().getPackageManager();
-    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("upi://pay"));
-    List<ResolveInfo> handlers = manager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
+    Map<String, JSObject> discoveredApps = new LinkedHashMap<>();
+
+    for (Map.Entry<String, String> knownApp : KNOWN_APPS.entrySet()) {
+      Intent targetedIntent = createPaymentIntent(DISCOVERY_URI, knownApp.getKey());
+
+      if (targetedIntent.resolveActivity(manager) != null) {
+        discoveredApps.put(
+          knownApp.getKey(),
+          createAppResult(knownApp.getKey(), knownApp.getValue(), true)
+        );
+      }
+    }
+
+    Intent intent = createPaymentIntent(DISCOVERY_URI, null);
+    List<ResolveInfo> handlers = manager.queryIntentActivities(
+      intent,
+      PackageManager.MATCH_DEFAULT_ONLY
+    );
     JSArray apps = new JSArray();
 
     for (ResolveInfo handler : handlers) {
       String packageName = handler.activityInfo.packageName;
-      JSObject app = new JSObject();
-      app.put("packageName", packageName);
-      app.put("name", KNOWN_APPS.getOrDefault(packageName, handler.loadLabel(manager).toString()));
-      app.put("known", KNOWN_APPS.containsKey(packageName));
+      discoveredApps.putIfAbsent(
+        packageName,
+        createAppResult(
+          packageName,
+          KNOWN_APPS.getOrDefault(packageName, handler.loadLabel(manager).toString()),
+          KNOWN_APPS.containsKey(packageName)
+        )
+      );
+    }
+
+    for (JSObject app : discoveredApps.values()) {
       apps.put(app);
     }
 
@@ -86,9 +113,10 @@ public class UpiPaymentsPlugin extends Plugin {
       return;
     }
 
-    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(upiUri));
-    intent.addCategory(Intent.CATEGORY_BROWSABLE);
-    if (packageName != null && !packageName.isBlank()) intent.setPackage(packageName);
+    Intent intent = createPaymentIntent(
+      Uri.parse(upiUri),
+      packageName != null && !packageName.isBlank() ? packageName : null
+    );
     if (intent.resolveActivity(getContext().getPackageManager()) == null) {
       call.reject("The selected UPI app is not available.", "UPI_APP_UNAVAILABLE");
       return;
@@ -130,6 +158,20 @@ public class UpiPaymentsPlugin extends Plugin {
       }
     }
     return values;
+  }
+
+  private Intent createPaymentIntent(Uri upiUri, String packageName) {
+    Intent intent = new Intent(Intent.ACTION_VIEW, upiUri);
+    if (packageName != null) intent.setPackage(packageName);
+    return intent;
+  }
+
+  private JSObject createAppResult(String packageName, String name, boolean known) {
+    JSObject app = new JSObject();
+    app.put("packageName", packageName);
+    app.put("name", name);
+    app.put("known", known);
+    return app;
   }
 
   private String first(Map<String, String> values, String... keys) {
