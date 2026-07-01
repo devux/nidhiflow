@@ -40,6 +40,9 @@ const SignupPage = lazy(async () => ({
 const LoginPage = lazy(async () => ({
   default: (await import("../features/auth/pages/LoginPage")).LoginPage,
 }));
+const PayPage = lazy(async () => ({
+  default: (await import("../features/payments/pages/PayPage")).PayPage,
+}));
 
 interface AppProps {
   repository?: GuestPreferencesRepository;
@@ -70,6 +73,7 @@ export function App({ repository, transactionRepository }: AppProps) {
                     <Route element={<YouPage />} path="you" />
                     <Route element={<SignupPage />} path="signup" />
                     <Route element={<LoginPage />} path="login" />
+                    <Route element={<PayPage />} path="pay" />
                     <Route element={<TransactionFormPage />} path="transactions/new" />
                     <Route element={<TransactionFormPage />} path="transactions/:id/edit" />
                     <Route element={<Navigate replace to="/" />} path="*" />

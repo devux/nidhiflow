@@ -294,6 +294,22 @@ The export request accepts `reportType=summary|categories|cashFlow`.
 Anonymous requests omit identity and contact data. Attachments use a separate
 approved upload flow.
 
+### Direct UPI Payments
+
+| Method | Endpoint                 | Access    | Purpose |
+| ------ | ------------------------ | --------- | ------- |
+| POST   | `/payments/create`       | Protected | Create server reference and UPI URI |
+| POST   | `/payments/update-status`| Protected | Store an unverified app callback |
+| GET    | `/payments/:paymentId`   | Owner     | Read one payment attempt |
+| GET    | `/payments/user/:userId` | Same user | List the latest 100 attempts |
+
+Create accepts `payeeUpiId`, optional `payeeName`, decimal-string `amount`,
+literal currency `INR`, optional `note`, `selectedUpiApp`, and
+`source=QR_SCAN|MANUAL_ENTRY`. The authenticated token supplies ownership.
+Status update accepts the payment ID, matching selected app, reported status,
+and optional bounded raw/parsed callback fields. Responses always expose
+`appReportedStatus` separately from `verificationStatus`.
+
 ### Notifications
 
 | Method     | Endpoint                              | Access                      |

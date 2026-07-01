@@ -27,6 +27,7 @@ must not delay or weaken the core finance foundation.
 - Savings and debt-repayment goals
 - Recurring transactions, reminders, and attachments
 - Search, filtering, sorting, pagination, CSV import/export
+- Authenticated Android Direct UPI intent handoff with unverified result capture
 
 ### Insights and Engagement
 
@@ -78,3 +79,7 @@ See [AI Roadmap](../ai/ai-roadmap.md) for sequencing and release gates.
 - Lending or credit decisions
 - Investment execution or trading recommendations
 - Automatic movement of money
+
+Direct UPI intent handoff is not automatic movement of money: the user chooses
+and completes the action in an external UPI app, and NidhiFlow does not verify
+or settle it.

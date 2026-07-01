@@ -22,6 +22,7 @@ import { createBillsRouter } from "../modules/bills/bill.routes.js";
 import { createRecurringTransactionsRouter } from "../modules/recurringTransactions/recurringTransaction.routes.js";
 import { createReportsRouter } from "../modules/reports/report.routes.js";
 import { createFlowRouter } from "../modules/flow/flow.routes.js";
+import { createPaymentsRouter } from "../modules/payments/payment.routes.js";
 import type { Database } from "../shared/database/database.js";
 import { createRateLimit } from "./middleware/rateLimit.js";
 
@@ -48,6 +49,7 @@ export function createApiRoutes({
     createNotificationPreferencesRouter({ database, environment }),
   );
   router.use("/notifications", createNotificationsRouter({ database, environment }));
+  router.use("/payments", createPaymentsRouter({ database, environment }));
   router.use(
     "/flow-launch-subscriptions",
     createFlowLaunchSubscriptionsRouter({ database, environment }),

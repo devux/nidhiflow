@@ -59,6 +59,15 @@ Use privacy-preserving product analytics with no transaction descriptions,
 amounts, account names, notes, attachment content, or AI prompts unless a
 separate explicit research consent exists. Avoid third-party trackers on
 sensitive screens.
+Recipient UPI IDs, receiver names, payment amounts/notes, UPI URIs, transaction
+references, and raw app callbacks are excluded from analytics.
+
+## Payment Intent Data
+
+Direct UPI attempts are sensitive account data. Explain that NidhiFlow hands
+the request to another app and cannot confirm settlement. Retention, account
+export, and deletion handling must include payment attempts and preserve only
+the minimum audit metadata required for security.
 
 ## AI Privacy
 

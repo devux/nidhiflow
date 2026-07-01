@@ -69,6 +69,20 @@
 - Top spending categories with amount, percentage, and accessible text labels
 - Charts remain understandable without color
 
+## Pay with UPI
+
+- Home exposes a `Pay with UPI` quick action; it is not a primary navigation tab
+- The first screen offers Scan UPI QR and manual UPI ID, receiver, amount, and
+  note fields
+- App selection lists installed compatible apps only
+- The external-app transition remains user initiated
+- Result uses success, failure, cancelled, or unknown wording followed by
+  `Payment status reported by UPI app`
+- Always display that the result is not bank-verified and provide a clear Done
+  action
+- Browser and unsupported-device states explain Android availability without
+  imitating a successful launch
+
 ## You
 
 - Keep `You` as the navigation destination and use `Profile` as the page heading

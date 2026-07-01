@@ -314,6 +314,17 @@ Configure cache-busted assets, safe HTML caching, CSP, HTTPS, compression, and
 source-map access restricted to approved error tooling. Validate mobile
 performance before release.
 
+The Android artifact is built from `codebase/apps/frontend/android`. Run
+`npm run android:sync` after every web or native dependency change. Release
+signing keys must be injected through protected CI/Gradle configuration and
+must never be committed. Direct UPI release testing requires a physical Android
+device and installed test-capable UPI applications.
+
+Neon hosts the PostgreSQL `payments` table, indexes, constraints, and migration
+history; it does not host the Express API or Android/web application. Apply
+`1750000000014_direct_upi_payments.cjs` through the normal controlled migration
+job before deploying the API that exposes payment routes.
+
 ## Backend
 
 Expose liveness and readiness endpoints without sensitive details. Gracefully

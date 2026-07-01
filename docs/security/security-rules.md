@@ -49,6 +49,18 @@ Rotate credentials and define incident procedures.
 Structured logs include request ID, safe actor/workspace identifiers, route,
 status, duration, and error code. Never log passwords, tokens, reset links,
 full financial payloads, attachment contents, or unnecessary personal data.
+UPI IDs, payment notes, canonical UPI URIs, and raw UPI callbacks must not be
+written to application or audit logs.
+
+## Direct UPI Intent
+
+- Require authentication and derive payment ownership from the access token.
+- Validate the UPI ID, positive fixed-precision INR amount, field sizes, source,
+  selected app, and callback status at the boundary.
+- Generate transaction references server-side with cryptographic randomness.
+- Launch only an installed app selected by the user.
+- Treat all callback content as untrusted and unverified.
+- Return safe `404` responses for cross-user reads or updates.
 
 ## Files
 

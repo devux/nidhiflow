@@ -1803,6 +1803,64 @@ const paths = {
       ),
     }),
   },
+  "/api/v1/payments/create": {
+    post: operation({
+      tags: ["Payments"],
+      summary: "Create a Direct UPI payment intent",
+      description:
+        "Creates an owner-scoped UPI URI and server transaction reference. This does not move or verify money.",
+      operationId: "createPayment",
+      security: bearerSecurity,
+      requestBody: requestBody(ref("CreatePaymentRequest")),
+      responses: responseSet(
+        { "201": successResponse("Payment intent created.", ref("Payment")) },
+        { auth: true, validation: true },
+      ),
+    }),
+  },
+  "/api/v1/payments/update-status": {
+    post: operation({
+      tags: ["Payments"],
+      summary: "Record a UPI app callback",
+      description:
+        "Stores an untrusted app-reported status. Verification remains independent and unverified.",
+      operationId: "updatePaymentStatus",
+      security: bearerSecurity,
+      requestBody: requestBody(ref("UpdatePaymentStatusRequest")),
+      responses: responseSet(
+        { "200": successResponse("UPI app status recorded as unverified.", ref("Payment")) },
+        { auth: true, conflict: true, notFound: true, validation: true },
+      ),
+    }),
+  },
+  "/api/v1/payments/{paymentId}": {
+    get: operation({
+      tags: ["Payments"],
+      summary: "Get a payment attempt",
+      description: "Returns a payment only to its authenticated owner.",
+      operationId: "getPayment",
+      security: bearerSecurity,
+      parameters: [parameterRef("paymentId")],
+      responses: responseSet(
+        { "200": successResponse("Payment retrieved.", ref("Payment")) },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
+  },
+  "/api/v1/payments/user/{userId}": {
+    get: operation({
+      tags: ["Payments"],
+      summary: "List payment attempts",
+      description: "Returns the latest 100 attempts only to the same authenticated user.",
+      operationId: "listUserPayments",
+      security: bearerSecurity,
+      parameters: [parameterRef("userId")],
+      responses: responseSet(
+        { "200": successResponse("Payments retrieved.", { type: "array", items: ref("Payment") }) },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
+  },
 };
 
 export const openApiDocument = {
@@ -1834,6 +1892,7 @@ export const openApiDocument = {
     { name: "Bills", description: "Bills, due dates, recurrence, and paid status." },
     { name: "Recurring Transactions", description: "Recurring transaction templates." },
     { name: "Reports", description: "Summary, category, cash-flow, and CSV export reports." },
+    { name: "Payments", description: "Direct UPI intent and unverified app results." },
     { name: "Flow", description: "Protected AI assistant chat and MCP-style finance tools." },
     { name: "Notifications", description: "Notifications, preferences, and Flow launch consent." },
     { name: "Feedback", description: "Public feedback submission." },
@@ -1882,6 +1941,7 @@ export const openApiDocument = {
         required: true,
         schema: { type: "string" },
       },
+      paymentId: { in: "path", name: "paymentId", required: true, schema: { type: "string" } },
       userId: { in: "path", name: "userId", required: true, schema: { type: "string" } },
       token: {
         in: "path",
@@ -2634,6 +2694,86 @@ export const openApiDocument = {
       CreateRecurringTransactionRequest: createRecurringTransactionRequest,
       UpdateRecurringTransactionRequest: updateRecurringTransactionRequest,
       CreateReportExportRequest: createReportExportRequest,
+      CreatePaymentRequest: {
+        additionalProperties: false,
+        type: "object",
+        required: ["payeeUpiId", "amount", "currency", "selectedUpiApp", "source"],
+        properties: {
+          payeeUpiId: {
+            maxLength: 320,
+            pattern: "^[A-Za-z0-9._-]+@[A-Za-z][A-Za-z0-9.-]+$",
+            type: "string",
+          },
+          payeeName: { maxLength: 100, type: "string" },
+          amount: { pattern: "^\\d{1,13}(\\.\\d{1,2})?$", type: "string" },
+          currency: { enum: ["INR"], type: "string" },
+          note: { maxLength: 80, type: "string" },
+          selectedUpiApp: { maxLength: 100, minLength: 1, type: "string" },
+          source: { enum: ["QR_SCAN", "MANUAL_ENTRY"], type: "string" },
+        },
+      },
+      UpdatePaymentStatusRequest: {
+        additionalProperties: false,
+        type: "object",
+        required: ["paymentId", "selectedUpiApp", "appReportedStatus"],
+        properties: {
+          paymentId: id,
+          selectedUpiApp: { maxLength: 100, minLength: 1, type: "string" },
+          appReportedStatus: {
+            enum: ["SUCCESS", "FAILURE", "CANCELLED", "UNKNOWN"],
+            type: "string",
+          },
+          rawResponse: { maxLength: 4000, type: "string" },
+          approvalRefNo: { maxLength: 100, type: "string" },
+          responseCode: { maxLength: 50, type: "string" },
+        },
+      },
+      Payment: {
+        type: "object",
+        required: [
+          "id",
+          "userId",
+          "payeeUpiId",
+          "amount",
+          "currency",
+          "transactionRef",
+          "selectedUpiApp",
+          "source",
+          "upiUri",
+          "appReportedStatus",
+          "verificationStatus",
+          "createdAt",
+          "updatedAt",
+        ],
+        properties: {
+          id,
+          userId: id,
+          payeeUpiId: { type: "string" },
+          payeeName: { nullable: true, type: "string" },
+          amount: { type: "string" },
+          currency: { enum: ["INR"], type: "string" },
+          note: { nullable: true, type: "string" },
+          transactionRef: { type: "string" },
+          selectedUpiApp: { type: "string" },
+          source: { enum: ["QR_SCAN", "MANUAL_ENTRY"], type: "string" },
+          upiUri: { type: "string" },
+          appReportedStatus: {
+            enum: ["PENDING", "SUCCESS", "FAILURE", "CANCELLED", "UNKNOWN"],
+            type: "string",
+          },
+          verificationStatus: {
+            enum: ["UNVERIFIED", "VERIFIED", "REJECTED"],
+            type: "string",
+          },
+          rawResponse: { nullable: true, type: "string" },
+          approvalRefNo: { nullable: true, type: "string" },
+          responseCode: { nullable: true, type: "string" },
+          launchedAt: { nullable: true, ...timestamp },
+          callbackReceivedAt: { nullable: true, ...timestamp },
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        },
+      },
       UpdateNotificationPreferencesRequest: {
         type: "object",
         minProperties: 1,

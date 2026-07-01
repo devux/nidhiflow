@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">NidhiFlow</string>
+    <string name="title_activity_main">NidhiFlow</string>
+    <string name="package_name">com.nidhiflow.app</string>
+    <string name="custom_url_scheme">com.nidhiflow.app</string>
+</resources>

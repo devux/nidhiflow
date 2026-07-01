@@ -97,6 +97,15 @@
 - Authenticated support conversation and status history
 - Admin filtering, status updates, and internal notes
 
+## Direct UPI Intent Payments
+
+- Authenticated Android users can scan a UPI QR code or enter payment details
+- Show only installed compatible UPI apps and require an explicit app choice
+- Generate the payment reference on the backend and launch the selected app
+- Store callbacks as app-reported and unverified
+- Never create a confirmed expense or claim bank settlement from an app callback
+- See [Direct UPI Intent Payments](../payments/direct-upi-intent.md)
+
 ## Notifications
 
 - In-app and email reminders for budgets, goals, and recurring entries

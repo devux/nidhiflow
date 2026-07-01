@@ -232,6 +232,21 @@ are derived; only asynchronous generated export artifacts need a
 - Define service-level objectives and incident runbooks before launch.
 - Add accessibility and financial-calculation test fixtures to CI.
 - Establish design tokens directly from approved Figma assets.
+
+## Direct UPI Intent Decisions
+
+- Use Capacitor to package the existing React application instead of creating a
+  separate Android UI codebase.
+- Keep app discovery, QR scanning, targeted intent launch, and activity result
+  capture in a local Android plugin because browsers cannot provide those
+  guarantees.
+- Use Google Code Scanner to avoid requesting camera permission directly.
+- Keep intent creation and transaction-reference generation in the backend.
+- Persist app-reported and verification statuses independently; no callback
+  creates a ledger transaction.
+- Keep payment attempts user-owned rather than workspace-owned for the first
+  release. Sharing payment-recipient details would require a separate privacy
+  decision.
 - Add reconciliation jobs/invariants for balances and report totals.
 
 ## Future Product Decisions

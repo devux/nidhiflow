@@ -16,7 +16,8 @@ export function AppShell() {
   const navigate = useNavigate();
   const [showGuestChoice, setShowGuestChoice] = useState(false);
   const isAuthRoute = location.pathname === "/login" || location.pathname === "/signup";
-  const isTransactionEntryRoute = location.pathname.startsWith("/transactions/");
+  const isTransactionEntryRoute =
+    location.pathname.startsWith("/transactions/") || location.pathname === "/pay";
   const isApiLoading = apiLoadingCount > 0;
   const shouldInertContent =
     isApiLoading && !(typeof navigator !== "undefined" && navigator.userAgent.includes("jsdom"));

@@ -653,6 +653,12 @@ export function HomePage() {
                 </span>
                 <strong>Budget</strong>
               </Link>
+              <Link aria-label="Pay with UPI" className="quick-action" to="/pay">
+                <span className="quick-action__icon">
+                  <Icon name="expense" />
+                </span>
+                <strong>Pay with UPI</strong>
+              </Link>
               <Link aria-label="Open reports" className="quick-action" to="/reports">
                 <span className="quick-action__icon">
                   <Icon name="report" />

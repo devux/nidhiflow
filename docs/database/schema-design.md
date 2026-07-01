@@ -207,6 +207,17 @@ Unique active budget per workspace/category/period.
 - type, parameters, status, storage key, expiry
 - timestamps
 
+### payments
+
+- `id`, `user_id`
+- `payee_upi_id`, nullable `payee_name`
+- positive `numeric(19,2)` amount and `INR` currency
+- nullable note, unique server-generated `transaction_ref`
+- selected UPI app, `QR_SCAN|MANUAL_ENTRY` source, canonical `upi_uri`
+- app-reported status and independent verification status
+- bounded raw callback, nullable approval reference and response code
+- launch, callback, create, and update timestamps
+
 ## Index Recommendations
 
 - All foreign keys
@@ -219,5 +230,6 @@ Unique active budget per workspace/category/period.
 - feedback status/created time for admins
 - audit workspace/resource/time
 - partial indexes for active/non-deleted records
+- `payments(user_id, created_at desc)` and unique transaction reference
 
 Verify indexes with production-like query plans; avoid speculative duplication.

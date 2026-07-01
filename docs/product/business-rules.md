@@ -99,6 +99,12 @@ finance collaboration.
   "This information is for educational purposes only and is not financial advice."
 - User-entered data and calculations must be distinguishable from suggestions.
 - Never shame users for spending, debt, or incomplete goals.
+- Direct UPI intent is an external-app handoff, not automatic movement of money
+  by NidhiFlow.
+- A UPI app callback is unverified evidence. It must remain separate from bank
+  verification and must not automatically create or confirm a transaction.
+- The user must explicitly choose the destination app and verify the outcome in
+  their bank or UPI app.
 
 ## Ethical Engagement
 
