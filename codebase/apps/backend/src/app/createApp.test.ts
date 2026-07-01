@@ -34,7 +34,7 @@ const environment: Environment = {
   REFRESH_SESSION_TTL_DAYS: 30,
   EMAIL_VERIFICATION_TTL_HOURS: 24,
   PASSWORD_RESET_TTL_HOURS: 2,
-  CORS_ORIGINS: ["http://localhost:5173", "http://127.0.0.1:5173", "https://localhost"],
+  CORS_ORIGINS: ["http://localhost:5173", "http://127.0.0.1:5173"],
 };
 
 function createQueryResult<Row extends QueryResultRow>(rows: Row[]): QueryResult<Row> {
@@ -136,7 +136,7 @@ describe("API foundation", () => {
       logger: pino({ enabled: false }),
     });
 
-    for (const origin of ["http://localhost:5173", "http://127.0.0.1:5173", "https://localhost"]) {
+    for (const origin of ["http://localhost:5173", "http://127.0.0.1:5173"]) {
       const response = await request(app)
         .options("/api/v1/auth/register")
         .set("Origin", origin)
@@ -147,6 +147,28 @@ describe("API foundation", () => {
       expect(response.headers["access-control-allow-origin"]).toBe(origin);
       expect(response.headers["access-control-allow-credentials"]).toBe("true");
     }
+  });
+
+  it("allows the packaged Capacitor origin in production", async () => {
+    const app = createApp({
+      database: createTestDatabase(vi.fn().mockResolvedValue(true)).database,
+      environment: {
+        ...environment,
+        APP_ENV: "production",
+        CORS_ORIGINS: ["https://nidhiflow.vercel.app"],
+      },
+      logger: pino({ enabled: false }),
+    });
+
+    const response = await request(app)
+      .options("/api/v1/auth/login")
+      .set("Origin", "https://localhost")
+      .set("Access-Control-Request-Method", "POST")
+      .set("Access-Control-Request-Headers", "content-type");
+
+    expect(response.status).toBe(204);
+    expect(response.headers["access-control-allow-origin"]).toBe("https://localhost");
+    expect(response.headers["access-control-allow-credentials"]).toBe("true");
   });
 
   it("returns the standard 404 envelope with a request id", async () => {

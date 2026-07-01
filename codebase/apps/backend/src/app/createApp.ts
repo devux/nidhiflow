@@ -24,6 +24,16 @@ interface AppDependencies {
   logger: Logger;
 }
 
+function getAllowedOrigins(environment: Environment) {
+  const origins = new Set(environment.CORS_ORIGINS);
+
+  if (environment.APP_ENV === "production") {
+    origins.add("https://localhost");
+  }
+
+  return [...origins];
+}
+
 export function createApp({ database, environment, logger }: AppDependencies) {
   const app = express();
 
@@ -32,7 +42,7 @@ export function createApp({ database, environment, logger }: AppDependencies) {
   app.use(requestContext);
   app.use(
     cors({
-      origin: environment.CORS_ORIGINS,
+      origin: getAllowedOrigins(environment),
       credentials: true,
     }),
   );
