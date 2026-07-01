@@ -1,5 +1,6 @@
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
+import { Capacitor } from "@capacitor/core";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
@@ -146,6 +147,7 @@ export function YouPage() {
   }
 
   const profileInitial = profileName.slice(0, 1).toUpperCase();
+  const showAndroidDownload = !Capacitor.isNativePlatform();
 
   return (
     <main className="page page--profile" id="main-content">
@@ -307,6 +309,34 @@ export function YouPage() {
           </button>
         </Card>
       </section>
+
+      {showAndroidDownload ? (
+        <section aria-labelledby="android-app-title" className="profile-android-download">
+          <div className="section-heading">
+            <h2 id="android-app-title">Android app</h2>
+          </div>
+          <Card className="android-download-card">
+            <span className="icon-tile" aria-hidden="true">
+              <Icon name="cloud" size={22} />
+            </span>
+            <span>
+              <strong>NidhiFlow for Android</strong>
+              <small>Testing build · Version 1.0 · Android 7 or newer</small>
+            </span>
+            <a
+              className="button button--primary"
+              download="nidhiflow-android-debug-v1.0.apk"
+              href="/downloads/nidhiflow-android-debug-v1.0.apk"
+            >
+              Download APK
+            </a>
+            <p>
+              This APK uses a development signature for device testing. Android may ask you to allow
+              installation from this browser.
+            </p>
+          </Card>
+        </section>
+      ) : null}
 
       <section aria-labelledby="preferences-title" id="preferences">
         <div className="section-heading">

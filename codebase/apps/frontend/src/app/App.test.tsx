@@ -2041,6 +2041,9 @@ describe("App", () => {
     expect(screen.getAllByRole("link", { name: /Activity/ }).length).toBeGreaterThan(0);
     expect(screen.queryByText("Goals")).toBeNull();
     expect(screen.getByRole("button", { name: "Feedback" })).toBeDefined();
+    expect(screen.getByRole("link", { name: "Download APK" }).getAttribute("href")).toBe(
+      "/downloads/nidhiflow-android-debug-v1.0.apk",
+    );
     expect(screen.queryByText("Data-protection reminder")).toBeNull();
     expect(screen.queryByText("Repeat reminder")).toBeNull();
     expect((await axe(container)).violations).toHaveLength(0);

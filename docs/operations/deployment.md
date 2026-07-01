@@ -314,6 +314,41 @@ Configure cache-busted assets, safe HTML caching, CSP, HTTPS, compression, and
 source-map access restricted to approved error tooling. Validate mobile
 performance before release.
 
+### Downloadable Android Artifact
+
+The frontend build copies `apps/frontend/public/downloads` into
+`dist/downloads`. The Profile page links to
+`/downloads/nidhiflow-android-debug-v1.0.apk`.
+
+The committed debug APK is for direct device testing only. It is signed with
+the standard Android development certificate and must not be represented as a
+production or Play Store release. Before public release:
+
+1. Create and protect a release keystore outside Git.
+2. Configure CI secret injection for signing.
+3. Increment `versionCode` and `versionName`.
+4. Build and verify a release APK or Android App Bundle.
+5. Test installation, upgrades, UPI app discovery, QR scanning, intent
+   callbacks, and uninstall behavior on physical devices.
+6. Replace the debug download and its SHA-256 file with the approved artifact.
+
+Generate the current test APK with Java 21 and Android SDK API 36:
+
+```bash
+cd codebase/apps/frontend
+NIDHIFLOW_API_BASE_URL=https://nidhiflow.onrender.com \
+NIDHIFLOW_CAPACITOR_BUILD=true \
+npm run build
+npx cap sync android
+cd android
+./gradlew assembleDebug
+```
+
+The generated file is
+`android/app/build/outputs/apk/debug/app-debug.apk`.
+Never publish an APK built with a loopback API URL such as `127.0.0.1`; a phone
+would resolve that address to itself.
+
 The Android artifact is built from `codebase/apps/frontend/android`. Run
 `npm run android:sync` after every web or native dependency change. Release
 signing keys must be injected through protected CI/Gradle configuration and

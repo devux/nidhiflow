@@ -3684,6 +3684,34 @@ p {
   min-height: 3rem;
 }
 
+.android-download-card.MuiCard-root {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.android-download-card > span:nth-child(2) {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.android-download-card small,
+.android-download-card p {
+  color: var(--color-text-muted);
+}
+
+.android-download-card > .button {
+  grid-column: 1 / -1;
+}
+
+.android-download-card p {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
 .profile-dialog.MuiDialog-paper {
   position: relative;
   border: 1px solid var(--color-border);

@@ -2,6 +2,7 @@ const path = require("node:path");
 
 const dotenv = require("dotenv");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const CopyWebpackPlugin = require("copy-webpack-plugin");
 const webpack = require("webpack");
 
 const frontendRoot = __dirname;
@@ -11,6 +12,7 @@ dotenv.config({ path: path.join(codebaseRoot, ".env") });
 
 const apiBaseUrl = process.env.NIDHIFLOW_API_BASE_URL;
 const flowAiEnabled = process.env.FLOW_AI_ENABLED ?? "false";
+const isCapacitorBuild = process.env.NIDHIFLOW_CAPACITOR_BUILD === "true";
 
 if (!apiBaseUrl) {
   throw new Error("NIDHIFLOW_API_BASE_URL must be configured.");
@@ -48,6 +50,18 @@ module.exports = {
     ],
   },
   plugins: [
+    ...(!isCapacitorBuild
+      ? [
+          new CopyWebpackPlugin({
+            patterns: [
+              {
+                from: path.join(frontendRoot, "public/downloads"),
+                to: "downloads",
+              },
+            ],
+          }),
+        ]
+      : []),
     new HtmlWebpackPlugin({
       template: path.join(frontendRoot, "public/index.html"),
     }),

@@ -95,6 +95,8 @@
 - Feedback form
 - Appearance, Language, Currency, and Privacy preferences
 - Optional avatar with safe default
+- Android app section provides an APK download action, supported Android
+  version, build type, and installation-source warning
 
 ## Flow Preview
 

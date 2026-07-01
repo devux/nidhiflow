@@ -70,6 +70,11 @@ Open the generated project:
 npm run android:open
 ```
 
+The web Profile page offers the current testing APK under `Android app`. The
+download is debug-signed and intended for direct device testing, not public
+production distribution. Its companion `.sha256.txt` file allows artifact
+integrity checks.
+
 ## Status Model
 
 `app_reported_status` is one of `PENDING`, `SUCCESS`, `FAILURE`, `CANCELLED`,
