@@ -97,13 +97,18 @@ APP_ENV=production
 LOG_LEVEL=info
 DATABASE_URL=<Neon production pooled or direct connection string>
 DATABASE_SSL=true
-CORS_ORIGINS=https://nidhiflow.vercel.app
+CORS_ORIGINS=https://nidhiflow.vercel.app,https://localhost
 JWT_ACCESS_SECRET=<strong random secret>
 AUTH_DEBUG_TOKENS_ENABLED=false
 FLOW_AI_ENABLED=false
 APP_PUBLIC_URL=https://nidhiflow.vercel.app
 EMAIL_DELIVERY_PROVIDER=none
 ```
+
+`https://localhost` is Capacitor Android's secure local WebView origin. Keep it
+in the exact CORS allowlist while the APK is supported. It does not bypass
+authentication or workspace authorization, and it must not be replaced with a
+wildcard origin.
 
 Optional Render environment variables, only when a feature needs them:
 

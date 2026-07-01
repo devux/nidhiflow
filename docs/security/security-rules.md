@@ -29,6 +29,8 @@ See [Authentication](../backend/authentication.md).
 
 - HTTPS only in production
 - Strict CORS allowlist
+- The production allowlist includes `https://localhost` only for the packaged
+  Capacitor Android origin; do not replace the allowlist with a wildcard
 - Security headers including CSP appropriate to the deployment
 - Request body, query, and file size limits
 - Schema validation for every external input

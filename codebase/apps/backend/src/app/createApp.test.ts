@@ -34,7 +34,7 @@ const environment: Environment = {
   REFRESH_SESSION_TTL_DAYS: 30,
   EMAIL_VERIFICATION_TTL_HOURS: 24,
   PASSWORD_RESET_TTL_HOURS: 2,
-  CORS_ORIGINS: ["http://localhost:5173", "http://127.0.0.1:5173"],
+  CORS_ORIGINS: ["http://localhost:5173", "http://127.0.0.1:5173", "https://localhost"],
 };
 
 function createQueryResult<Row extends QueryResultRow>(rows: Row[]): QueryResult<Row> {
@@ -136,7 +136,7 @@ describe("API foundation", () => {
       logger: pino({ enabled: false }),
     });
 
-    for (const origin of ["http://localhost:5173", "http://127.0.0.1:5173"]) {
+    for (const origin of ["http://localhost:5173", "http://127.0.0.1:5173", "https://localhost"]) {
       const response = await request(app)
         .options("/api/v1/auth/register")
         .set("Origin", origin)

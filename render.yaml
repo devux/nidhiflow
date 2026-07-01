@@ -16,7 +16,7 @@ services:
       - key: DATABASE_SSL
         value: "true"
       - key: CORS_ORIGINS
-        value: https://nidhiflow.vercel.app
+        value: https://nidhiflow.vercel.app,https://localhost
       - key: JWT_ACCESS_SECRET
         sync: false
       - key: AUTH_DEBUG_TOKENS_ENABLED
