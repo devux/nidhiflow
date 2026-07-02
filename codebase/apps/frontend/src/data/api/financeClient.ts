@@ -228,7 +228,8 @@ export interface DetectedNotificationTransaction {
     | "com.phonepe.app"
     | "net.one97.paytm"
     | "in.org.npci.upiapp"
-    | "com.idfcfirstbank.optimus";
+    | "com.idfcfirstbank.optimus"
+    | "android.default_sms";
   transactionDate: string;
   type: "income" | "expense";
 }

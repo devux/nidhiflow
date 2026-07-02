@@ -47,4 +47,13 @@ describe("createNotificationTransactionBodySchema", () => {
       }).success,
     ).toBe(false);
   });
+
+  it("accepts the normalized default SMS notification source", () => {
+    expect(
+      createNotificationTransactionBodySchema.safeParse({
+        ...validInput,
+        sourcePackage: "android.default_sms",
+      }).success,
+    ).toBe(true);
+  });
 });

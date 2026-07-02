@@ -100,9 +100,9 @@
 - Android app section provides an APK download action, supported Android
   version, build type, and installation-source warning
 - On supported Android builds when enabled, Transaction detection explains
-  notification-access scope and shared visibility, requires an INR destination
-  account plus explicit consent, opens Android notification-access settings,
-  and provides a disable action.
+  notification-access scope, default-SMS transaction detection, and shared
+  visibility; requires an INR destination account plus explicit consent; opens
+  Android notification-access settings; and provides a disable action.
 
 ## Flow Preview
 

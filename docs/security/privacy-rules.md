@@ -76,12 +76,15 @@ opening Android settings, explain that the system permission can expose
 notifications from many applications. Users can decline or revoke access
 without losing unrelated features.
 
-Supported transaction notifications are parsed on-device. After the user opts
-in to automatic transaction creation, NidhiFlow may upload only the minimal
-derived transaction fields, source metadata, and a non-reversible duplicate
-fingerprint. Raw notification titles, bodies, OTPs, security alerts, and
-unrelated notification content must be discarded and must not reach the
-backend, analytics, logs, crash reports, or support tools.
+Supported finance-app notifications and strict banking transaction
+notifications from the OS-selected default SMS app are parsed on-device.
+NidhiFlow does not request SMS inbox permission or read message history. After
+the user opts in to automatic transaction creation, NidhiFlow may upload only
+the minimal derived transaction fields, normalized source metadata, and a
+non-reversible duplicate fingerprint. Raw notification titles, bodies, OTPs,
+security alerts, general messages, and unrelated notification content must be
+discarded and must not reach the backend, analytics, logs, crash reports, or
+support tools.
 
 Automatically created entries are ordinary transactions: they immediately
 affect calculations and exports and are visible to every member of the current

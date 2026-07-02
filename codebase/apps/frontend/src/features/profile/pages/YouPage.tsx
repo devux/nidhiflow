@@ -425,12 +425,12 @@ export function YouPage() {
             </span>
             <span>
               <strong>NidhiFlow for Android</strong>
-              <small>Testing build · Version 1.0.4 · Android 7 or newer</small>
+              <small>Testing build · Version 1.0.5 · Android 7 or newer</small>
             </span>
             <a
               className="button button--primary"
-              download="nidhiflow-android-debug-v1.0.4.apk"
-              href="/downloads/nidhiflow-android-debug-v1.0.4.apk"
+              download="nidhiflow-android-debug-v1.0.5.apk"
+              href="/downloads/nidhiflow-android-debug-v1.0.5.apk"
             >
               Download APK
             </a>
@@ -451,9 +451,10 @@ export function YouPage() {
             <div>
               <strong>Use Android notifications</strong>
               <p>
-                NidhiFlow reads supported payment notifications on this device and immediately
-                creates shared transactions marked <em>From notification</em>. Raw notification text
-                is not uploaded.
+                NidhiFlow reads supported payment-app notifications and strict credited/debited
+                banking messages posted by your default SMS app. It immediately creates shared
+                transactions marked <em>From notification</em>. Raw notification text is not
+                uploaded, and NidhiFlow does not read your SMS inbox.
               </p>
             </div>
             <label>
@@ -482,7 +483,8 @@ export function YouPage() {
                 />
                 <span>
                   I understand Android notification access can expose notifications from many apps,
-                  and detected transactions will be visible to everyone in my workspace.
+                  including SMS previews, and detected transactions will be visible to everyone in
+                  my workspace.
                 </span>
               </label>
             ) : null}

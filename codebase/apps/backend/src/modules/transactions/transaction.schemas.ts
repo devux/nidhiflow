@@ -106,6 +106,7 @@ export const createNotificationTransactionBodySchema = z
       "net.one97.paytm",
       "in.org.npci.upiapp",
       "com.idfcfirstbank.optimus",
+      "android.default_sms",
     ]),
     transactionDate: dateOnlySchema,
     type: z.enum(["income", "expense"]),

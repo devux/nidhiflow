@@ -73,8 +73,11 @@ written to application or audit logs.
   default.
 - Require clear in-app education, explicit opt-in, Android system permission,
   and immediate stop on permission revocation.
-- Process only allowlisted source packages with versioned parsers and discard
-  unrelated notification content locally.
+- Process only allowlisted finance-app packages or the OS-selected default SMS
+  app with versioned parsers, and discard unrelated notification content
+  locally. Default-SMS parsing requires explicit banking context,
+  credited/debited direction, and one transaction amount tied to that
+  direction.
 - Never retain or transmit raw notification titles or bodies.
 - Reject OTPs, authentication/security alerts, promotional content, unsupported
   currencies, ambiguous amounts, and malformed values.

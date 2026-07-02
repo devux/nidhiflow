@@ -116,7 +116,9 @@
 - Flow launch notification
 - Useful, non-spammy delivery with clear disable controls
 - On supported Android devices, explicit notification-access opt-in can create
-  ordinary categorized workspace transactions from allowlisted finance apps.
+  ordinary categorized workspace transactions from allowlisted finance apps
+  and strict transaction notifications posted by the OS-selected default SMS
+  app.
 - Notification-derived transactions show `From notification`, immediately
   participate in all calculations, remain editable/reversible, and are
   idempotent across duplicate delivery.

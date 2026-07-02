@@ -104,4 +104,38 @@ public class NotificationTransactionParserTest {
       second.optString("sourceFingerprint")
     );
   }
+
+  @Test
+  public void parsesStrictDefaultSmsTransactionAndIgnoresAvailableBalance() {
+    JSONObject parsed = NotificationTransactionParser.parseDefaultSms(
+      "com.google.android.apps.messaging",
+      "sms-key",
+      "VM-TESTBK",
+      "Your A/c XX1234 has been debited by INR 245.50 via UPI. Available balance INR 9000.00.",
+      1_782_816_600_000L
+    );
+
+    assertEquals("245.50", parsed.optString("amount"));
+    assertEquals("expense", parsed.optString("type"));
+    assertEquals("android.default_sms", parsed.optString("sourcePackage"));
+    assertEquals("uncategorized", parsed.optString("categoryHint"));
+  }
+
+  @Test
+  public void rejectsGeneralAndSensitiveDefaultSmsNotifications() {
+    assertNull(NotificationTransactionParser.parseDefaultSms(
+      "com.google.android.apps.messaging",
+      "general-key",
+      "Friend",
+      "I received INR 500 from the shop",
+      1_782_816_600_000L
+    ));
+    assertNull(NotificationTransactionParser.parseDefaultSms(
+      "com.google.android.apps.messaging",
+      "otp-sms-key",
+      "VM-TESTBK",
+      "OTP 123456 for INR 500 debit from your bank account",
+      1_782_816_600_000L
+    ));
+  }
 }

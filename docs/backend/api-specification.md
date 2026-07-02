@@ -220,11 +220,12 @@ deletes the transaction and records an audit event.
 
 Notification ingestion accepts only derived fields: account, positive INR
 amount, income/expense type, category hint, transaction/detection dates,
-allowlisted Android source package, parser version, optional merchant hint, and
-a SHA-256 source fingerprint. It never accepts raw notification content. The
-fingerprint is idempotent per user. Created entries are ordinary shared
-transactions with `source=ANDROID_NOTIFICATION`; duplicate requests return the
-existing entry only within its original workspace.
+allowlisted Android source package (including normalized
+`android.default_sms`), parser version, optional merchant hint, and a SHA-256
+source fingerprint. It never accepts raw notification content. The fingerprint
+is idempotent per user. Created entries are ordinary shared transactions with
+`source=ANDROID_NOTIFICATION`; duplicate requests return the existing entry
+only within its original workspace.
 
 ### Recurring Transactions
 

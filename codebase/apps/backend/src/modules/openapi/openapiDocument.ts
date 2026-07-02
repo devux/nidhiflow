@@ -278,6 +278,7 @@ const createNotificationTransactionRequest = {
         "net.one97.paytm",
         "in.org.npci.upiapp",
         "com.idfcfirstbank.optimus",
+        "android.default_sms",
       ],
       type: "string",
     },

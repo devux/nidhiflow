@@ -183,9 +183,11 @@ the user's current workspace.
 - Access begins only after explicit user opt-in and Android system permission.
   Revocation must stop processing immediately.
 - Start with a reviewed allowlist of supported banking and payment-app package
-  names and versioned parsers.
+  names plus the device's OS-selected default SMS app. Default-SMS candidates
+  require stricter versioned banking-message rules.
 - Ignore OTPs, verification codes, login/security alerts, promotional content,
-  messages without a reliable amount, and unsupported currencies.
+  general messages, messages without explicit banking context and a reliable
+  credited/debited amount, and unsupported currencies.
 - Parse locally and discard unrelated notification content immediately.
 - Extract only the minimum candidate fields: amount, currency, direction,
   merchant/counterparty hint, event time, source package, and a non-reversible
