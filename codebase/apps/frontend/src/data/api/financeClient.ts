@@ -53,7 +53,7 @@ export interface BudgetResource {
   workspaceId: string;
 }
 
-interface TransactionResource {
+export interface TransactionResource {
   amount?: string;
   categoryId: string | null;
   createdAt: string;
@@ -61,6 +61,10 @@ interface TransactionResource {
   id: string;
   money?: ApiMoney;
   note: string | null;
+  source?: "MANUAL" | "ANDROID_NOTIFICATION";
+  sourceDetectedAt?: string | null;
+  sourcePackage?: string | null;
+  sourceParserVersion?: number | null;
   transactionDate: string;
   type: TransactionType | "transfer";
   updatedAt: string;
@@ -186,10 +190,79 @@ function toTransaction(
     currency,
     id: resource.id,
     note: resource.note ?? "",
+    source: resource.source ?? "MANUAL",
+    sourceDetectedAt: resource.sourceDetectedAt ?? null,
+    sourcePackage: resource.sourcePackage ?? null,
+    sourceParserVersion: resource.sourceParserVersion ?? null,
     transactionDate: toDateOnly(resource.transactionDate),
     type: resource.type,
     updatedAt: resource.updatedAt,
   };
+}
+
+export interface DetectedNotificationTransaction {
+  amount: string;
+  categoryHint:
+    | "salary"
+    | "freelance"
+    | "business"
+    | "interest"
+    | "food"
+    | "shopping"
+    | "transport"
+    | "bills"
+    | "entertainment"
+    | "health"
+    | "education"
+    | "travel"
+    | "home"
+    | "uncategorized";
+  currency: "INR";
+  detectedAt: string;
+  localId: string;
+  merchantHint?: string;
+  parserVersion: number;
+  sourceFingerprint: string;
+  sourcePackage:
+    | "com.google.android.apps.nbu.paisa.user"
+    | "com.phonepe.app"
+    | "net.one97.paytm"
+    | "in.org.npci.upiapp"
+    | "com.idfcfirstbank.optimus";
+  transactionDate: string;
+  type: "income" | "expense";
+}
+
+export async function createNotificationTransaction(input: {
+  accessToken: string;
+  accountId: string;
+  categories: CategoryResource[];
+  detected: DetectedNotificationTransaction;
+  workspaceId: string;
+}): Promise<{ duplicate: boolean; transaction: GuestTransaction }> {
+  const result = await apiRequest<{ duplicate: boolean; transaction: TransactionResource }>(
+    `/workspaces/${input.workspaceId}/transactions/from-notification`,
+    input.accessToken,
+    {
+      body: JSON.stringify({
+        accountId: input.accountId,
+        amount: input.detected.amount,
+        categoryHint: input.detected.categoryHint,
+        currency: input.detected.currency,
+        detectedAt: input.detected.detectedAt,
+        merchantHint: input.detected.merchantHint,
+        parserVersion: input.detected.parserVersion,
+        sourceFingerprint: input.detected.sourceFingerprint,
+        sourcePackage: input.detected.sourcePackage,
+        transactionDate: input.detected.transactionDate,
+        type: input.detected.type,
+      }),
+      method: "POST",
+    },
+  );
+  const transaction = toTransaction(result.data.transaction, input.categories);
+  if (!transaction) throw new Error("Notification transaction response could not be read.");
+  return { duplicate: result.data.duplicate, transaction };
 }
 
 export async function listAccounts(input: {

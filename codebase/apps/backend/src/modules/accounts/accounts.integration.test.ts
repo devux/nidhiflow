@@ -12,16 +12,10 @@ import { createDatabase, type Database } from "../../shared/database/database.js
 
 interface RegisterResponseBody {
   data: {
-    debugToken: string;
-  };
-}
-
-interface VerifyResponseBody {
-  data: {
     accessToken: string;
-    workspace: {
+    workspaces: Array<{
       id: string;
-    };
+    }>;
   };
 }
 
@@ -30,6 +24,24 @@ interface AccountResponseBody {
     currentBalance: string;
     id: string;
     name: string;
+  };
+}
+
+interface AccountsResponseBody {
+  data: AccountResponseBody["data"][];
+}
+
+interface NotificationTransactionResponseBody {
+  data: {
+    duplicate: boolean;
+    transaction: {
+      categoryId: string;
+      id: string;
+      note: string;
+      source: string;
+      sourcePackage: string;
+      sourceParserVersion: number;
+    };
   };
 }
 
@@ -107,6 +119,7 @@ describe("finance workflow integration", () => {
 
     environment = {
       ...baseEnvironment,
+      ANDROID_NOTIFICATION_TRANSACTIONS_ENABLED: true,
       APP_ENV: "test",
       DATABASE_URL: buildDatabaseUrl(baseEnvironment.DATABASE_URL, migrationDatabaseName),
     };
@@ -145,17 +158,10 @@ describe("finance workflow integration", () => {
       timezone: "Asia/Kolkata",
     });
     const registerBody = registerResponse.body as RegisterResponseBody;
-    expect(registerResponse.status).toBe(202);
-    expect(registerBody.data.debugToken).toEqual(expect.any(String));
-
-    const verifyResponse = await request(app).post("/api/v1/auth/verify-email").send({
-      token: registerBody.data.debugToken,
-    });
-    const verifyBody = verifyResponse.body as VerifyResponseBody;
-    const accessToken = verifyBody.data.accessToken;
-    const workspaceId = verifyBody.data.workspace.id;
-
-    expect(verifyResponse.status).toBe(200);
+    expect(registerResponse.status).toBe(201);
+    const accessToken = registerBody.data.accessToken;
+    const workspaceId = registerBody.data.workspaces[0]?.id ?? "";
+    expect(workspaceId).toEqual(expect.any(String));
 
     const categoryResponse = await request(app)
       .post(`/api/v1/workspaces/${workspaceId}/categories`)
@@ -348,5 +354,70 @@ describe("finance workflow integration", () => {
     expect(
       categoriesBody.data.some((category) => category.name === "Food" && category.isSystem),
     ).toBe(true);
+
+    const detectedAt = new Date();
+    const notificationPayload = {
+      accountId: cashBody.data.id,
+      amount: "75.50",
+      categoryHint: "food",
+      currency: "INR",
+      detectedAt: detectedAt.toISOString(),
+      merchantHint: "Corner Cafe",
+      parserVersion: 1,
+      sourceFingerprint: "a".repeat(64),
+      sourcePackage: "com.google.android.apps.nbu.paisa.user",
+      transactionDate: detectedAt.toISOString().slice(0, 10),
+      type: "expense",
+    };
+    const notificationResponse = await request(app)
+      .post(`/api/v1/workspaces/${workspaceId}/transactions/from-notification`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send(notificationPayload);
+    const notificationBody = notificationResponse.body as NotificationTransactionResponseBody;
+
+    expect(notificationResponse.status).toBe(201);
+    expect(notificationBody.data).toMatchObject({
+      duplicate: false,
+      transaction: {
+        categoryId: "cat_food",
+        note: "Corner Cafe",
+        source: "ANDROID_NOTIFICATION",
+        sourcePackage: "com.google.android.apps.nbu.paisa.user",
+        sourceParserVersion: 1,
+      },
+    });
+
+    const repeatedNotification = await request(app)
+      .post(`/api/v1/workspaces/${workspaceId}/transactions/from-notification`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send(notificationPayload);
+    const repeatedNotificationBody =
+      repeatedNotification.body as NotificationTransactionResponseBody;
+    expect(repeatedNotification.status).toBe(200);
+    expect(repeatedNotificationBody.data.duplicate).toBe(true);
+    expect(repeatedNotificationBody.data.transaction.id).toBe(notificationBody.data.transaction.id);
+
+    const notificationTransactions = await request(app)
+      .get(`/api/v1/workspaces/${workspaceId}/transactions`)
+      .set("Authorization", `Bearer ${accessToken}`);
+    const notificationTransactionsBody = notificationTransactions.body as TransactionResponseBody;
+    expect(notificationTransactionsBody.data).toHaveLength(3);
+
+    const updatedAccounts = await request(app)
+      .get(`/api/v1/workspaces/${workspaceId}/accounts`)
+      .set("Authorization", `Bearer ${accessToken}`);
+    const updatedAccountsBody = updatedAccounts.body as AccountsResponseBody;
+    const updatedCash = updatedAccountsBody.data.find((account) => account.name === "Cash");
+    expect(updatedCash?.currentBalance).toBe("574.5000");
+
+    const unsupportedSource = await request(app)
+      .post(`/api/v1/workspaces/${workspaceId}/transactions/from-notification`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        ...notificationPayload,
+        sourceFingerprint: "b".repeat(64),
+        sourcePackage: "bad.app",
+      });
+    expect(unsupportedSource.status).toBe(422);
   });
 });

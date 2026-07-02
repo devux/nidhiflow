@@ -93,6 +93,8 @@ reference in the same transaction.
 - nullable `recurring_transaction_id`
 - `created_by_user_id`, `updated_by_user_id`
 - nullable stable `client_id` for migration/idempotency
+- `source` (`MANUAL|ANDROID_NOTIFICATION`), nullable source package,
+  parser version, source-detection time, and non-reversible source fingerprint
 - timestamps, `deleted_at`
 
 Checks enforce positive amount, transfer account rules, and category rules.
@@ -100,6 +102,8 @@ Authenticated CRUD stores transactions in this table and links each record to
 its workspace and actor. Guest users do not create or update transaction rows.
 Deletes are represented with `deleted_at` so auditability and historical
 references remain intact.
+Notification fingerprints are unique per creating user even after soft
+deletion so replay cannot recreate a transaction.
 
 ### transaction_tags
 

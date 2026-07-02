@@ -11,6 +11,10 @@ export interface TransactionRecord {
   destinationAccountId: string | null;
   id: string;
   note: string | null;
+  source: "MANUAL" | "ANDROID_NOTIFICATION";
+  sourceDetectedAt: string | null;
+  sourcePackage: string | null;
+  sourceParserVersion: number | null;
   transactionDate: string;
   type: "income" | "expense" | "transfer";
   updatedAt: string;
@@ -71,6 +75,10 @@ export class TransactionRepository {
               category_id AS "categoryId",
               transaction_date AS "transactionDate",
               note,
+              source,
+              source_package AS "sourcePackage",
+              source_parser_version AS "sourceParserVersion",
+              source_detected_at AS "sourceDetectedAt",
               created_by_user_id AS "createdByUserId",
               updated_by_user_id AS "updatedByUserId",
               created_at AS "createdAt",
@@ -97,6 +105,10 @@ export class TransactionRepository {
               category_id AS "categoryId",
               transaction_date AS "transactionDate",
               note,
+              source,
+              source_package AS "sourcePackage",
+              source_parser_version AS "sourceParserVersion",
+              source_detected_at AS "sourceDetectedAt",
               created_by_user_id AS "createdByUserId",
               updated_by_user_id AS "updatedByUserId",
               created_at AS "createdAt",
@@ -123,6 +135,11 @@ export class TransactionRepository {
       destinationAccountId: string | null;
       id: string;
       note: string | null;
+      source?: TransactionRecord["source"];
+      sourceDetectedAt?: string | null;
+      sourceFingerprint?: string | null;
+      sourcePackage?: string | null;
+      sourceParserVersion?: number | null;
       transactionDate: string;
       type: TransactionRecord["type"];
       updatedByUserId: string;
@@ -142,9 +159,17 @@ export class TransactionRepository {
          category_id,
          transaction_date,
          note,
+         source,
+         source_package,
+         source_parser_version,
+         source_fingerprint,
+         source_detected_at,
          created_by_user_id,
          updated_by_user_id
-       ) VALUES ($1, $2, $3, $4::numeric(19,4), $5, $6, $7, $8, $9, $10, $11, $12)
+       ) VALUES ($1, $2, $3, $4::numeric(19,4), $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+       ON CONFLICT (created_by_user_id, source_fingerprint)
+         WHERE source = 'ANDROID_NOTIFICATION'
+       DO NOTHING
        RETURNING id,
                  workspace_id AS "workspaceId",
                  type,
@@ -155,6 +180,10 @@ export class TransactionRepository {
                  category_id AS "categoryId",
                  transaction_date AS "transactionDate",
                  note,
+                 source,
+                 source_package AS "sourcePackage",
+                 source_parser_version AS "sourceParserVersion",
+                 source_detected_at AS "sourceDetectedAt",
                  created_by_user_id AS "createdByUserId",
                  updated_by_user_id AS "updatedByUserId",
                  created_at AS "createdAt",
@@ -171,6 +200,11 @@ export class TransactionRepository {
         input.categoryId,
         input.transactionDate,
         input.note,
+        input.source ?? "MANUAL",
+        input.sourcePackage ?? null,
+        input.sourceParserVersion ?? null,
+        input.sourceFingerprint ?? null,
+        input.sourceDetectedAt ?? null,
         input.createdByUserId,
         input.updatedByUserId,
       ],
@@ -220,6 +254,10 @@ export class TransactionRepository {
                  category_id AS "categoryId",
                  transaction_date AS "transactionDate",
                  note,
+                 source,
+                 source_package AS "sourcePackage",
+                 source_parser_version AS "sourceParserVersion",
+                 source_detected_at AS "sourceDetectedAt",
                  created_by_user_id AS "createdByUserId",
                  updated_by_user_id AS "updatedByUserId",
                  created_at AS "createdAt",
@@ -267,12 +305,54 @@ export class TransactionRepository {
                  category_id AS "categoryId",
                  transaction_date AS "transactionDate",
                  note,
+                 source,
+                 source_package AS "sourcePackage",
+                 source_parser_version AS "sourceParserVersion",
+                 source_detected_at AS "sourceDetectedAt",
                  created_by_user_id AS "createdByUserId",
                  updated_by_user_id AS "updatedByUserId",
                  created_at AS "createdAt",
                  updated_at AS "updatedAt",
                  deleted_at AS "deletedAt"`,
       [workspaceId, transactionId, updatedByUserId],
+    );
+
+    return result.rows[0] ?? null;
+  }
+
+  async findByNotificationFingerprint(
+    userId: string,
+    workspaceId: string,
+    sourceFingerprint: string,
+    queryable: Queryable = this.database,
+  ) {
+    const result = await queryable.query<TransactionRecord>(
+      `SELECT id,
+              workspace_id AS "workspaceId",
+              type,
+              amount::text AS amount,
+              currency,
+              account_id AS "accountId",
+              destination_account_id AS "destinationAccountId",
+              category_id AS "categoryId",
+              transaction_date AS "transactionDate",
+              note,
+              source,
+              source_package AS "sourcePackage",
+              source_parser_version AS "sourceParserVersion",
+              source_detected_at AS "sourceDetectedAt",
+              created_by_user_id AS "createdByUserId",
+              updated_by_user_id AS "updatedByUserId",
+              created_at AS "createdAt",
+              updated_at AS "updatedAt",
+              deleted_at AS "deletedAt"
+         FROM transactions
+        WHERE created_by_user_id = $1
+          AND workspace_id = $2
+          AND source_fingerprint = $3
+          AND source = 'ANDROID_NOTIFICATION'
+        LIMIT 1`,
+      [userId, workspaceId, sourceFingerprint],
     );
 
     return result.rows[0] ?? null;

@@ -6,11 +6,13 @@ describe("parseFrontendEnvironment", () => {
   it("accepts a valid API URL", () => {
     expect(
       parseFrontendEnvironment({
+        ANDROID_NOTIFICATION_TRANSACTIONS_ENABLED: "true",
         DIRECT_UPI_ENABLED: "true",
         FLOW_AI_ENABLED: "true",
         NIDHIFLOW_API_BASE_URL: "http://localhost:3000",
       }),
     ).toEqual({
+      ANDROID_NOTIFICATION_TRANSACTIONS_ENABLED: true,
       DIRECT_UPI_ENABLED: true,
       FLOW_AI_ENABLED: true,
       NIDHIFLOW_API_BASE_URL: "http://localhost:3000",
@@ -23,6 +25,7 @@ describe("parseFrontendEnvironment", () => {
         NIDHIFLOW_API_BASE_URL: "http://localhost:3000",
       }),
     ).toEqual({
+      ANDROID_NOTIFICATION_TRANSACTIONS_ENABLED: false,
       DIRECT_UPI_ENABLED: false,
       FLOW_AI_ENABLED: false,
       NIDHIFLOW_API_BASE_URL: "http://localhost:3000",

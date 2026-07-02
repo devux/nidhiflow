@@ -89,6 +89,11 @@ workspace. The opt-in disclosure must explain this shared visibility before
 notification access is enabled. Each entry displays `From notification` and
 remains editable or reversible under ordinary transaction rules.
 
+Pending derived candidates remain on-device for at most seven days and are
+scoped to the opted-in user and workspace. Disable, permission revocation,
+logout, or an authenticated workspace/user change clears the pending queue so
+one account cannot inherit another account's detections.
+
 ## AI Privacy
 
 Send the minimum authorized context required for a Flow request. Do not use

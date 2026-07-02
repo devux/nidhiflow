@@ -11,6 +11,8 @@ const codebaseRoot = path.resolve(frontendRoot, "../..");
 dotenv.config({ path: path.join(codebaseRoot, ".env") });
 
 const apiBaseUrl = process.env.NIDHIFLOW_API_BASE_URL;
+const androidNotificationTransactionsEnabled =
+  process.env.ANDROID_NOTIFICATION_TRANSACTIONS_ENABLED ?? "false";
 const directUpiEnabled = process.env.DIRECT_UPI_ENABLED ?? "false";
 const flowAiEnabled = process.env.FLOW_AI_ENABLED ?? "false";
 const isCapacitorBuild = process.env.NIDHIFLOW_CAPACITOR_BUILD === "true";
@@ -67,6 +69,9 @@ module.exports = {
       template: path.join(frontendRoot, "public/index.html"),
     }),
     new webpack.DefinePlugin({
+      __ANDROID_NOTIFICATION_TRANSACTIONS_ENABLED__: JSON.stringify(
+        androidNotificationTransactionsEnabled,
+      ),
       __DIRECT_UPI_ENABLED__: JSON.stringify(directUpiEnabled),
       "process.env.FLOW_AI_ENABLED": JSON.stringify(flowAiEnabled),
       "process.env.NIDHIFLOW_API_BASE_URL": JSON.stringify(apiBaseUrl),

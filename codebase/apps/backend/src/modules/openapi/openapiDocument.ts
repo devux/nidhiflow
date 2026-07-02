@@ -229,6 +229,63 @@ const createTransactionRequest = {
   },
 };
 
+const createNotificationTransactionRequest = {
+  additionalProperties: false,
+  type: "object",
+  required: [
+    "accountId",
+    "amount",
+    "categoryHint",
+    "currency",
+    "detectedAt",
+    "parserVersion",
+    "sourceFingerprint",
+    "sourcePackage",
+    "transactionDate",
+    "type",
+  ],
+  properties: {
+    accountId: { type: "string" },
+    amount: { pattern: "^\\d+(\\.\\d{1,2})?$", type: "string" },
+    categoryHint: {
+      enum: [
+        "salary",
+        "freelance",
+        "business",
+        "interest",
+        "food",
+        "shopping",
+        "transport",
+        "bills",
+        "entertainment",
+        "health",
+        "education",
+        "travel",
+        "home",
+        "uncategorized",
+      ],
+      type: "string",
+    },
+    currency: { enum: ["INR"], type: "string" },
+    detectedAt: timestamp,
+    merchantHint: { maxLength: 100, type: "string" },
+    parserVersion: { maximum: 100, minimum: 1, type: "integer" },
+    sourceFingerprint: { pattern: "^[a-f0-9]{64}$", type: "string" },
+    sourcePackage: {
+      enum: [
+        "com.google.android.apps.nbu.paisa.user",
+        "com.phonepe.app",
+        "net.one97.paytm",
+        "in.org.npci.upiapp",
+        "com.idfcfirstbank.optimus",
+      ],
+      type: "string",
+    },
+    transactionDate: dateOnly,
+    type: { enum: ["income", "expense"], type: "string" },
+  },
+};
+
 const createBudgetRequest = {
   type: "object",
   required: ["currency", "limitAmount", "periodEnd", "periodStart"],
@@ -1215,6 +1272,37 @@ const paths = {
       responses: responseSet(
         { "200": successResponse("Transaction deleted.", ref("Transaction")) },
         { auth: true, notFound: true, validation: true },
+      ),
+    }),
+  },
+  "/api/v1/workspaces/{workspaceId}/transactions/from-notification": {
+    post: operation({
+      tags: ["Transactions"],
+      summary: "Create an Android notification-derived transaction",
+      description:
+        "Creates an ordinary shared workspace transaction from locally derived Android notification fields. Raw notification content is never accepted. The endpoint is unavailable unless the server feature flag is enabled.",
+      operationId: "createNotificationTransaction",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId")],
+      requestBody: requestBody(ref("CreateNotificationTransactionRequest")),
+      responses: responseSet(
+        {
+          "200": successResponse("Duplicate notification transaction returned.", {
+            type: "object",
+            properties: {
+              duplicate: { type: "boolean" },
+              transaction: ref("Transaction"),
+            },
+          }),
+          "201": successResponse("Notification transaction created.", {
+            type: "object",
+            properties: {
+              duplicate: { type: "boolean" },
+              transaction: ref("Transaction"),
+            },
+          }),
+        },
+        { auth: true, conflict: true, notFound: true, validation: true },
       ),
     }),
   },
@@ -2233,6 +2321,10 @@ export const openApiDocument = {
           categoryId: { nullable: true, type: "string" },
           transactionDate: dateOnly,
           note: { nullable: true, type: "string" },
+          source: { enum: ["MANUAL", "ANDROID_NOTIFICATION"], type: "string" },
+          sourcePackage: { nullable: true, type: "string" },
+          sourceParserVersion: { nullable: true, type: "integer" },
+          sourceDetectedAt: { nullable: true, ...timestamp },
           createdByUserId: { nullable: true, type: "string" },
           updatedByUserId: { nullable: true, type: "string" },
           createdAt: timestamp,
@@ -2683,6 +2775,7 @@ export const openApiDocument = {
       CreateCategoryRequest: createCategoryRequest,
       UpdateCategoryRequest: updateCategoryRequest,
       CreateTransactionRequest: createTransactionRequest,
+      CreateNotificationTransactionRequest: createNotificationTransactionRequest,
       UpdateTransactionRequest: createTransactionRequest,
       CreateBudgetRequest: createBudgetRequest,
       UpdateBudgetRequest: updateBudgetRequest,

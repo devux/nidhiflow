@@ -23,6 +23,8 @@ services:
         value: "true"
       - key: FLOW_AI_ENABLED
         value: "false"
+      - key: ANDROID_NOTIFICATION_TRANSACTIONS_ENABLED
+        value: "true"
       - key: APP_PUBLIC_URL
         value: https://nidhiflow.vercel.app
       - key: EMAIL_DELIVERY_PROVIDER

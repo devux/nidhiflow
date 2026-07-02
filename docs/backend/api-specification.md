@@ -190,12 +190,13 @@ different type, currency, or opening balance return `409 CONFLICT`.
 
 ### Transactions
 
-| Method             | Endpoint                                               | Access    |
-| ------------------ | ------------------------------------------------------ | --------- |
-| GET, POST          | `/workspaces/:workspaceId/transactions`                | Protected |
-| GET, PATCH, DELETE | `/workspaces/:workspaceId/transactions/:transactionId` | Protected |
-| POST               | `/workspaces/:workspaceId/transactions/imports`        | Protected |
-| GET                | `/workspaces/:workspaceId/transactions/exports`        | Protected |
+| Method             | Endpoint                                                  | Access                   |
+| ------------------ | --------------------------------------------------------- | ------------------------ |
+| GET, POST          | `/workspaces/:workspaceId/transactions`                   | Protected                |
+| GET, PATCH, DELETE | `/workspaces/:workspaceId/transactions/:transactionId`    | Protected                |
+| POST               | `/workspaces/:workspaceId/transactions/imports`           | Protected                |
+| POST               | `/workspaces/:workspaceId/transactions/from-notification` | Protected, feature-gated |
+| GET                | `/workspaces/:workspaceId/transactions/exports`           | Protected                |
 
 Create example:
 
@@ -216,6 +217,14 @@ List filters include `type`, `accountId`, `categoryId`, `from`, `to`, `query`,
 `PATCH /workspaces/:workspaceId/transactions/:transactionId` replaces the
 transaction payload using the same validation rules as create. `DELETE` soft
 deletes the transaction and records an audit event.
+
+Notification ingestion accepts only derived fields: account, positive INR
+amount, income/expense type, category hint, transaction/detection dates,
+allowlisted Android source package, parser version, optional merchant hint, and
+a SHA-256 source fingerprint. It never accepts raw notification content. The
+fingerprint is idempotent per user. Created entries are ordinary shared
+transactions with `source=ANDROID_NOTIFICATION`; duplicate requests return the
+existing entry only within its original workspace.
 
 ### Recurring Transactions
 

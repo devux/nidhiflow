@@ -12,6 +12,7 @@ import { useAuth } from "../../../app/providers/AuthProvider";
 import { trackApiRequest } from "../../../app/providers/apiLoadingState";
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
 import { environment } from "../../../config/environment";
+import { listAccounts, type AccountResource } from "../../../data/api/financeClient";
 import {
   supportedCurrencies,
   supportedLocales,
@@ -23,6 +24,11 @@ import {
 import { Button } from "../../../shared/components/Button";
 import { Card } from "../../../shared/components/Card";
 import { Icon, type IconName } from "../../../shared/components/Icon";
+import {
+  notificationTransactions,
+  supportsNotificationTransactions,
+  type NotificationTransactionStatus,
+} from "../../notifications/native/notificationTransactions";
 
 const tools: Array<{ description: string; href: string; icon: IconName; title: string }> = [
   {
@@ -53,7 +59,7 @@ const currencyLabels: Record<SupportedCurrency, string> = {
 };
 
 export function YouPage() {
-  const { isAuthenticated, logout, updateProfile, user } = useAuth();
+  const { accessToken, activeWorkspace, isAuthenticated, logout, updateProfile, user } = useAuth();
   const { preferences, savePreferences } = useGuestPreferences();
   const profileName = user?.displayName ?? preferences.displayName;
   const [displayName, setDisplayName] = useState(profileName);
@@ -67,10 +73,63 @@ export function YouPage() {
   const [isNameModalOpen, setIsNameModalOpen] = useState(false);
   const [logoutState, setLogoutState] = useState<"error" | "idle" | "saving">("idle");
   const [saveState, setSaveState] = useState<"error" | "idle" | "saved">("idle");
+  const [notificationAccounts, setNotificationAccounts] = useState<AccountResource[]>([]);
+  const [notificationConsent, setNotificationConsent] = useState(false);
+  const [notificationState, setNotificationState] = useState<
+    "error" | "idle" | "loading" | "saved"
+  >("idle");
+  const [notificationStatus, setNotificationStatus] =
+    useState<NotificationTransactionStatus | null>(null);
+  const [notificationAccountId, setNotificationAccountId] = useState("");
+  const showNotificationTransactions =
+    environment.ANDROID_NOTIFICATION_TRANSACTIONS_ENABLED &&
+    supportsNotificationTransactions() &&
+    isAuthenticated &&
+    Boolean(accessToken && activeWorkspace);
 
   useEffect(() => {
     setDisplayName(profileName);
   }, [profileName]);
+
+  useEffect(() => {
+    if (!showNotificationTransactions || !accessToken || !activeWorkspace) return;
+    const notificationAccessToken = accessToken;
+    const notificationWorkspaceId = activeWorkspace.id;
+    let active = true;
+    async function loadNotificationSettings() {
+      setNotificationState("loading");
+      try {
+        const [status, accounts] = await Promise.all([
+          notificationTransactions.getStatus(),
+          listAccounts({
+            accessToken: notificationAccessToken,
+            workspaceId: notificationWorkspaceId,
+          }),
+        ]);
+        if (!active) return;
+        const writableAccounts = accounts.filter(
+          (account) => !account.isArchived && account.currency === "INR",
+        );
+        setNotificationAccounts(writableAccounts);
+        setNotificationStatus(status);
+        setNotificationAccountId(
+          writableAccounts.some((account) => account.id === status.accountId)
+            ? status.accountId
+            : (writableAccounts[0]?.id ?? ""),
+        );
+        setNotificationState("idle");
+      } catch {
+        if (active) setNotificationState("error");
+      }
+    }
+    const handleFocus = () => void loadNotificationSettings();
+    void loadNotificationSettings();
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      active = false;
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [accessToken, activeWorkspace, showNotificationTransactions]);
 
   async function persist(updatedPreferences: GuestPreferences) {
     setSaveState("idle");
@@ -143,6 +202,51 @@ export function YouPage() {
       setLogoutState("idle");
     } catch {
       setLogoutState("error");
+    }
+  }
+
+  async function enableNotificationTransactions() {
+    if (!notificationConsent || !notificationAccountId) return;
+    setNotificationState("loading");
+    try {
+      await notificationTransactions.configure({
+        accountId: notificationAccountId,
+        captureEnabled: true,
+        userId: user?.id,
+        workspaceId: activeWorkspace?.id,
+      });
+      const current = await notificationTransactions.getStatus();
+      setNotificationStatus({ ...current, accountId: notificationAccountId, captureEnabled: true });
+      setNotificationState("saved");
+      window.dispatchEvent(new Event("nidhiflow:notification-settings-changed"));
+      if (!current.permissionGranted) {
+        await notificationTransactions.openNotificationAccessSettings();
+      }
+    } catch {
+      setNotificationState("error");
+    }
+  }
+
+  async function disableNotificationTransactions() {
+    setNotificationState("loading");
+    try {
+      await notificationTransactions.disableAndClear();
+      setNotificationStatus((current) =>
+        current
+          ? {
+              ...current,
+              accountId: "",
+              captureEnabled: false,
+              pendingCount: 0,
+              userId: "",
+              workspaceId: "",
+            }
+          : current,
+      );
+      setNotificationConsent(false);
+      setNotificationState("saved");
+    } catch {
+      setNotificationState("error");
     }
   }
 
@@ -321,12 +425,12 @@ export function YouPage() {
             </span>
             <span>
               <strong>NidhiFlow for Android</strong>
-              <small>Testing build · Version 1.0.3 · Android 7 or newer</small>
+              <small>Testing build · Version 1.0.4 · Android 7 or newer</small>
             </span>
             <a
               className="button button--primary"
-              download="nidhiflow-android-debug-v1.0.3.apk"
-              href="/downloads/nidhiflow-android-debug-v1.0.3.apk"
+              download="nidhiflow-android-debug-v1.0.4.apk"
+              href="/downloads/nidhiflow-android-debug-v1.0.4.apk"
             >
               Download APK
             </a>
@@ -334,6 +438,85 @@ export function YouPage() {
               This APK uses a development signature for device testing. Android may ask you to allow
               installation from this browser.
             </p>
+          </Card>
+        </section>
+      ) : null}
+
+      {showNotificationTransactions ? (
+        <section aria-labelledby="notification-transactions-title">
+          <div className="section-heading">
+            <h2 id="notification-transactions-title">Transaction detection</h2>
+          </div>
+          <Card className="notification-transaction-settings">
+            <div>
+              <strong>Use Android notifications</strong>
+              <p>
+                NidhiFlow reads supported payment notifications on this device and immediately
+                creates shared transactions marked <em>From notification</em>. Raw notification text
+                is not uploaded.
+              </p>
+            </div>
+            <label>
+              Account for detected transactions
+              <select
+                disabled={
+                  notificationState === "loading" || Boolean(notificationStatus?.captureEnabled)
+                }
+                onChange={(event) => setNotificationAccountId(event.target.value)}
+                value={notificationAccountId}
+              >
+                <option value="">Select an INR account</option>
+                {notificationAccounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {!notificationStatus?.captureEnabled ? (
+              <label className="notification-transaction-settings__consent">
+                <input
+                  checked={notificationConsent}
+                  onChange={(event) => setNotificationConsent(event.target.checked)}
+                  type="checkbox"
+                />
+                <span>
+                  I understand Android notification access can expose notifications from many apps,
+                  and detected transactions will be visible to everyone in my workspace.
+                </span>
+              </label>
+            ) : null}
+            <p>
+              Permission: {notificationStatus?.permissionGranted ? "Granted" : "Not granted"}
+              {notificationStatus?.pendingCount
+                ? ` · ${notificationStatus.pendingCount} waiting to sync`
+                : ""}
+            </p>
+            {notificationState === "error" ? (
+              <div className="error-message" role="alert">
+                Notification transaction settings could not be updated.
+              </div>
+            ) : null}
+            {notificationStatus?.captureEnabled ? (
+              <Button
+                disabled={notificationState === "loading"}
+                fullWidth
+                onClick={() => void disableNotificationTransactions()}
+                variant="secondary"
+              >
+                Disable transaction detection
+              </Button>
+            ) : (
+              <Button
+                disabled={
+                  notificationState === "loading" || !notificationConsent || !notificationAccountId
+                }
+                fullWidth
+                onClick={() => void enableNotificationTransactions()}
+              >
+                Enable and open Android settings
+              </Button>
+            )}
           </Card>
         </section>
       ) : null}

@@ -115,6 +115,12 @@
 - Guest login/data-protection reminder preference stored locally
 - Flow launch notification
 - Useful, non-spammy delivery with clear disable controls
+- On supported Android devices, explicit notification-access opt-in can create
+  ordinary categorized workspace transactions from allowlisted finance apps.
+- Notification-derived transactions show `From notification`, immediately
+  participate in all calculations, remain editable/reversible, and are
+  idempotent across duplicate delivery.
+- Raw notification content is parsed and discarded on-device.
 
 ## Planned Backlog Features
 
@@ -123,11 +129,6 @@
   without changing privacy, authentication, or single-workspace rules.
 - Goals and Liabilities become dedicated secondary destinations without adding
   more primary navigation tabs or duplicating ledger data.
-- After explicit opt-in, Android notification access may automatically create
-  categorized ordinary transactions in the current workspace. They immediately
-  affect all applicable calculations and are visible to every workspace member
-  with a small `From notification` source label. Raw notification content stays
-  on-device.
 - Detailed scope and release gates are defined in
   [Product Backlog](backlog.md).
 

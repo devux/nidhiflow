@@ -7,6 +7,7 @@ public class MainActivity extends BridgeActivity {
   @Override
   public void onCreate(Bundle savedInstanceState) {
     registerPlugin(UpiPaymentsPlugin.class);
+    registerPlugin(NotificationTransactionsPlugin.class);
     super.onCreate(savedInstanceState);
   }
 }

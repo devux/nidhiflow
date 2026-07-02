@@ -48,6 +48,7 @@ Required Vercel environment variables:
 
 ```text
 NIDHIFLOW_API_BASE_URL=https://nidhiflow.onrender.com
+ANDROID_NOTIFICATION_TRANSACTIONS_ENABLED=false
 DIRECT_UPI_ENABLED=false
 FLOW_AI_ENABLED=false
 ```
@@ -55,6 +56,12 @@ FLOW_AI_ENABLED=false
 `NIDHIFLOW_API_BASE_URL` and frontend feature flags are compiled into the
 frontend bundle, so changing them requires a new Vercel deployment.
 `DIRECT_UPI_ENABLED` must remain `false` while Direct UPI is parked.
+`ANDROID_NOTIFICATION_TRANSACTIONS_ENABLED` must use the same value in the
+packaged Android build and backend. The web deployment may remain `false`
+because notification access is unavailable there. The native listener is
+compiled off unless the flag is `true` during the Android Gradle build. Enable
+it only for Android device testing or an approved rollout after migration
+`1750000000015_android_notification_transactions.cjs` has completed.
 `FLOW_AI_ENABLED` controls whether the Flow page shows the static coming-soon
 experience or the enabled Flow chat experience.
 
@@ -102,6 +109,7 @@ DATABASE_SSL=true
 CORS_ORIGINS=https://nidhiflow.vercel.app,https://localhost
 JWT_ACCESS_SECRET=<strong random secret>
 AUTH_DEBUG_TOKENS_ENABLED=false
+ANDROID_NOTIFICATION_TRANSACTIONS_ENABLED=false
 FLOW_AI_ENABLED=false
 APP_PUBLIC_URL=https://nidhiflow.vercel.app
 EMAIL_DELIVERY_PROVIDER=none
@@ -325,7 +333,7 @@ performance before release.
 
 The frontend build copies `apps/frontend/public/downloads` into
 `dist/downloads`. The Profile page links to
-`/downloads/nidhiflow-android-debug-v1.0.3.apk`.
+`/downloads/nidhiflow-android-debug-v1.0.4.apk`.
 
 The committed debug APK is for direct device testing only. It is signed with
 the standard Android development certificate and must not be represented as a

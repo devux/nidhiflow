@@ -27,6 +27,9 @@ must not delay or weaken the core finance foundation.
 - Savings and debt-repayment goals
 - Recurring transactions, reminders, and attachments
 - Search, filtering, sorting, pagination, CSV import/export
+- Feature-gated Android notification-derived transaction creation with
+  on-device parsing, deterministic categorization, provenance, and duplicate
+  prevention
 
 ### Insights and Engagement
 
@@ -77,8 +80,7 @@ Current order:
 2. Profile screen UI optimization
 3. Shared-workspace screen UI optimization
 4. Dedicated Goals and Liabilities screens
-5. Experimental Android notification-derived transactions
-6. Parked Direct UPI intent
+5. Parked Direct UPI intent
 
 See [AI Roadmap](../ai/ai-roadmap.md) for sequencing and release gates.
 

@@ -846,6 +846,19 @@ p {
   white-space: nowrap;
 }
 
+.transaction-source-label {
+  display: inline-flex;
+  align-items: center;
+  margin-left: var(--space-2);
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--radius-pill);
+  color: var(--color-brand-strong);
+  background: var(--color-brand-soft);
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .transaction-history-row__amount {
   min-width: 4.5rem;
   color: var(--color-text-primary);
@@ -3699,6 +3712,48 @@ p {
 .android-download-card small,
 .android-download-card p {
   color: var(--color-text-muted);
+}
+
+.notification-transaction-settings.MuiCard-root {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.notification-transaction-settings p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.notification-transaction-settings label {
+  display: grid;
+  gap: var(--space-2);
+  color: var(--color-text-primary);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.notification-transaction-settings select {
+  width: 100%;
+  min-height: 2.75rem;
+  padding-inline: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+}
+
+.notification-transaction-settings__consent {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  font-weight: 400 !important;
+}
+
+.notification-transaction-settings__consent input {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.1rem;
 }
 
 .android-download-card > .button {

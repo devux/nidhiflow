@@ -43,6 +43,9 @@ resources remain collaborative.
   for transfers.
 - `created_by_user_id`/`updated_by_user_id` attribute family changes.
 - A generated recurring transaction references its template.
+- An Android notification-derived transaction records provenance and a parser
+  version plus a user-scoped deduplication fingerprint but remains an ordinary
+  workspace transaction visible to every member.
 - Attachments may be linked to transactions.
 
 Cross-workspace account/category references are prohibited by service checks

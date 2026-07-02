@@ -4,6 +4,7 @@ import { sendSuccess } from "../../app/http.js";
 import type { AuthContext } from "../../app/middleware/authenticate.js";
 import type { TransactionService } from "./transaction.service.js";
 import type {
+  CreateNotificationTransactionBody,
   CreateTransactionBody,
   TransactionListQuery,
   UpdateTransactionBody,
@@ -49,6 +50,27 @@ export class TransactionController {
       data: transaction,
       message: "Transaction created successfully.",
       status: 201,
+    });
+  };
+
+  createNotificationTransaction = async (
+    request: Request<{ workspaceId: string }, never, CreateNotificationTransactionBody>,
+    response: Response,
+  ) => {
+    const auth = getAuthContext(response);
+    const result = await this.service.createNotificationTransaction(
+      auth.userId,
+      request.params.workspaceId,
+      request.body,
+      response.locals.requestId as string,
+    );
+
+    sendSuccess(response, {
+      data: result,
+      message: result.duplicate
+        ? "Notification transaction already exists."
+        : "Notification transaction created successfully.",
+      status: result.duplicate ? 200 : 201,
     });
   };
 

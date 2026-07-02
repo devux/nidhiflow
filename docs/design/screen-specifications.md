@@ -23,6 +23,8 @@
 - Groups: Today, Yesterday, or localized date
 - Rows show context, signed amount, and time
 - Selecting a row opens details and permitted edit actions
+- Android-derived entries show a compact `From notification` provenance label
+  in lists and details.
 
 ## Add Income and Add Expense
 
@@ -97,6 +99,10 @@
 - Optional avatar with safe default
 - Android app section provides an APK download action, supported Android
   version, build type, and installation-source warning
+- On supported Android builds when enabled, Transaction detection explains
+  notification-access scope and shared visibility, requires an INR destination
+  account plus explicit consent, opens Android notification-access settings,
+  and provides a disable action.
 
 ## Flow Preview
 

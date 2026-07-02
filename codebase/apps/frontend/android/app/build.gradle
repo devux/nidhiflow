@@ -1,14 +1,21 @@
 apply plugin: 'com.android.application'
 
+def notificationTransactionsEnabled =
+    System.getenv("ANDROID_NOTIFICATION_TRANSACTIONS_ENABLED")?.equalsIgnoreCase("true") ?: false
+
 android {
     namespace = "com.nidhiflow.app"
     compileSdk = rootProject.ext.compileSdkVersion
+    buildFeatures {
+        buildConfig = true
+    }
     defaultConfig {
         applicationId "com.nidhiflow.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 4
-        versionName "1.0.3"
+        versionCode 5
+        versionName "1.0.4"
+        buildConfigField "boolean", "ANDROID_NOTIFICATION_TRANSACTIONS_ENABLED", notificationTransactionsEnabled.toString()
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -38,6 +45,7 @@ dependencies {
     implementation project(':capacitor-android')
     implementation 'com.google.android.gms:play-services-code-scanner:16.1.0'
     testImplementation "junit:junit:$junitVersion"
+    testImplementation 'org.json:json:20240303'
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')

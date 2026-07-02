@@ -15,6 +15,29 @@ const moneySchema = z.object({
 });
 
 const transactionTypeSchema = z.enum(["income", "expense", "transfer"]);
+const dateOnlySchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Transaction date must be YYYY-MM-DD.")
+  .refine((value) => {
+    const parsed = new Date(`${value}T00:00:00.000Z`);
+    return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+  }, "Transaction date must be a real calendar date.");
+const notificationCategoryHintSchema = z.enum([
+  "salary",
+  "freelance",
+  "business",
+  "interest",
+  "food",
+  "shopping",
+  "transport",
+  "bills",
+  "entertainment",
+  "health",
+  "education",
+  "travel",
+  "home",
+  "uncategorized",
+]);
 
 export const workspaceIdSchema = z.object({
   workspaceId: z.string().trim().min(1),
@@ -31,9 +54,7 @@ export const createTransactionBodySchema = z
     destinationAccountId: z.string().trim().min(1).optional(),
     money: moneySchema,
     note: z.string().trim().max(100).optional(),
-    transactionDate: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/, "Transaction date must be YYYY-MM-DD."),
+    transactionDate: dateOnlySchema,
     type: transactionTypeSchema,
   })
   .superRefine((value, context) => {
@@ -66,6 +87,31 @@ export const createTransactionBodySchema = z
 
 export const updateTransactionBodySchema = createTransactionBodySchema;
 
+export const createNotificationTransactionBodySchema = z
+  .object({
+    accountId: z.string().trim().min(1),
+    amount: z
+      .string()
+      .regex(/^\d+(\.\d{1,2})?$/, "Amount must be a decimal string with up to 2 places.")
+      .refine((value) => Number(value) > 0, "Amount must be greater than zero."),
+    categoryHint: notificationCategoryHintSchema,
+    currency: z.literal("INR"),
+    detectedAt: z.string().datetime({ offset: true }),
+    merchantHint: z.string().trim().min(1).max(100).optional(),
+    parserVersion: z.number().int().min(1).max(100),
+    sourceFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+    sourcePackage: z.enum([
+      "com.google.android.apps.nbu.paisa.user",
+      "com.phonepe.app",
+      "net.one97.paytm",
+      "in.org.npci.upiapp",
+      "com.idfcfirstbank.optimus",
+    ]),
+    transactionDate: dateOnlySchema,
+    type: z.enum(["income", "expense"]),
+  })
+  .strict();
+
 export const transactionListQuerySchema = z.object({
   accountId: z.string().trim().min(1).optional(),
   categoryId: z.string().trim().min(1).optional(),
@@ -81,5 +127,8 @@ export const transactionListQuerySchema = z.object({
 });
 
 export type CreateTransactionBody = z.infer<typeof createTransactionBodySchema>;
+export type CreateNotificationTransactionBody = z.infer<
+  typeof createNotificationTransactionBodySchema
+>;
 export type UpdateTransactionBody = z.infer<typeof updateTransactionBodySchema>;
 export type TransactionListQuery = z.infer<typeof transactionListQuerySchema>;

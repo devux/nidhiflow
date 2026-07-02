@@ -7,10 +7,66 @@ import { WorkspaceCategoryRepository } from "../categories/workspace-category.re
 import { WorkspaceRepository } from "../workspaces/workspace.repository.js";
 import { TransactionRepository } from "./transaction.repository.js";
 import type {
+  CreateNotificationTransactionBody,
   CreateTransactionBody,
   TransactionListQuery,
   UpdateTransactionBody,
 } from "./transaction.schemas.js";
+
+const notificationCategoryIds = {
+  income: {
+    business: "cat_business",
+    freelance: "cat_freelance",
+    interest: "cat_interest",
+    salary: "cat_salary",
+    uncategorized: "cat_uncategorized_income",
+  },
+  expense: {
+    bills: "cat_bills",
+    education: "cat_education",
+    entertainment: "cat_entertainment",
+    food: "cat_food",
+    health: "cat_health",
+    home: "cat_home",
+    shopping: "cat_shopping",
+    transport: "cat_transport",
+    travel: "cat_travel",
+    uncategorized: "cat_uncategorized_expense",
+  },
+} as const;
+
+function notificationCategoryId(input: CreateNotificationTransactionBody) {
+  const categoryMap = notificationCategoryIds[input.type] as Record<string, string>;
+  return categoryMap[input.categoryHint] ?? categoryMap.uncategorized;
+}
+
+function validateNotificationDates(input: CreateNotificationTransactionBody) {
+  const detectedAt = new Date(input.detectedAt);
+  const now = Date.now();
+  const maximumAgeMs = 8 * 24 * 60 * 60 * 1_000;
+  const maximumFutureSkewMs = 5 * 60 * 1_000;
+  if (
+    Number.isNaN(detectedAt.getTime()) ||
+    detectedAt.getTime() < now - maximumAgeMs ||
+    detectedAt.getTime() > now + maximumFutureSkewMs
+  ) {
+    throw new AppError({
+      code: "VALIDATION_ERROR",
+      message: "The notification detection time is outside the accepted range.",
+      status: 422,
+    });
+  }
+
+  const transactionDate = Date.parse(`${input.transactionDate}T00:00:00.000Z`);
+  const detectedDate = Date.parse(`${detectedAt.toISOString().slice(0, 10)}T00:00:00.000Z`);
+  if (Math.abs(transactionDate - detectedDate) > 24 * 60 * 60 * 1_000) {
+    throw new AppError({
+      code: "VALIDATION_ERROR",
+      message: "The transaction date does not match the notification detection time.",
+      status: 422,
+    });
+  }
+}
 
 function notFound() {
   return new AppError({
@@ -31,8 +87,12 @@ export class TransactionService {
     this.authRepository = new AuthRepository(database);
   }
 
-  private async ensureWorkspaceAccess(userId: string, workspaceId: string) {
-    const workspace = await this.workspaceRepository.findWorkspaceForUser(userId, workspaceId);
+  private async ensureWorkspaceAccess(userId: string, workspaceId: string, queryable?: Queryable) {
+    const workspace = await this.workspaceRepository.findWorkspaceForUser(
+      userId,
+      workspaceId,
+      queryable,
+    );
 
     if (!workspace) {
       throw notFound();
@@ -43,7 +103,7 @@ export class TransactionService {
 
   private async validateTransactionInput(
     workspaceId: string,
-    input: CreateTransactionBody | UpdateTransactionBody,
+    input: CreateTransactionBody,
     transaction: Queryable,
   ) {
     const accountRepository = new AccountRepository(transaction);
@@ -230,6 +290,103 @@ export class TransactionService {
       );
 
       return created;
+    });
+  }
+
+  async createNotificationTransaction(
+    userId: string,
+    workspaceId: string,
+    input: CreateNotificationTransactionBody,
+    requestId: string | null,
+  ) {
+    const categoryId = notificationCategoryId(input);
+    const transactionInput: CreateTransactionBody = {
+      accountId: input.accountId,
+      categoryId,
+      money: { amount: input.amount, currency: input.currency },
+      ...(input.merchantHint ? { note: input.merchantHint } : {}),
+      transactionDate: input.transactionDate,
+      type: input.type,
+    };
+
+    return this.database.transaction(async (transaction) => {
+      await this.ensureWorkspaceAccess(userId, workspaceId, transaction);
+      const repository = new TransactionRepository(transaction);
+      const existing = await repository.findByNotificationFingerprint(
+        userId,
+        workspaceId,
+        input.sourceFingerprint,
+        transaction,
+      );
+      if (existing) {
+        return { duplicate: true, transaction: existing };
+      }
+      validateNotificationDates(input);
+      const validated = await this.validateTransactionInput(
+        workspaceId,
+        transactionInput,
+        transaction,
+      );
+      const created = await repository.create(
+        {
+          accountId: input.accountId,
+          amount: input.amount,
+          categoryId: validated.categoryId,
+          createdByUserId: userId,
+          currency: input.currency,
+          destinationAccountId: null,
+          id: createId("txn"),
+          note: input.merchantHint ?? null,
+          source: "ANDROID_NOTIFICATION",
+          sourceDetectedAt: input.detectedAt,
+          sourceFingerprint: input.sourceFingerprint,
+          sourcePackage: input.sourcePackage,
+          sourceParserVersion: input.parserVersion,
+          transactionDate: input.transactionDate,
+          type: input.type,
+          updatedByUserId: userId,
+          workspaceId,
+        },
+        transaction,
+      );
+
+      if (!created) {
+        const existing = await repository.findByNotificationFingerprint(
+          userId,
+          workspaceId,
+          input.sourceFingerprint,
+          transaction,
+        );
+        if (!existing) {
+          throw new AppError({
+            code: "CONFLICT",
+            message: "The notification transaction could not be created.",
+            status: 409,
+          });
+        }
+        return { duplicate: true, transaction: existing };
+      }
+
+      await this.authRepository.insertAuditLog(
+        {
+          action: "transaction.notification_created",
+          actorUserId: userId,
+          changeMetadata: {
+            source: "ANDROID_NOTIFICATION",
+            sourcePackage: input.sourcePackage,
+            sourceParserVersion: input.parserVersion,
+            type: input.type,
+          },
+          id: createId("aud"),
+          requestId,
+          resourceId: created.id,
+          resourceType: "transaction",
+          workspaceId,
+        },
+        transaction,
+      );
+
+      return { duplicate: false, transaction: created };
     });
   }
 

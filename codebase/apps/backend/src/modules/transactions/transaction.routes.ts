@@ -7,6 +7,7 @@ import type { Database } from "../../shared/database/database.js";
 import { TransactionController } from "./transaction.controller.js";
 import { TransactionService } from "./transaction.service.js";
 import {
+  createNotificationTransactionBodySchema,
   createTransactionBodySchema,
   transactionIdSchema,
   transactionListQuerySchema,
@@ -35,6 +36,13 @@ export function createTransactionsRouter({
     validate({ params: workspaceIdSchema, body: createTransactionBodySchema }),
     controller.createTransaction,
   );
+  if (environment.ANDROID_NOTIFICATION_TRANSACTIONS_ENABLED) {
+    router.post(
+      "/from-notification",
+      validate({ params: workspaceIdSchema, body: createNotificationTransactionBodySchema }),
+      controller.createNotificationTransaction,
+    );
+  }
   router.patch(
     "/:transactionId",
     validate({

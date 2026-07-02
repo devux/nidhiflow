@@ -116,7 +116,14 @@ function TransactionHistoryRow({ locale, transaction }: TransactionHistoryRowPro
       <ListItemText
         className="transaction-history-row__details"
         primary={title}
-        secondary={formatTransactionDate(transaction.transactionDate, locale)}
+        secondary={
+          <>
+            {formatTransactionDate(transaction.transactionDate, locale)}
+            {transaction.source === "ANDROID_NOTIFICATION" ? (
+              <span className="transaction-source-label">From notification</span>
+            ) : null}
+          </>
+        }
       />
       <Typography
         className={`transaction-history-row__amount transaction-history-row__amount--${transaction.type}`}

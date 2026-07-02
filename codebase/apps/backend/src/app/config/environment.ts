@@ -15,6 +15,7 @@ const environmentSchema = z
     API_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(100),
     AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(10),
     FEEDBACK_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(5),
+    ANDROID_NOTIFICATION_TRANSACTIONS_ENABLED: booleanString.default("false"),
     FLOW_AI_ENABLED: booleanString.default("false"),
     FLOW_AI_TIMEOUT_MS: z.coerce.number().int().min(5_000).max(120_000).default(60_000),
     FLOW_MODEL: z.string().trim().min(1).default("llama3.2:3b"),

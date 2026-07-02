@@ -12,8 +12,7 @@ privacy, API, database, design, and test requirements are ready.
 2. Profile screen UI optimization
 3. Shared-workspace screen UI optimization
 4. Dedicated Goals and Liabilities screens
-5. Android notification-derived transactions
-6. Parked Direct UPI intent
+5. Parked Direct UPI intent
 
 ## P0: Initial-Load and API Performance
 
@@ -167,7 +166,7 @@ ledger.
 - Currency, accessibility, loading, empty, and error behavior follow shared
   finance rules.
 
-## P2 Experimental: Android Notification-Derived Transactions
+## Implemented, Feature-Gated: Android Notification-Derived Transactions
 
 ### Goal
 

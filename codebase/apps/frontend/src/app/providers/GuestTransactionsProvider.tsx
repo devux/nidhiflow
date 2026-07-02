@@ -15,6 +15,7 @@ import {
 import { useAuth } from "./AuthProvider";
 import {
   createAccount,
+  createNotificationTransaction,
   createTransaction as createApiTransaction,
   deleteTransaction as deleteApiTransaction,
   listAccounts,
@@ -24,6 +25,11 @@ import {
   updateTransaction as updateApiTransaction,
   type AccountResource,
 } from "../../data/api/financeClient";
+import { environment } from "../../config/environment";
+import {
+  notificationTransactions,
+  supportsNotificationTransactions,
+} from "../../features/notifications/native/notificationTransactions";
 import type {
   GuestTransaction,
   GuestTransactionInput,
@@ -86,7 +92,7 @@ export function GuestTransactionsProvider({
   children,
   repository = defaultRepository,
 }: GuestTransactionsProviderProps) {
-  const { accessToken, activeWorkspace, isAuthenticated, isCheckingSession } = useAuth();
+  const { accessToken, activeWorkspace, isAuthenticated, isCheckingSession, user } = useAuth();
   const [transactions, setTransactions] = useState<GuestTransaction[]>();
   const [loadError, setLoadError] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
@@ -126,6 +132,123 @@ export function GuestTransactionsProvider({
       isActive = false;
     };
   }, [accessToken, isAuthenticated, isCheckingSession, loadAttempt, repository, workspaceId]);
+
+  useEffect(() => {
+    if (!supportsNotificationTransactions() || isCheckingSession) return;
+    if (
+      !environment.ANDROID_NOTIFICATION_TRANSACTIONS_ENABLED ||
+      !isAuthenticated ||
+      !accessToken ||
+      !workspaceId ||
+      !user
+    ) {
+      void notificationTransactions.disableAndClear().catch(() => undefined);
+      return;
+    }
+
+    void notificationTransactions
+      .getStatus()
+      .then((status) => {
+        if (
+          status.captureEnabled &&
+          (status.userId !== user.id || status.workspaceId !== workspaceId)
+        ) {
+          return notificationTransactions.disableAndClear();
+        }
+        return undefined;
+      })
+      .catch(() => undefined);
+  }, [accessToken, isAuthenticated, isCheckingSession, user, workspaceId]);
+
+  useEffect(() => {
+    if (
+      !environment.ANDROID_NOTIFICATION_TRANSACTIONS_ENABLED ||
+      !supportsNotificationTransactions() ||
+      !isAuthenticated ||
+      !accessToken ||
+      !workspaceId ||
+      !user
+    ) {
+      return;
+    }
+    const notificationAccessToken = accessToken;
+    const notificationUserId = user.id;
+    const notificationWorkspaceId = workspaceId;
+
+    let isActive = true;
+    let syncing = false;
+    async function syncDetectedTransactions() {
+      if (syncing) return;
+      syncing = true;
+      try {
+        const status = await notificationTransactions.getStatus();
+        if (
+          !status.captureEnabled ||
+          !status.permissionGranted ||
+          !status.accountId ||
+          status.userId !== notificationUserId ||
+          status.workspaceId !== notificationWorkspaceId
+        ) {
+          return;
+        }
+        const pending = await notificationTransactions.getPendingTransactions();
+        if (pending.transactions.length === 0) return;
+        const categories = await listCategories({
+          accessToken: notificationAccessToken,
+          workspaceId: notificationWorkspaceId,
+        });
+        const acknowledged: string[] = [];
+        const synced: GuestTransaction[] = [];
+
+        for (const detected of pending.transactions) {
+          try {
+            const result = await createNotificationTransaction({
+              accessToken: notificationAccessToken,
+              accountId: status.accountId,
+              categories,
+              detected,
+              workspaceId: notificationWorkspaceId,
+            });
+            acknowledged.push(detected.localId);
+            synced.push(result.transaction);
+          } catch {
+            // Keep the item queued for a later retry or account correction.
+          }
+        }
+
+        if (acknowledged.length > 0) {
+          await notificationTransactions.acknowledgeTransactions({ localIds: acknowledged });
+        }
+        if (isActive && synced.length > 0) {
+          setTransactions((current) => {
+            const records = [...(current ?? [])];
+            for (const transaction of synced) {
+              const index = records.findIndex((record) => record.id === transaction.id);
+              if (index >= 0) records[index] = transaction;
+              else records.unshift(transaction);
+            }
+            return records;
+          });
+        }
+      } finally {
+        syncing = false;
+      }
+    }
+
+    const handleForeground = () => {
+      if (document.visibilityState === "visible") void syncDetectedTransactions();
+    };
+    void syncDetectedTransactions();
+    window.addEventListener("focus", handleForeground);
+    window.addEventListener("nidhiflow:notification-settings-changed", handleForeground);
+    document.addEventListener("visibilitychange", handleForeground);
+    return () => {
+      isActive = false;
+      window.removeEventListener("focus", handleForeground);
+      window.removeEventListener("nidhiflow:notification-settings-changed", handleForeground);
+      document.removeEventListener("visibilitychange", handleForeground);
+    };
+  }, [accessToken, isAuthenticated, user, workspaceId]);
 
   const createTransaction = useCallback(
     async (input: GuestTransactionInput) => {

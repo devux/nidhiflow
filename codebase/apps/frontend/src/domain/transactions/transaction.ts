@@ -1,6 +1,12 @@
 import type { SupportedCurrency } from "../preferences/guestPreferences";
 
-export const incomeCategories = ["Salary", "Freelance", "Business", "Interest"] as const;
+export const incomeCategories = [
+  "Salary",
+  "Freelance",
+  "Business",
+  "Interest",
+  "Uncategorized",
+] as const;
 export const expenseCategories = [
   "Food",
   "Shopping",
@@ -12,6 +18,7 @@ export const expenseCategories = [
   "Travel",
   "Home",
   "Misc",
+  "Uncategorized",
 ] as const;
 
 export type IncomeCategory = (typeof incomeCategories)[number];
@@ -27,6 +34,10 @@ export interface GuestTransaction {
   deletedAt?: string;
   id: string;
   note: string;
+  source?: "MANUAL" | "ANDROID_NOTIFICATION";
+  sourceDetectedAt?: string | null;
+  sourcePackage?: string | null;
+  sourceParserVersion?: number | null;
   transactionDate: string;
   type: TransactionType;
   updatedAt: string;
