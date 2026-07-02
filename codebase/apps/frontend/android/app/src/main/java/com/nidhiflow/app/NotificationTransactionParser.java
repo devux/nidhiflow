@@ -53,17 +53,17 @@ final class NotificationTransactionParser {
     Pattern.CASE_INSENSITIVE
   );
   private static final Pattern SMS_EXPENSE = Pattern.compile(
-    "\\b(debited|withdrawn)\\b",
+    "\\b(debited|withdrawn|sent)\\b",
     Pattern.CASE_INSENSITIVE
   );
   private static final Pattern SMS_AMOUNT_BEFORE_DIRECTION = Pattern.compile(
     "(?:₹|\\brs\\.?|\\binr)\\s*(" +
     AMOUNT_VALUE +
-    ")(?![0-9,.]).{0,80}?\\b(?:credited|deposited|debited|withdrawn)\\b",
+    ")(?![0-9,.]).{0,80}?\\b(?:credited|deposited|debited|withdrawn|sent)\\b",
     Pattern.CASE_INSENSITIVE | Pattern.DOTALL
   );
   private static final Pattern SMS_AMOUNT_AFTER_DIRECTION = Pattern.compile(
-    "\\b(?:credited|deposited|debited|withdrawn)\\b.{0,80}?(?:₹|\\brs\\.?|\\binr)\\s*(" +
+    "\\b(?:credited|deposited|debited|withdrawn|sent)\\b.{0,80}?(?:₹|\\brs\\.?|\\binr)\\s*(" +
     AMOUNT_VALUE +
     ")(?![0-9,.])",
     Pattern.CASE_INSENSITIVE | Pattern.DOTALL
@@ -82,6 +82,7 @@ final class NotificationTransactionParser {
 
     Map<String, Integer> parserVersions = new HashMap<>();
     for (String packageName : sourceNames.keySet()) parserVersions.put(packageName, 1);
+    parserVersions.put(DEFAULT_SMS_SOURCE, 2);
     PARSER_VERSIONS = Collections.unmodifiableMap(parserVersions);
     SUPPORTED_PACKAGES = Collections.unmodifiableSet(supportedPackages);
   }

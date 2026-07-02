@@ -138,4 +138,34 @@ public class NotificationTransactionParserTest {
       1_782_816_600_000L
     ));
   }
+
+  @Test
+  public void parsesHdfcCreditAlertTemplate() {
+    JSONObject parsed = NotificationTransactionParser.parseDefaultSms(
+      "com.google.android.apps.messaging",
+      "hdfc-credit-key",
+      "HDFCBK",
+      "Credit Alert! Rs.1.00 credited to HDFC Bank A/c XX1234 on 03-07-26 from VPA testuser@okaxis (UPI 655000000001)",
+      1_783_013_400_000L
+    );
+
+    assertEquals("1.00", parsed.optString("amount"));
+    assertEquals("income", parsed.optString("type"));
+    assertEquals(2, parsed.optInt("parserVersion"));
+  }
+
+  @Test
+  public void parsesHdfcSentTemplate() {
+    JSONObject parsed = NotificationTransactionParser.parseDefaultSms(
+      "com.google.android.apps.messaging",
+      "hdfc-sent-key",
+      "HDFCBK",
+      "Sent Rs.1.00\nFrom HDFC Bank A/C *1234\nTo TEST USER\nOn 03/07/26\nRef 655000000002\nNot You?\nCall 18000000000/SMS BLOCK UPI to 7000000000",
+      1_783_013_400_000L
+    );
+
+    assertEquals("1.00", parsed.optString("amount"));
+    assertEquals("expense", parsed.optString("type"));
+    assertEquals(2, parsed.optInt("parserVersion"));
+  }
 }

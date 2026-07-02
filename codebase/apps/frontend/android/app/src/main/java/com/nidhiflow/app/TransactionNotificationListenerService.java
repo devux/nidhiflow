@@ -18,12 +18,12 @@ public class TransactionNotificationListenerService extends NotificationListener
     if (!NotificationTransactionStore.captureEnabled(this)) return;
     Bundle extras = notification.getNotification().extras;
     CharSequence title = extras.getCharSequence(Notification.EXTRA_TITLE);
-    CharSequence text = extras.getCharSequence(Notification.EXTRA_BIG_TEXT);
-    if (text == null) text = extras.getCharSequence(Notification.EXTRA_TEXT);
     String packageName = notification.getPackageName();
     String defaultSmsPackage = Telephony.Sms.getDefaultSmsPackage(this);
+    boolean defaultSmsSource = packageName.equals(defaultSmsPackage);
+    CharSequence text = defaultSmsSource ? defaultSmsText(extras) : standardText(extras);
     JSONObject parsed =
-      packageName.equals(defaultSmsPackage)
+      defaultSmsSource
         ? NotificationTransactionParser.parseDefaultSms(
           packageName,
           notification.getKey(),
@@ -39,6 +39,31 @@ public class TransactionNotificationListenerService extends NotificationListener
           notification.getPostTime()
         );
     if (parsed != null) NotificationTransactionStore.enqueue(this, parsed);
+  }
+
+  private static CharSequence defaultSmsText(Bundle extras) {
+    android.os.Parcelable[] bundledMessages = extras.getParcelableArray(
+      Notification.EXTRA_MESSAGES
+    );
+    if (bundledMessages != null) {
+      for (int index = bundledMessages.length - 1; index >= 0; index--) {
+        if (!(bundledMessages[index] instanceof Bundle)) continue;
+        CharSequence latestMessage = ((Bundle) bundledMessages[index]).getCharSequence("text");
+        if (latestMessage != null && latestMessage.length() > 0) {
+          return latestMessage;
+        }
+      }
+    }
+    return standardText(extras);
+  }
+
+  private static CharSequence standardText(Bundle extras) {
+    CharSequence text = extras.getCharSequence(Notification.EXTRA_BIG_TEXT);
+    if (text != null && text.length() > 0) return text;
+    text = extras.getCharSequence(Notification.EXTRA_TEXT);
+    if (text != null && text.length() > 0) return text;
+    CharSequence[] lines = extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES);
+    return lines == null || lines.length == 0 ? "" : lines[lines.length - 1];
   }
 
   @Override
