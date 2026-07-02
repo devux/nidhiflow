@@ -67,6 +67,27 @@ written to application or audit logs.
 - Treat all callback content as untrusted and unverified.
 - Return safe `404` responses for cross-user reads or updates.
 
+## Android Notification-Derived Transactions
+
+- Treat Android notification access as highly sensitive and disabled by
+  default.
+- Require clear in-app education, explicit opt-in, Android system permission,
+  and immediate stop on permission revocation.
+- Process only allowlisted source packages with versioned parsers and discard
+  unrelated notification content locally.
+- Never retain or transmit raw notification titles or bodies.
+- Reject OTPs, authentication/security alerts, promotional content, unsupported
+  currencies, ambiguous amounts, and malformed values.
+- A notification is untrusted evidence even when it creates an ordinary
+  transaction. Display `From notification` and never describe the entry as
+  bank-verified.
+- Revalidate authentication, active workspace membership, amount, account,
+  category, date, duplicates, and idempotency before automatic creation.
+- Treat the created entry as an ordinary workspace transaction in authorization,
+  calculations, audit, export, edit, and deletion/reversal flows.
+- Exclude notification content, merchant hints, and financial values from logs,
+  analytics, crash reports, and audit metadata.
+
 ## Files
 
 Validate signature/type/size, use generated storage keys, store outside the web

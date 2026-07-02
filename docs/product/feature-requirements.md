@@ -99,6 +99,8 @@
 
 ## Direct UPI Intent Payments
 
+- Status: parked in the backlog and hidden by default with
+  `DIRECT_UPI_ENABLED=false`.
 - Authenticated Android users can scan a UPI QR code or enter payment details
 - Show only installed compatible UPI apps and require an explicit app choice
 - Generate the payment reference on the backend and launch the selected app
@@ -113,6 +115,21 @@
 - Guest login/data-protection reminder preference stored locally
 - Flow launch notification
 - Useful, non-spammy delivery with clear disable controls
+
+## Planned Backlog Features
+
+- Initial-load and API performance work is the highest-priority backlog item.
+- Profile and shared-workspace screens receive mobile-first UI optimization
+  without changing privacy, authentication, or single-workspace rules.
+- Goals and Liabilities become dedicated secondary destinations without adding
+  more primary navigation tabs or duplicating ledger data.
+- After explicit opt-in, Android notification access may automatically create
+  categorized ordinary transactions in the current workspace. They immediately
+  affect all applicable calculations and are visible to every workspace member
+  with a small `From notification` source label. Raw notification content stays
+  on-device.
+- Detailed scope and release gates are defined in
+  [Product Backlog](backlog.md).
 
 ## Flow Preview and Phase 2
 

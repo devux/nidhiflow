@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-route
 
 import type { GuestPreferencesRepository } from "../data/guest/guestPreferencesRepository";
 import type { GuestTransactionRepository } from "../data/guest/guestTransactionRepository";
+import { environment } from "../config/environment";
 import { LoadingScreen } from "../shared/components/LoadingScreen";
 import { AuthProvider } from "./providers/AuthProvider";
 import { GuestPreferencesProvider } from "./providers/GuestPreferencesProvider";
@@ -73,7 +74,12 @@ export function App({ repository, transactionRepository }: AppProps) {
                     <Route element={<YouPage />} path="you" />
                     <Route element={<SignupPage />} path="signup" />
                     <Route element={<LoginPage />} path="login" />
-                    <Route element={<PayPage />} path="pay" />
+                    <Route
+                      element={
+                        environment.DIRECT_UPI_ENABLED ? <PayPage /> : <Navigate replace to="/" />
+                      }
+                      path="pay"
+                    />
                     <Route element={<TransactionFormPage />} path="transactions/new" />
                     <Route element={<TransactionFormPage />} path="transactions/:id/edit" />
                     <Route element={<Navigate replace to="/" />} path="*" />

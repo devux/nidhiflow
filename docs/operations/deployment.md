@@ -48,13 +48,15 @@ Required Vercel environment variables:
 
 ```text
 NIDHIFLOW_API_BASE_URL=https://nidhiflow.onrender.com
+DIRECT_UPI_ENABLED=false
 FLOW_AI_ENABLED=false
 ```
 
-`NIDHIFLOW_API_BASE_URL` is compiled into the frontend bundle, so changing the
-backend URL requires a new Vercel deployment. `FLOW_AI_ENABLED` controls whether
-the Flow page shows the static coming-soon experience or the enabled Flow chat
-experience.
+`NIDHIFLOW_API_BASE_URL` and frontend feature flags are compiled into the
+frontend bundle, so changing them requires a new Vercel deployment.
+`DIRECT_UPI_ENABLED` must remain `false` while Direct UPI is parked.
+`FLOW_AI_ENABLED` controls whether the Flow page shows the static coming-soon
+experience or the enabled Flow chat experience.
 
 Do not configure Vercel with output directory `public`; this app builds to
 `apps/frontend/dist`.
@@ -323,7 +325,7 @@ performance before release.
 
 The frontend build copies `apps/frontend/public/downloads` into
 `dist/downloads`. The Profile page links to
-`/downloads/nidhiflow-android-debug-v1.0.2.apk`.
+`/downloads/nidhiflow-android-debug-v1.0.3.apk`.
 
 The committed debug APK is for direct device testing only. It is signed with
 the standard Android development certificate and must not be represented as a

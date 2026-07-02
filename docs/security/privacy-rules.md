@@ -69,6 +69,26 @@ the request to another app and cannot confirm settlement. Retention, account
 export, and deletion handling must include payment attempts and preserve only
 the minimum audit metadata required for security.
 
+## Android Notification Access
+
+Notification access is optional, Android-only, and off by default. Before
+opening Android settings, explain that the system permission can expose
+notifications from many applications. Users can decline or revoke access
+without losing unrelated features.
+
+Supported transaction notifications are parsed on-device. After the user opts
+in to automatic transaction creation, NidhiFlow may upload only the minimal
+derived transaction fields, source metadata, and a non-reversible duplicate
+fingerprint. Raw notification titles, bodies, OTPs, security alerts, and
+unrelated notification content must be discarded and must not reach the
+backend, analytics, logs, crash reports, or support tools.
+
+Automatically created entries are ordinary transactions: they immediately
+affect calculations and exports and are visible to every member of the current
+workspace. The opt-in disclosure must explain this shared visibility before
+notification access is enabled. Each entry displays `From notification` and
+remains editable or reversible under ordinary transaction rules.
+
 ## AI Privacy
 
 Send the minimum authorized context required for a Flow request. Do not use

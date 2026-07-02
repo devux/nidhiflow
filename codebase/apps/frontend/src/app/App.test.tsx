@@ -470,6 +470,7 @@ describe("App", () => {
     );
 
     await expectHomeHeader();
+    expect(screen.queryByRole("link", { name: "Pay with UPI" })).toBeNull();
 
     const navigation = screen.getByRole("navigation", { name: "Primary navigation" });
     const links = within(navigation)
@@ -484,6 +485,17 @@ describe("App", () => {
 
     await user.click(within(navigation).getByRole("button", { name: "You" }));
     expect(await screen.findByRole("heading", { name: "Profile" })).toBeDefined();
+  });
+
+  it("redirects the parked Direct UPI route to Home", async () => {
+    window.history.replaceState({}, "", "/pay");
+    render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    await expectHomeHeader();
+    expect(window.location.pathname).toBe("/");
+    expect(screen.queryByRole("heading", { name: "Pay with UPI" })).toBeNull();
   });
 
   it("shows authenticated activity when API transactions include ISO timestamps", async () => {
@@ -2042,7 +2054,7 @@ describe("App", () => {
     expect(screen.queryByText("Goals")).toBeNull();
     expect(screen.getByRole("button", { name: "Feedback" })).toBeDefined();
     expect(screen.getByRole("link", { name: "Download APK" }).getAttribute("href")).toBe(
-      "/downloads/nidhiflow-android-debug-v1.0.2.apk",
+      "/downloads/nidhiflow-android-debug-v1.0.3.apk",
     );
     expect(screen.queryByText("Data-protection reminder")).toBeNull();
     expect(screen.queryByText("Repeat reminder")).toBeNull();

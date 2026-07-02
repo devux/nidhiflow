@@ -105,6 +105,15 @@ finance collaboration.
   verification and must not automatically create or confirm a transaction.
 - The user must explicitly choose the destination app and verify the outcome in
   their bank or UPI app.
+- When the experimental Android notification feature is explicitly enabled,
+  a supported transaction notification may automatically create an ordinary
+  workspace transaction without a separate review step.
+- A notification-derived transaction immediately participates in balances,
+  budgets, goals, reports, exports, and shared-workspace activity.
+- Show `From notification` on every notification-derived entry. This identifies
+  provenance and does not claim bank verification.
+- All workspace members can view the entry, and ordinary edit and
+  deletion/reversal rules remain available for corrections.
 
 ## Ethical Engagement
 

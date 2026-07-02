@@ -36,6 +36,7 @@ import { type CSSProperties, type FormEvent, type MouseEvent, useMemo, useState 
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
 import { useGuestTransactions } from "../../../app/providers/GuestTransactionsProvider";
+import { environment } from "../../../config/environment";
 import {
   createWorkspaceShareCode,
   joinWorkspaceByShareCode,
@@ -653,12 +654,14 @@ export function HomePage() {
                 </span>
                 <strong>Budget</strong>
               </Link>
-              <Link aria-label="Pay with UPI" className="quick-action" to="/pay">
-                <span className="quick-action__icon">
-                  <Icon name="expense" />
-                </span>
-                <strong>Pay with UPI</strong>
-              </Link>
+              {environment.DIRECT_UPI_ENABLED ? (
+                <Link aria-label="Pay with UPI" className="quick-action" to="/pay">
+                  <span className="quick-action__icon">
+                    <Icon name="expense" />
+                  </span>
+                  <strong>Pay with UPI</strong>
+                </Link>
+              ) : null}
               <Link aria-label="Open reports" className="quick-action" to="/reports">
                 <span className="quick-action__icon">
                   <Icon name="report" />

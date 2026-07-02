@@ -24,6 +24,9 @@ personal data.
 
 - Request rate, error rate, and latency by route
 - Database pool usage and query latency
+- Frontend startup and route-transition timing, separated into warm and hosting
+  cold-start paths
+- Duplicate startup request and request-waterfall regression checks
 - Queue depth/job failures
 - Storage/email provider failures
 - Frontend error and web-vital trends
@@ -46,6 +49,12 @@ personal data.
 - User corrections and safety incidents
 
 Do not include sensitive finance values in metric labels.
+
+Android notification-derived transaction metrics, if the experimental feature
+is enabled, are limited to permission state transitions, parser source/version,
+success/failure reason codes, transaction creation, duplicates, user
+corrections/reversals, and false-positive reports. Never include raw
+notification content, merchant hints, amounts, or account identifiers.
 
 ## Alerts
 

@@ -1,5 +1,14 @@
 # Direct UPI Intent Payments
 
+## Release Status
+
+This feature is parked in the backlog. The frontend flag
+`DIRECT_UPI_ENABLED` defaults to `false`, hides the Home entry point, and
+redirects direct `/pay` navigation to Home. Do not enable it in production
+until NidhiFlow completes an approved merchant/PSP integration and physical
+device validation across supported UPI applications and banks. The existing
+implementation and authenticated APIs are retained for future work.
+
 ## Scope
 
 NidhiFlow can prepare a UPI payment request and hand it to an installed Android

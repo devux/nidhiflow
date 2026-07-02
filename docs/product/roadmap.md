@@ -27,7 +27,6 @@ must not delay or weaken the core finance foundation.
 - Savings and debt-repayment goals
 - Recurring transactions, reminders, and attachments
 - Search, filtering, sorting, pagination, CSV import/export
-- Authenticated Android Direct UPI intent handoff with unverified result capture
 
 ### Insights and Engagement
 
@@ -68,6 +67,18 @@ must not delay or weaken the core finance foundation.
 - Monthly summaries and multilingual conversations
 - User-approved creation of transactions, budgets, goals, and reminders
 - Household finance assistance
+
+## Product Backlog
+
+The prioritized backlog is maintained in [Product Backlog](backlog.md).
+Current order:
+
+1. Initial-load and API performance
+2. Profile screen UI optimization
+3. Shared-workspace screen UI optimization
+4. Dedicated Goals and Liabilities screens
+5. Experimental Android notification-derived transactions
+6. Parked Direct UPI intent
 
 See [AI Roadmap](../ai/ai-roadmap.md) for sequencing and release gates.
 

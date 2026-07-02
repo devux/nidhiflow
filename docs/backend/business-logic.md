@@ -17,6 +17,13 @@ verification.
   product policy.
 - Updates and deletions/reversals are audited.
 - Recurring schedules generate ordinary transactions idempotently.
+- When notification ingestion is enabled, an Android-derived entry is an
+  ordinary transaction with `ANDROID_NOTIFICATION` provenance. It uses the same
+  ledger, reporting, authorization, audit, edit, and deletion/reversal rules as
+  manual entries.
+- Notification-derived creates require a non-reversible, user-scoped source
+  fingerprint as an idempotency boundary so duplicate notification delivery
+  cannot create duplicate transactions.
 
 ## Accounts and Categories
 
