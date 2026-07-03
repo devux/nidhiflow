@@ -355,12 +355,12 @@ function parsePlan(raw: string): FlowModelPlan {
   if (parsed.filters) {
     plan.filters = Object.fromEntries(
       Object.entries(parsed.filters).filter(([, value]) => value !== undefined),
-    ) as NonNullable<FlowModelPlan["filters"]>;
+    );
   }
   if (parsed.evidence) {
     plan.evidence = Object.fromEntries(
       Object.entries(parsed.evidence).filter(([, value]) => value !== undefined),
-    ) as NonNullable<FlowModelPlan["evidence"]>;
+    );
   }
   return plan;
 }

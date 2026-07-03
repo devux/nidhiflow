@@ -43,6 +43,18 @@ const tools: Array<{ description: string; href: string; icon: IconName; title: s
     icon: "report",
     title: "Reports",
   },
+  {
+    description: "Review credit cards and loans",
+    href: "/liabilities",
+    icon: "liability",
+    title: "Liabilities",
+  },
+  {
+    description: "Track savings and debt goals",
+    href: "/goals",
+    icon: "goal",
+    title: "Goals",
+  },
 ];
 
 const localeLabels: Record<SupportedLocale, string> = {
@@ -270,7 +282,7 @@ export function YouPage() {
         </IconButton>
       </header>
 
-      <Card className="profile-card">
+      <section className="profile-card profile-card--compact">
         <div className="profile-card__top">
           <button
             aria-label={`Edit display name, current name ${profileName}`}
@@ -295,15 +307,15 @@ export function YouPage() {
           </button>
         </div>
         {isAuthenticated && user ? (
-          <Button
+          <button
+            className="profile-logout-row"
             disabled={logoutState === "saving"}
-            fullWidth
             onClick={() => void handleLogout()}
-            variant="secondary"
+            type="button"
           >
             <Icon name="user" size={20} />
             {logoutState === "saving" ? "Logging out" : "Log out"}
-          </Button>
+          </button>
         ) : (
           <div className="account-actions">
             <Link className="button button--primary button--full" to="/signup">
@@ -316,7 +328,7 @@ export function YouPage() {
             </Link>
           </div>
         )}
-      </Card>
+      </section>
 
       {saveState === "saved" ? (
         <div className="success-message" role="status">
@@ -425,7 +437,7 @@ export function YouPage() {
             </span>
             <span>
               <strong>NidhiFlow for Android</strong>
-              <small>Testing build · Version 1.0.6 · Android 7 or newer</small>
+              <small>v1.0.6 · Android 7 or newer</small>
             </span>
             <a
               className="button button--primary"
@@ -434,10 +446,7 @@ export function YouPage() {
             >
               Download APK
             </a>
-            <p>
-              This APK uses a development signature for device testing. Android may ask you to allow
-              installation from this browser.
-            </p>
+            <Icon name="shield" size={22} />
           </Card>
         </section>
       ) : null}

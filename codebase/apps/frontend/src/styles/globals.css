@@ -1852,6 +1852,205 @@ p {
   background: color-mix(in srgb, var(--color-danger) 12%, transparent);
 }
 
+.page--liabilities {
+  width: min(100%, 52rem);
+  margin-inline: auto;
+}
+
+.liabilities-loading {
+  min-height: 10rem;
+  display: grid;
+  place-items: center;
+  color: var(--color-text-secondary);
+  font-weight: 750;
+}
+
+.liabilities-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.liabilities-total {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  color: white;
+  background:
+    radial-gradient(circle at 90% 10%, rgb(255 255 255 / 18%), transparent 34%),
+    linear-gradient(135deg, var(--color-brand-strong), var(--color-brand));
+}
+
+.liabilities-total__icon {
+  display: grid;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 1.1rem;
+  place-items: center;
+  color: var(--color-brand-strong);
+  background: white;
+}
+
+.liabilities-total p,
+.liabilities-total strong,
+.liabilities-total small {
+  display: block;
+  margin: 0;
+}
+
+.liabilities-total p {
+  margin-bottom: var(--space-1);
+  color: rgb(255 255 255 / 78%);
+  font-size: 0.8rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.liabilities-total strong {
+  font-size: clamp(1.55rem, 7vw, 2.2rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.liabilities-total small {
+  grid-column: 2;
+  color: rgb(255 255 255 / 78%);
+}
+
+.liability-account-list {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.liability-account {
+  padding: var(--space-5);
+}
+
+.liability-account__heading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.liability-account h3,
+.liability-account p,
+.liability-account__details,
+.liabilities-planning h2,
+.liabilities-planning p,
+.archived-liability h3,
+.archived-liability p {
+  margin: 0;
+}
+
+.liability-account h3,
+.archived-liability h3 {
+  font-size: 1rem;
+}
+
+.liability-account p,
+.archived-liability p {
+  margin-top: 0.15rem;
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+}
+
+.liability-account__heading > strong,
+.archived-liability > strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.liability-account__details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.liability-account__details div {
+  min-width: 0;
+}
+
+.liability-account__details dt {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.liability-account__details dd {
+  margin: var(--space-1) 0 0;
+  font-size: 0.875rem;
+  font-weight: 750;
+}
+
+.liabilities-planning,
+.liabilities-error {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-3);
+  padding: var(--space-5);
+}
+
+.liabilities-planning h2,
+.liabilities-error h2 {
+  font-size: 1rem;
+}
+
+.liabilities-planning p,
+.liabilities-error p {
+  margin-top: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.liabilities-planning > a {
+  grid-column: 2;
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-brand-strong);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.liabilities-error > button {
+  grid-column: 2;
+  justify-self: start;
+}
+
+.archived-liability-list {
+  padding: 0 var(--space-5);
+}
+
+.archived-liability {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-4);
+  padding-block: var(--space-4);
+}
+
+.archived-liability + .archived-liability {
+  border-top: 1px solid var(--color-border);
+}
+
+@media (min-width: 48rem) {
+  .liability-account-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .button {
   display: inline-flex;
   min-height: 2.75rem;
@@ -3186,6 +3385,70 @@ p {
   font-size: 1.15rem;
 }
 
+.family-share-modal__workspace-identity {
+  display: grid;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-3);
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.family-share-modal__workspace-identity > span:first-child {
+  display: grid;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 50%;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(145deg, #31b85f, #08752f);
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+.family-share-modal__workspace-identity > span:last-child {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.family-share-modal__workspace-identity strong {
+  overflow-wrap: anywhere;
+  font-size: 1.05rem;
+}
+
+.family-share-modal__workspace-identity small {
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.family-share-modal__workspace-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.family-share-modal__workspace-meta > span {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  gap: var(--space-2);
+  padding-inline: var(--space-3);
+  border-radius: var(--radius-pill);
+  color: var(--color-brand-strong);
+  background: var(--color-brand-soft);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.family-share-modal__leave.button {
+  min-height: 3rem;
+  justify-self: start;
+  padding-inline: 0;
+  color: var(--color-brand-strong);
+}
+
 .family-share-modal__workspace dl {
   display: grid;
   gap: var(--space-3);
@@ -3943,6 +4206,386 @@ p {
 
 .settings-form > * + * {
   margin-top: var(--space-3);
+}
+
+/* Mobile-first secondary finance destinations */
+.finance-editor-dialog.MuiDialog-paper {
+  border-radius: 1.5rem;
+}
+
+.finance-editor-form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.finance-editor-form label {
+  display: grid;
+  gap: var(--space-2);
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  font-weight: 800;
+}
+
+.finance-editor-form :is(input, select) {
+  width: 100%;
+  min-height: 3rem;
+  padding-inline: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  font: inherit;
+}
+
+.finance-editor-form label small {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.form-error {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: 0.875rem;
+}
+
+.liability-account > .button {
+  width: 100%;
+  margin-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  border-radius: 0;
+}
+
+.archived-liability {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.archived-liability > .button {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.page--goals {
+  width: min(100%, 52rem);
+  margin-inline: auto;
+}
+
+.goal-list {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.goal-card.MuiCard-root {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 1.35rem;
+}
+
+.goal-card__main {
+  display: grid;
+  width: 100%;
+  min-height: 7rem;
+  align-items: center;
+  gap: var(--space-3);
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  padding: var(--space-4);
+  color: var(--color-text-primary);
+  text-align: left;
+  background: transparent;
+}
+
+.goal-card__icon {
+  display: grid;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 1.1rem;
+  place-items: center;
+  color: var(--color-brand-strong);
+  background: var(--color-brand-soft);
+}
+
+.goal-card__icon--debt {
+  color: var(--color-warning);
+  background: color-mix(in srgb, var(--color-warning) 12%, white);
+}
+
+.goal-card__copy {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-2);
+}
+
+.goal-card__copy > strong {
+  overflow-wrap: anywhere;
+  font-size: 1rem;
+}
+
+.goal-card__copy > small {
+  color: var(--color-text-secondary);
+}
+
+.goal-card__track {
+  height: 0.45rem;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--color-border);
+}
+
+.goal-card__track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-brand);
+}
+
+.goal-card__percent {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-pill);
+  color: var(--color-brand-strong);
+  background: var(--color-brand-soft);
+  font-weight: 900;
+}
+
+.goal-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 0 var(--space-4) var(--space-3);
+}
+
+/* Shared Space bottom sheet */
+.modal-backdrop:has(.family-share-modal) {
+  align-items: end;
+  padding: 0;
+  animation: shared-space-backdrop-in 280ms ease both;
+}
+
+.family-share-modal {
+  width: min(100%, 42rem);
+  max-height: 92dvh;
+  padding: var(--space-4);
+  padding-top: var(--space-3);
+  border-radius: 1.5rem 1.5rem 0 0;
+  overflow: hidden;
+  transition: max-height 280ms ease;
+  animation: shared-space-sheet-in 280ms ease both;
+}
+
+.family-share-modal--peek {
+  max-height: min(37rem, 72dvh);
+}
+
+.family-share-modal--expanded {
+  max-height: 94dvh;
+}
+
+.family-share-modal__drag-handle {
+  display: grid;
+  width: 100%;
+  min-height: 3rem;
+  padding: 0;
+  place-items: center;
+  background: transparent;
+  touch-action: none;
+}
+
+.family-share-modal__drag-handle > span {
+  width: 3rem;
+  height: 0.3rem;
+  border-radius: var(--radius-pill);
+  background: #9aa4b2;
+}
+
+.family-share-modal__panel-content {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: max(var(--space-3), env(safe-area-inset-bottom));
+}
+
+.family-share-modal__actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.family-share-modal__compact-action.MuiButton-root,
+.family-share-modal__close.MuiIconButton-root {
+  min-height: 3rem;
+  min-width: 3rem;
+}
+
+.family-share-modal__expanded-content {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.family-share-modal--peek .family-share-modal__expanded-content {
+  display: none;
+}
+
+.shared-space-section {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: 1.25rem;
+}
+
+.shared-space-section :is(h3, p) {
+  margin: 0;
+}
+
+.shared-space-section p {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.shared-space-member {
+  display: grid;
+  align-items: center;
+  gap: var(--space-3);
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.shared-space-member .profile-avatar {
+  width: 2.75rem;
+  height: 2.75rem;
+  font-size: 1rem;
+}
+
+.shared-space-member > span:nth-child(2) {
+  display: grid;
+  min-width: 0;
+}
+
+.shared-space-member small {
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  text-overflow: ellipsis;
+}
+
+@keyframes shared-space-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes shared-space-backdrop-in {
+  from {
+    background: transparent;
+  }
+  to {
+    background: rgb(15 23 42 / 42%);
+  }
+}
+
+/* Compact profile treatment */
+.profile-card--compact {
+  display: grid;
+  gap: var(--space-3);
+  padding: 0;
+}
+
+.profile-card--compact .profile-card__identity {
+  min-height: 5.25rem;
+}
+
+.profile-card--compact .profile-avatar {
+  width: 4.25rem;
+  height: 4.25rem;
+}
+
+.profile-logout-row {
+  display: inline-flex;
+  min-height: 3rem;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-brand-strong);
+  background: transparent;
+  font-weight: 800;
+}
+
+.profile-quick-access__list.MuiCard-root {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.profile-quick-access__list.settings-list a {
+  min-height: 5.5rem;
+  justify-items: center;
+  align-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 0;
+  text-align: center;
+}
+
+.profile-quick-access__list.settings-list a > span:nth-child(2) {
+  display: grid;
+}
+
+.profile-quick-access__list.settings-list a small,
+.profile-quick-access__list.settings-list a > svg {
+  display: none;
+}
+
+.android-download-card.MuiCard-root {
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  padding: var(--space-4);
+  border-radius: 1.25rem;
+}
+
+.android-download-card > .button {
+  grid-column: auto;
+  min-height: 3rem;
+  white-space: nowrap;
+}
+
+.android-download-card > svg {
+  color: var(--color-brand-strong);
+}
+
+@media (max-width: 26.875rem) {
+  .goal-card__main {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .goal-card__percent {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .goal-card__main > svg {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .android-download-card.MuiCard-root {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .android-download-card > .button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .profile-quick-access__list.MuiCard-root {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .family-share-modal,
+  .modal-backdrop:has(.family-share-modal) {
+    animation: none;
+    transition: none;
+  }
 }
 
 .settings-form input,

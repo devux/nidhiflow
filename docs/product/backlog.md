@@ -16,6 +16,15 @@ privacy, API, database, design, and test requirements are ready.
 
 ## P0: Initial-Load and API Performance
 
+### Implementation status
+
+Measured on 2026-07-03, the production Render service took 43.0 seconds for a
+cold liveness request and 0.36–0.62 seconds for subsequent warm requests. The
+frontend now renders cached/guest shell state without waiting for background
+session or finance reads, requests categories and transactions in parallel,
+and refreshes known-expired access tokens before protected reads. Removing the
+remaining hosting cold start requires a non-sleeping Render instance.
+
 ### Problem
 
 Initial application loading and authenticated API reads are noticeably slow.
@@ -114,7 +123,14 @@ personal/shared workspace switching.
 - The complete flow works at 320 pixels, with keyboard and screen-reader
   navigation.
 
-## P1: Dedicated Goals Screen
+## Implemented P1: Dedicated Goals Screen
+
+### Status
+
+The authenticated Goals destination is available from Home, Budget, Profile,
+and liability planning. Users can create, edit, contribute to, complete, and
+archive savings or debt-repayment goals. Active and completed goals remain
+separate, and progress is derived from server-side contribution totals.
 
 ### Goal
 
@@ -139,7 +155,16 @@ of limiting them to a small Budget preview.
 - Shared changes identify the actor and are audited.
 - Completed-goal celebration is optional, accessible, and non-manipulative.
 
-## P1: Dedicated Liabilities Screen
+## Implemented P1: Dedicated Liabilities Screen
+
+### Status
+
+The authenticated secondary screen is available from Home and Profile. It uses
+ledger-derived account balances, separates active and archived accounts, groups
+totals by currency, and labels unavailable due-date and payment-plan data
+without inference. The `other_liability` account type supports liabilities that
+are not credit cards or loans. The UI supports create, edit, archive, and
+restore flows.
 
 ### Goal
 
@@ -166,7 +191,14 @@ ledger.
 - Currency, accessibility, loading, empty, and error behavior follow shared
   finance rules.
 
-## Implemented, Feature-Gated: Android Notification-Derived Transactions
+## Incomplete, Feature-Gated: Android Notification-Derived Transactions
+
+### Status
+
+The gated implementation exists, but physical-device notification capture and
+source-format reliability remain unresolved. Keep this feature marked
+incomplete until the limited-device pilot, parser-accuracy measurements,
+permission-revocation checks, and privacy release gates are complete.
 
 ### Goal
 

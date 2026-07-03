@@ -66,7 +66,8 @@ reference in the same transaction.
 ### accounts
 
 - `id`, `workspace_id`
-- `name`, `type`
+- `name`, `type` (`cash`, `bank`, `credit_card`, `loan`, `wallet`, `other`,
+  `other_liability`)
 - `opening_balance`, `currency`
 - `is_archived`, `archived_at`
 - timestamps, optional `deleted_at`

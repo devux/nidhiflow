@@ -963,7 +963,15 @@ export function BudgetPage() {
   const projectedYearlySavingsMinor = yearlyAverageRemainingMinor * 12n;
   return (
     <main className="page page--budget" id="main-content">
-      <PageHeader title="Budget" />
+      <PageHeader
+        action={
+          <Link className="button button--quiet" to="/goals">
+            Goals
+            <Icon name="chevron" size={18} />
+          </Link>
+        }
+        title="Budget"
+      />
 
       <Stack
         className="filter-dropdown-grid activity-filter-bar budget-filter-bar"

@@ -63,8 +63,9 @@ async function parseResponse<Data>(response: Response): Promise<ApiEnvelope<Data
 async function apiRequest<Data>(
   path: string,
   options: RequestInit = {},
+  config: { trackLoading?: boolean } = {},
 ): Promise<ApiEnvelope<Data>> {
-  return trackApiRequest(async () => {
+  const request = async () => {
     const response = await fetch(`${environment.NIDHIFLOW_API_BASE_URL}/api/v1${path}`, {
       ...options,
       credentials: "include",
@@ -75,7 +76,9 @@ async function apiRequest<Data>(
     });
 
     return parseResponse<Data>(response);
-  });
+  };
+
+  return config.trackLoading === false ? request() : trackApiRequest(request);
 }
 
 export async function registerAccount(input: {
@@ -121,10 +124,16 @@ export async function login(input: { email: string; password: string }): Promise
   return result.data;
 }
 
-export async function refreshAccessToken(): Promise<string> {
-  refreshAccessTokenRequest ??= apiRequest<{ accessToken: string }>("/auth/refresh", {
-    method: "POST",
-  })
+export async function refreshAccessToken(
+  options: { trackLoading?: boolean } = {},
+): Promise<string> {
+  refreshAccessTokenRequest ??= apiRequest<{ accessToken: string }>(
+    "/auth/refresh",
+    {
+      method: "POST",
+    },
+    options,
+  )
     .then((result) => result.data.accessToken)
     .finally(() => {
       refreshAccessTokenRequest = null;
@@ -133,24 +142,38 @@ export async function refreshAccessToken(): Promise<string> {
   return refreshAccessTokenRequest;
 }
 
-export async function getWorkspaces(accessToken: string): Promise<WorkspaceSummary[]> {
-  const result = await apiRequest<WorkspaceSummary[]>("/workspaces", {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
+export async function getWorkspaces(
+  accessToken: string,
+  options: { trackLoading?: boolean } = {},
+): Promise<WorkspaceSummary[]> {
+  const result = await apiRequest<WorkspaceSummary[]>(
+    "/workspaces",
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      method: "GET",
     },
-    method: "GET",
-  });
+    options,
+  );
 
   return result.data;
 }
 
-export async function getCurrentUser(accessToken: string): Promise<AuthUser> {
-  const result = await apiRequest<AuthUser>("/users/me", {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
+export async function getCurrentUser(
+  accessToken: string,
+  options: { trackLoading?: boolean } = {},
+): Promise<AuthUser> {
+  const result = await apiRequest<AuthUser>(
+    "/users/me",
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      method: "GET",
     },
-    method: "GET",
-  });
+    options,
+  );
 
   return result.data;
 }

@@ -31,6 +31,21 @@ interface IdResponseBody {
   };
 }
 
+interface ErrorResponseBody {
+  error: {
+    code: string;
+  };
+}
+
+interface BudgetResponseBody {
+  data: {
+    deletedAt: string | null;
+    id: string;
+    periodEnd: string;
+    periodStart: string;
+  };
+}
+
 interface BudgetSummaryResponseBody {
   data: {
     budgets: Array<{
@@ -179,8 +194,9 @@ describe("planning integration", () => {
         periodEnd: "2026-06-30",
         periodStart: "2026-06-01",
       });
+    const budgetBody = budgetResponse.body as BudgetResponseBody;
     expect(budgetResponse.status).toBe(201);
-    expect(budgetResponse.body.data).toMatchObject({
+    expect(budgetBody.data).toMatchObject({
       periodEnd: "2026-06-30",
       periodStart: "2026-06-01",
     });
@@ -195,7 +211,7 @@ describe("planning integration", () => {
         periodStart: "2026-06-01",
       });
     expect(duplicateBudgetResponse.status).toBe(409);
-    expect(duplicateBudgetResponse.body.error.code).toBe("CONFLICT");
+    expect((duplicateBudgetResponse.body as ErrorResponseBody).error.code).toBe("CONFLICT");
 
     const spendingResponse = await request(app)
       .post(`/api/v1/workspaces/${workspaceId}/transactions`)
@@ -223,13 +239,15 @@ describe("planning integration", () => {
     });
 
     const archiveBudgetResponse = await request(app)
-      .delete(`/api/v1/workspaces/${workspaceId}/budgets/${budgetResponse.body.data.id}`)
+      .delete(`/api/v1/workspaces/${workspaceId}/budgets/${budgetBody.data.id}`)
       .set("Authorization", `Bearer ${accessToken}`);
     expect(archiveBudgetResponse.status).toBe(200);
-    expect(archiveBudgetResponse.body.data.deletedAt).toEqual(expect.any(String));
+    expect((archiveBudgetResponse.body as BudgetResponseBody).data.deletedAt).toEqual(
+      expect.any(String),
+    );
 
     const archivedBudgetResponse = await request(app)
-      .get(`/api/v1/workspaces/${workspaceId}/budgets/${budgetResponse.body.data.id}`)
+      .get(`/api/v1/workspaces/${workspaceId}/budgets/${budgetBody.data.id}`)
       .set("Authorization", `Bearer ${accessToken}`);
     expect(archivedBudgetResponse.status).toBe(404);
 

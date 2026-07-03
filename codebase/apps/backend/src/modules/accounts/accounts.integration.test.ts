@@ -27,6 +27,16 @@ interface AccountResponseBody {
   };
 }
 
+interface ErrorResponseBody {
+  error: {
+    code: string;
+  };
+}
+
+interface MessageResponseBody {
+  message: string;
+}
+
 interface AccountsResponseBody {
   data: AccountResponseBody["data"][];
 }
@@ -202,7 +212,9 @@ describe("finance workflow integration", () => {
 
     expect(repeatedCashResponse.status).toBe(200);
     expect(repeatedCashBody.data.id).toBe(cashBody.data.id);
-    expect(repeatedCashResponse.body.message).toBe("Account already exists.");
+    expect((repeatedCashResponse.body as MessageResponseBody).message).toBe(
+      "Account already exists.",
+    );
 
     const duplicateCashResponse = await request(app)
       .post(`/api/v1/workspaces/${workspaceId}/accounts`)
@@ -214,7 +226,7 @@ describe("finance workflow integration", () => {
         type: "cash",
       });
     expect(duplicateCashResponse.status).toBe(409);
-    expect(duplicateCashResponse.body.error.code).toBe("CONFLICT");
+    expect((duplicateCashResponse.body as ErrorResponseBody).error.code).toBe("CONFLICT");
 
     const bankResponse = await request(app)
       .post(`/api/v1/workspaces/${workspaceId}/accounts`)
@@ -229,6 +241,21 @@ describe("finance workflow integration", () => {
 
     expect(bankResponse.status).toBe(201);
     expect(minorUnits(bankBody.data.currentBalance)).toBe(0n);
+
+    const liabilityResponse = await request(app)
+      .post(`/api/v1/workspaces/${workspaceId}/accounts`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        currency: "INR",
+        name: "Family debt",
+        openingBalance: { amount: "100.0000", currency: "INR" },
+        type: "other_liability",
+      });
+
+    expect(liabilityResponse.status).toBe(201);
+    expect(minorUnits((liabilityResponse.body as AccountResponseBody).data.currentBalance)).toBe(
+      1_000_000n,
+    );
 
     const transferResponse = await request(app)
       .post(`/api/v1/workspaces/${workspaceId}/transactions`)
@@ -296,7 +323,7 @@ describe("finance workflow integration", () => {
       });
 
     expect(updateResponse.status).toBe(200);
-    expect(updateResponse.body.data.amount).toBe("2.0000");
+    expect((updateResponse.body as { data: { amount: string } }).data.amount).toBe("2.0000");
 
     const deleteResponse = await request(app)
       .delete(`/api/v1/workspaces/${workspaceId}/transactions/${incomeBody.data.id}`)
@@ -328,8 +355,8 @@ describe("finance workflow integration", () => {
     expect(summaryResponse.status).toBe(200);
     expect(summaryBody.data).toMatchObject({
       assetTotalMinor: "9000000",
-      liabilityTotalMinor: "0",
-      netWorthMinor: "9000000",
+      liabilityTotalMinor: "1000000",
+      netWorthMinor: "8000000",
     });
 
     const transactionsResponse = await request(app)

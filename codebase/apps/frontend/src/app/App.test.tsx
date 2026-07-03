@@ -29,8 +29,20 @@ function getRequestUrl(input: Parameters<typeof fetch>[0]): string {
   return input.url;
 }
 
+function getRequestBody(init?: RequestInit): string {
+  return typeof init?.body === "string" ? init.body : "{}";
+}
+
 function toApiDateTimestamp(dateOnly: string): string {
   return new Date(`${dateOnly}T00:00:00+05:30`).toISOString();
+}
+
+function toLocalDateOnly(date: Date): string {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
 }
 
 const defaultPreferences: GuestPreferences = {
@@ -106,6 +118,7 @@ function mockAuthenticatedFinanceSession(
     budgets?: Array<Record<string, unknown>>;
     failAccountCreateAsConflict?: boolean;
     failFirstBudgetCreateAsUnauthenticated?: boolean;
+    goals?: Array<Record<string, unknown>>;
     reportingCurrency?: string;
     transactions?: unknown[];
   } = {},
@@ -122,6 +135,7 @@ function mockAuthenticatedFinanceSession(
     ]),
   ];
   let budgets = [...(options.budgets ?? [])];
+  let goals = [...(options.goals ?? [])];
   let hasRejectedBudgetCreate = false;
   const reportingCurrency = options.reportingCurrency ?? "USD";
 
@@ -229,6 +243,21 @@ function mockAuthenticatedFinanceSession(
       );
     }
 
+    if (url.endsWith("/api/v1/workspaces/wsp_finance/accounts/summary") && method === "GET") {
+      return Promise.resolve(
+        createJsonResponse({
+          data: {
+            accounts,
+            assetTotalMinor: "0",
+            liabilityTotalMinor: "0",
+            netWorthMinor: "0",
+          },
+          message: "Account summary retrieved successfully.",
+          success: true,
+        }),
+      );
+    }
+
     if (url.endsWith("/api/v1/workspaces/wsp_finance/accounts") && method === "POST") {
       if (options.failAccountCreateAsConflict) {
         return Promise.resolve(
@@ -244,16 +273,19 @@ function mockAuthenticatedFinanceSession(
         );
       }
 
-      const body = JSON.parse(String(init?.body ?? "{}")) as {
+      const body = JSON.parse(getRequestBody(init)) as {
         currency: string;
         name: string;
+        openingBalance: { amount: string };
         type: string;
       };
       const account = {
         currency: body.currency,
+        currentBalance: body.openingBalance.amount,
         id: `acc_${accounts.length + 1}`,
         isArchived: false,
         name: body.name,
+        openingBalance: body.openingBalance.amount,
         type: body.type,
       };
       accounts = [...accounts, account];
@@ -300,6 +332,54 @@ function mockAuthenticatedFinanceSession(
       );
     }
 
+    const accountMatch = /\/api\/v1\/workspaces\/wsp_finance\/accounts\/([^/]+)$/.exec(url);
+
+    if (accountMatch && method === "PATCH") {
+      const accountId = accountMatch[1];
+      const body = JSON.parse(getRequestBody(init)) as {
+        currency: string;
+        name: string;
+        openingBalance: { amount: string };
+        type: string;
+      };
+      const updatedAccount = {
+        ...(accounts.find((item) => item.id === accountId) ?? {}),
+        currency: body.currency,
+        currentBalance: body.openingBalance.amount,
+        id: accountId,
+        isArchived: false,
+        name: body.name,
+        openingBalance: body.openingBalance.amount,
+        type: body.type,
+      };
+      accounts = accounts.map((item) => (item.id === accountId ? updatedAccount : item));
+      return Promise.resolve(
+        createJsonResponse({
+          data: updatedAccount,
+          message: "Account updated successfully.",
+          success: true,
+        }),
+      );
+    }
+
+    const archiveAccountMatch =
+      /\/api\/v1\/workspaces\/wsp_finance\/accounts\/([^/]+)\/archive$/.exec(url);
+    if (archiveAccountMatch && method === "POST") {
+      const accountId = archiveAccountMatch[1];
+      const archived = {
+        ...(accounts.find((item) => item.id === accountId) ?? {}),
+        isArchived: true,
+      };
+      accounts = accounts.map((item) => (item.id === accountId ? archived : item));
+      return Promise.resolve(
+        createJsonResponse({
+          data: archived,
+          message: "Account archived successfully.",
+          success: true,
+        }),
+      );
+    }
+
     if (url.endsWith("/api/v1/workspaces/wsp_finance/transactions") && method === "GET") {
       return Promise.resolve(
         createJsonResponse({
@@ -311,7 +391,7 @@ function mockAuthenticatedFinanceSession(
     }
 
     if (url.endsWith("/api/v1/workspaces/wsp_finance/transactions") && method === "POST") {
-      const body = JSON.parse(String(init?.body ?? "{}")) as {
+      const body = JSON.parse(getRequestBody(init)) as {
         accountId: string;
         categoryId: string;
         money: { amount: string; currency: string };
@@ -365,7 +445,7 @@ function mockAuthenticatedFinanceSession(
         );
       }
 
-      const body = JSON.parse(String(init?.body ?? "{}")) as {
+      const body = JSON.parse(getRequestBody(init)) as {
         categoryId: string;
         limitAmount: { amount: string; currency: string };
         periodEnd: string;
@@ -396,10 +476,116 @@ function mockAuthenticatedFinanceSession(
       );
     }
 
+    if (url.endsWith("/api/v1/workspaces/wsp_finance/goals") && method === "GET") {
+      return Promise.resolve(
+        createJsonResponse({
+          data: goals,
+          message: "Goals retrieved successfully.",
+          success: true,
+        }),
+      );
+    }
+
+    if (url.endsWith("/api/v1/workspaces/wsp_finance/goals") && method === "POST") {
+      const body = JSON.parse(getRequestBody(init)) as {
+        currency: string;
+        name: string;
+        targetAmount: { amount: string };
+        targetDate?: string;
+        type: "debt" | "savings";
+      };
+      const goal = {
+        createdAt: "2026-07-03T00:00:00.000Z",
+        currency: body.currency,
+        fundedAmount: "0.0000",
+        id: `goal_${goals.length + 1}`,
+        name: body.name,
+        progressPercent: "0",
+        remainingAmount: body.targetAmount.amount,
+        status: "active",
+        targetAmount: body.targetAmount.amount,
+        targetDate: body.targetDate ?? null,
+        type: body.type,
+        updatedAt: "2026-07-03T00:00:00.000Z",
+        workspaceId: "wsp_finance",
+      };
+      goals = [...goals, goal];
+      return Promise.resolve(
+        createJsonResponse({ data: goal, message: "Goal created successfully.", success: true }),
+      );
+    }
+
+    const goalMatch = /\/api\/v1\/workspaces\/wsp_finance\/goals\/([^/]+)$/.exec(url);
+    if (goalMatch && method === "PATCH") {
+      const goalId = goalMatch[1];
+      const body = JSON.parse(getRequestBody(init)) as {
+        currency: string;
+        name: string;
+        status?: "active" | "completed";
+        targetAmount: { amount: string };
+        targetDate?: string;
+        type: "debt" | "savings";
+      };
+      let updatedGoal: Record<string, unknown> | undefined;
+      goals = goals.map((goal) => {
+        if (goal.id !== goalId) return goal;
+        updatedGoal = {
+          ...goal,
+          currency: body.currency,
+          name: body.name,
+          status: body.status ?? goal.status,
+          targetAmount: body.targetAmount.amount,
+          targetDate: body.targetDate ?? goal.targetDate,
+          type: body.type,
+        };
+        return updatedGoal;
+      });
+      return Promise.resolve(
+        createJsonResponse({
+          data: updatedGoal,
+          message: "Goal updated successfully.",
+          success: true,
+        }),
+      );
+    }
+
+    if (goalMatch && method === "DELETE") {
+      const goalId = goalMatch[1];
+      goals = goals.filter((goal) => goal.id !== goalId);
+      return Promise.resolve(
+        createJsonResponse({ data: null, message: "Goal archived successfully.", success: true }),
+      );
+    }
+
+    const contributionMatch =
+      /\/api\/v1\/workspaces\/wsp_finance\/goals\/([^/]+)\/contributions$/.exec(url);
+    if (contributionMatch && method === "POST") {
+      const goalId = contributionMatch[1];
+      const body = JSON.parse(getRequestBody(init)) as {
+        amount: { amount: string };
+      };
+      goals = goals.map((goal) =>
+        goal.id === goalId
+          ? {
+              ...goal,
+              fundedAmount: body.amount.amount,
+              progressPercent: "25",
+            }
+          : goal,
+      );
+      return Promise.resolve(
+        createJsonResponse({
+          data: { id: "contribution_1" },
+          message: "Goal contribution created successfully.",
+          success: true,
+        }),
+      );
+    }
+
     const budgetMatch = /\/api\/v1\/workspaces\/wsp_finance\/budgets\/([^/]+)$/.exec(url);
 
     if (budgetMatch && method === "PATCH") {
-      const body = JSON.parse(String(init?.body ?? "{}")) as {
+      const body = JSON.parse(getRequestBody(init)) as {
         categoryId: string;
         limitAmount: { amount: string; currency: string };
         periodEnd: string;
@@ -524,6 +710,196 @@ describe("App", () => {
     expect(screen.getByText("April 15")).toBeDefined();
   });
 
+  it("renders the authenticated app shell while startup finance reads continue in parallel", async () => {
+    const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
+    let resolveCategories: ((response: Response) => void) | undefined;
+    let resolveTransactions: ((response: Response) => void) | undefined;
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = getRequestUrl(input);
+      const method = init?.method ?? "GET";
+
+      if (url.endsWith("/api/v1/auth/refresh") && method === "POST") {
+        return Promise.resolve(
+          createJsonResponse({
+            data: { accessToken: "startup-token" },
+            message: "Access token refreshed successfully.",
+            success: true,
+          }),
+        );
+      }
+      if (url.endsWith("/api/v1/users/me")) {
+        return Promise.resolve(
+          createJsonResponse({
+            data: {
+              displayName: "Nila",
+              email: "nila@example.com",
+              id: "usr_startup",
+              locale: "en-US",
+              preferredCurrency: "USD",
+              theme: "system",
+              timezone: "UTC",
+            },
+            message: "Current user retrieved successfully.",
+            success: true,
+          }),
+        );
+      }
+      if (url.endsWith("/api/v1/workspaces")) {
+        return Promise.resolve(
+          createJsonResponse({
+            data: [{ id: "wsp_startup", name: "Nila", reportingCurrency: "USD", type: "personal" }],
+            message: "Workspaces retrieved successfully.",
+            success: true,
+          }),
+        );
+      }
+      if (url.endsWith("/api/v1/workspaces/wsp_startup/categories")) {
+        return new Promise<Response>((resolve) => {
+          resolveCategories = resolve;
+        });
+      }
+      if (url.endsWith("/api/v1/workspaces/wsp_startup/transactions")) {
+        return new Promise<Response>((resolve) => {
+          resolveTransactions = resolve;
+        });
+      }
+      return Promise.reject(new Error(`Unexpected request: ${url}`));
+    });
+
+    window.history.replaceState({}, "", "/");
+    render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    await expectHomeHeader();
+    expect(resolveCategories).toBeDefined();
+    expect(resolveTransactions).toBeDefined();
+
+    act(() => {
+      resolveCategories?.(
+        createJsonResponse({
+          data: [],
+          message: "Categories retrieved successfully.",
+          success: true,
+        }),
+      );
+      resolveTransactions?.(
+        createJsonResponse({
+          data: [],
+          message: "Transactions retrieved successfully.",
+          success: true,
+        }),
+      );
+    });
+  });
+
+  it("shows ledger-derived liabilities by currency and keeps archived accounts in history", async () => {
+    mockAuthenticatedFinanceSession(globalThis.fetch as jest.MockedFunction<typeof fetch>, {
+      accounts: [
+        {
+          currency: "USD",
+          currentBalance: "-1200.25",
+          id: "acc_card",
+          isArchived: false,
+          name: "Everyday card",
+          type: "credit_card",
+        },
+        {
+          currency: "INR",
+          currentBalance: "50000.00",
+          id: "acc_loan",
+          isArchived: false,
+          name: "Vehicle loan",
+          type: "loan",
+        },
+        {
+          currency: "USD",
+          currentBalance: "-300.00",
+          id: "acc_old_loan",
+          isArchived: true,
+          name: "Old loan",
+          type: "loan",
+        },
+      ],
+    });
+    window.history.replaceState({}, "", "/liabilities");
+    const view = render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Liabilities" })).toBeDefined();
+    expect(await screen.findByText("Everyday card")).toBeDefined();
+    expect(screen.getByText("Vehicle loan")).toBeDefined();
+    expect(screen.getAllByText("$1,200.25")).toHaveLength(2);
+    expect(screen.getAllByText("₹50,000.00")).toHaveLength(2);
+    expect(screen.getByRole("heading", { name: "Archived history" })).toBeDefined();
+    expect(screen.getByText("Old loan")).toBeDefined();
+    expect(screen.getAllByText("Not provided")).toHaveLength(4);
+    expect((await axe(view.container)).violations).toHaveLength(0);
+  });
+
+  it("creates a liability from the dedicated screen", async () => {
+    mockAuthenticatedFinanceSession(globalThis.fetch as jest.MockedFunction<typeof fetch>, {
+      accounts: [],
+      reportingCurrency: "INR",
+    });
+    window.history.replaceState({}, "", "/liabilities");
+    const user = userEvent.setup();
+    render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    expect(await screen.findByText("No liabilities yet")).toBeDefined();
+    await user.click(screen.getByRole("button", { name: "Add liability" }));
+    const dialog = screen.getByRole("dialog", { name: "Add liability" });
+    await user.type(within(dialog).getByLabelText("Account name"), "Home loan");
+    await user.selectOptions(within(dialog).getByLabelText("Liability type"), "loan");
+    await user.type(within(dialog).getByLabelText(/Opening balance/), "500000");
+    await user.click(within(dialog).getByRole("button", { name: "Save liability" }));
+
+    expect(await screen.findByText("Home loan")).toBeDefined();
+    expect(screen.getAllByText("₹500,000.00").length).toBeGreaterThan(0);
+  });
+
+  it("creates a goal and adds a contribution", async () => {
+    mockAuthenticatedFinanceSession(globalThis.fetch as jest.MockedFunction<typeof fetch>, {
+      goals: [],
+      reportingCurrency: "INR",
+    });
+    window.history.replaceState({}, "", "/goals");
+    const user = userEvent.setup();
+    const view = render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    expect(await screen.findByText("No goals yet")).toBeDefined();
+    await user.click(screen.getByRole("button", { name: "Add goal" }));
+    let dialog = screen.getByRole("dialog", { name: "Create goal" });
+    await user.type(within(dialog).getByLabelText("Name"), "Emergency fund");
+    await user.type(within(dialog).getByLabelText("Target amount"), "100000");
+    await user.click(within(dialog).getByRole("button", { name: "Save goal" }));
+
+    expect(await screen.findByText("Emergency fund")).toBeDefined();
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Create goal" })).toBeNull());
+    await user.click(screen.getByRole("button", { name: "Add contribution" }));
+    dialog = screen.getByRole("dialog", { name: "Contribute to Emergency fund" });
+    await user.type(within(dialog).getByLabelText("Amount"), "25000");
+    await user.click(within(dialog).getByRole("button", { name: "Add contribution" }));
+
+    expect(await screen.findByText(/₹25,000.00/)).toBeDefined();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await user.click(screen.getByRole("button", { name: /Emergency fund/ }));
+    dialog = screen.getByRole("dialog", { name: "Edit goal" });
+    const nameInput = within(dialog).getByLabelText("Name");
+    await user.clear(nameInput);
+    await user.type(nameInput, "Rainy day fund");
+    await user.click(within(dialog).getByRole("button", { name: "Save goal" }));
+
+    expect(await screen.findByText("Rainy day fund")).toBeDefined();
+    expect((await axe(view.container)).violations).toHaveLength(0);
+  });
+
   it("uses the authenticated user's single current workspace", async () => {
     window.sessionStorage.setItem("nidhiflow.accessToken", "access-token-joined-family");
     const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
@@ -611,7 +987,7 @@ describe("App", () => {
     );
 
     expect(await screen.findByRole("heading", { name: "Activity" })).toBeDefined();
-    expect(screen.getByText("Shared groceries")).toBeDefined();
+    expect(await screen.findByText("Shared groceries")).toBeDefined();
 
     const navigation = screen.getByRole("navigation", { name: "Primary navigation" });
     await user.click(within(navigation).getByRole("button", { name: "Home" }));
@@ -624,7 +1000,13 @@ describe("App", () => {
     expect(within(workspaceDetails).getByText("Family Money")).toBeDefined();
     expect(within(workspaceDetails).getByText("Member")).toBeDefined();
     expect(within(workspaceDetails).getByText("USD")).toBeDefined();
-    expect(screen.getByRole("button", { name: "Leave and create my workspace" })).toBeDefined();
+    expect(
+      within(workspaceDetails).getByRole("button", { name: "Leave and create my workspace" }),
+    ).toBeDefined();
+    await user.click(screen.getByRole("button", { name: "Expand shared space" }));
+    expect(screen.getAllByRole("button", { name: "Leave and create my workspace" })).toHaveLength(
+      1,
+    );
     expect(screen.queryByRole("button", { name: /Switch to/ })).toBeNull();
   });
 
@@ -700,6 +1082,14 @@ describe("App", () => {
   it("shares the current workspace and confirms ownership transfer before joining", async () => {
     window.sessionStorage.setItem("nidhiflow.accessToken", "access-token-family");
     const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
+    const nativeShare = jest.fn((data?: ShareData) => {
+      void data;
+      return Promise.resolve();
+    });
+    Object.defineProperty(globalThis.navigator, "share", {
+      configurable: true,
+      value: nativeShare,
+    });
     let hasJoined = false;
     let joinAttempts = 0;
     let shareCodeAttempts = 0;
@@ -811,7 +1201,7 @@ describe("App", () => {
         method === "POST"
       ) {
         joinAttempts += 1;
-        const body = JSON.parse(String(init?.body)) as { transferOwnership: boolean };
+        const body = JSON.parse(getRequestBody(init)) as { transferOwnership: boolean };
 
         if (!body.transferOwnership) {
           return Promise.resolve(
@@ -849,7 +1239,7 @@ describe("App", () => {
 
     window.history.replaceState({}, "", "/");
     const user = userEvent.setup();
-    render(
+    const view = render(
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
@@ -860,6 +1250,18 @@ describe("App", () => {
     expect(screen.getByRole("region", { name: "Current workspace details" })).toBeDefined();
     expect(await screen.findByText("ABCD-2345")).toBeDefined();
     expect(shareCodeAttempts).toBe(2);
+    await user.click(screen.getByRole("button", { name: "Share" }));
+    expect(nativeShare).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: expect.stringContaining("ABCD-2345"),
+        title: "Join Nila Family",
+      }),
+    );
+    await user.click(screen.getByRole("button", { name: "Expand shared space" }));
+    expect(screen.getByRole("heading", { name: "Members" })).toBeDefined();
+    expect(screen.getByRole("heading", { name: "Permissions" })).toBeDefined();
+    expect(screen.queryByText("nila@example.com")).toBeNull();
+    expect((await axe(view.container)).violations).toHaveLength(0);
     await user.type(screen.getByLabelText("Join with code"), "LMNO-6789");
     await user.click(screen.getByRole("button", { name: "Join" }));
 
@@ -879,6 +1281,7 @@ describe("App", () => {
         method: "POST",
       }),
     );
+    Reflect.deleteProperty(globalThis.navigator, "share");
   });
 
   it("lets a guest create an account and start a session", async () => {
@@ -1453,6 +1856,7 @@ describe("App", () => {
   });
 
   it("shows Home budget and goal totals derived from transactions", async () => {
+    const currentDate = toLocalDateOnly(new Date());
     window.history.replaceState({}, "", "/");
     render(
       <App
@@ -1465,7 +1869,7 @@ describe("App", () => {
             currency: "USD",
             id: "transaction-1",
             note: "June salary",
-            transactionDate: "2026-06-17",
+            transactionDate: currentDate,
             type: "income",
             updatedAt: "2026-06-17T00:00:00.000Z",
           },
@@ -1476,7 +1880,7 @@ describe("App", () => {
             currency: "USD",
             id: "transaction-2",
             note: "Groceries",
-            transactionDate: "2026-06-17",
+            transactionDate: currentDate,
             type: "expense",
             updatedAt: "2026-06-17T00:00:01.000Z",
           },
@@ -1491,7 +1895,7 @@ describe("App", () => {
     expect(
       within(budgetSection).queryByRole("progressbar", { name: "Goal progress: 68 percent" }),
     ).toBeNull();
-    expect(within(budgetSection).getByText("$250.00")).toBeDefined();
+    expect(await within(budgetSection).findByText("$250.00")).toBeDefined();
     expect(within(budgetSection).getByText("$80.00")).toBeDefined();
     expect(within(budgetSection).getByText("$170.00")).toBeDefined();
     expect(screen.queryByRole("region", { name: "Current balance" })).toBeNull();
@@ -1499,6 +1903,7 @@ describe("App", () => {
 
   it("adds, edits, deletes budget categories and recalculates totals", async () => {
     const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
+    const currentDate = toLocalDateOnly(new Date());
 
     mockAuthenticatedFinanceSession(fetchMock, {
       reportingCurrency: "INR",
@@ -1510,7 +1915,7 @@ describe("App", () => {
           currency: "INR",
           id: "transaction-1",
           note: "Groceries",
-          transactionDate: "2026-06-17",
+          transactionDate: currentDate,
           type: "expense",
           updatedAt: "2026-06-17T00:00:01.000Z",
         },
@@ -1541,7 +1946,7 @@ describe("App", () => {
         init?.method === "POST",
     );
 
-    expect(JSON.parse(String(createBudgetCall?.[1]?.body))).toEqual(
+    expect(JSON.parse(getRequestBody(createBudgetCall?.[1]))).toEqual(
       expect.objectContaining({
         currency: "INR",
         limitAmount: { amount: "250.00", currency: "INR" },
@@ -1602,6 +2007,15 @@ describe("App", () => {
 
   it("quick-fills the current monthly budget from the previous month", async () => {
     const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
+    const today = new Date();
+    const currentMonthStart = toLocalDateOnly(new Date(today.getFullYear(), today.getMonth(), 1));
+    const currentMonthEnd = toLocalDateOnly(new Date(today.getFullYear(), today.getMonth() + 1, 0));
+    const nextMonthStart = toLocalDateOnly(new Date(today.getFullYear(), today.getMonth() + 1, 1));
+    const nextMonthEnd = toLocalDateOnly(new Date(today.getFullYear(), today.getMonth() + 2, 0));
+    const currentMonthLabel = new Intl.DateTimeFormat("en-US", {
+      month: "long",
+      year: "numeric",
+    }).format(today);
 
     mockAuthenticatedFinanceSession(fetchMock, {
       budgets: [
@@ -1611,8 +2025,8 @@ describe("App", () => {
           deletedAt: null,
           id: "bgt_june_food",
           limitAmount: "10000.00",
-          periodEnd: "2026-06-30T00:00:00.000Z",
-          periodStart: "2026-06-01T00:00:00.000Z",
+          periodEnd: `${currentMonthEnd}T00:00:00.000Z`,
+          periodStart: `${currentMonthStart}T00:00:00.000Z`,
           progressPercent: "0",
           remainingAmount: "10000.00",
           spentAmount: "0",
@@ -1625,8 +2039,8 @@ describe("App", () => {
           deletedAt: null,
           id: "bgt_june_food_duplicate",
           limitAmount: "10000.00",
-          periodEnd: "2026-06-30T00:00:00.000Z",
-          periodStart: "2026-06-01T00:00:00.000Z",
+          periodEnd: `${currentMonthEnd}T00:00:00.000Z`,
+          periodStart: `${currentMonthStart}T00:00:00.000Z`,
           progressPercent: "0",
           remainingAmount: "10000.00",
           spentAmount: "0",
@@ -1669,12 +2083,12 @@ describe("App", () => {
     );
 
     expect(createBudgetCalls).toHaveLength(1);
-    expect(JSON.parse(String(createBudgetCall?.[1]?.body))).toEqual(
+    expect(JSON.parse(getRequestBody(createBudgetCall?.[1]))).toEqual(
       expect.objectContaining({
         categoryId: "cat_food",
         limitAmount: { amount: "10000.00", currency: "INR" },
-        periodEnd: "2026-07-31",
-        periodStart: "2026-07-01",
+        periodEnd: nextMonthEnd,
+        periodStart: nextMonthStart,
       }),
     );
     expect(await screen.findByText("₹0.00 spent of ₹10,000.00")).toBeDefined();
@@ -1682,7 +2096,7 @@ describe("App", () => {
     expect(screen.queryByText("Budget missing")).toBeNull();
 
     await user.click(screen.getByRole("button", { name: "Previous month" }));
-    expect(await screen.findByText("June 2026 categories")).toBeDefined();
+    expect(await screen.findByText(`${currentMonthLabel} categories`)).toBeDefined();
     expect(screen.getAllByText("₹0.00 spent of ₹10,000.00")).toHaveLength(1);
   });
 
@@ -1771,6 +2185,7 @@ describe("App", () => {
     window.sessionStorage.setItem("nidhiflow.accessToken", "access-token-profile");
     const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
     let displayName = "Nila";
+    let rejectedExpiredProfileToken = false;
 
     fetchMock.mockImplementation((input, init) => {
       const url = getRequestUrl(input);
@@ -1795,7 +2210,21 @@ describe("App", () => {
       }
 
       if (url.endsWith("/api/v1/users/me") && method === "PATCH") {
-        const body = JSON.parse(String(init?.body ?? "{}")) as { displayName: string };
+        if (!rejectedExpiredProfileToken) {
+          rejectedExpiredProfileToken = true;
+          return Promise.resolve(
+            createJsonResponse(
+              {
+                error: { code: "UNAUTHENTICATED" },
+                message: "Authentication is required for this resource.",
+                success: false,
+              },
+              false,
+              401,
+            ),
+          );
+        }
+        const body = JSON.parse(getRequestBody(init)) as { displayName: string };
         displayName = body.displayName;
 
         return Promise.resolve(
@@ -1810,6 +2239,16 @@ describe("App", () => {
               timezone: "UTC",
             },
             message: "Profile updated successfully.",
+            success: true,
+          }),
+        );
+      }
+
+      if (url.endsWith("/api/v1/auth/refresh") && method === "POST") {
+        return Promise.resolve(
+          createJsonResponse({
+            data: { accessToken: "access-token-profile-refreshed" },
+            message: "Access token refreshed successfully.",
             success: true,
           }),
         );
@@ -1869,6 +2308,16 @@ describe("App", () => {
         headers: expect.objectContaining({
           Authorization: "Bearer access-token-profile",
           "Content-Type": "application/json",
+        }),
+        method: "PATCH",
+      }),
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/api/v1/users/me"),
+      expect.objectContaining({
+        body: JSON.stringify({ displayName: "Priya" }),
+        headers: expect.objectContaining({
+          Authorization: "Bearer access-token-profile-refreshed",
         }),
         method: "PATCH",
       }),
@@ -2051,7 +2500,7 @@ describe("App", () => {
 
     await screen.findByRole("heading", { name: "Profile" });
     expect(screen.getAllByRole("link", { name: /Activity/ }).length).toBeGreaterThan(0);
-    expect(screen.queryByText("Goals")).toBeNull();
+    expect(screen.getAllByRole("link", { name: /Goals/ }).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Feedback" })).toBeDefined();
     expect(screen.getByRole("link", { name: "Download APK" }).getAttribute("href")).toBe(
       "/downloads/nidhiflow-android-debug-v1.0.6.apk",

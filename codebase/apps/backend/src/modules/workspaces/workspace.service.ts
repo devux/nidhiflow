@@ -233,7 +233,7 @@ export class WorkspaceService {
     input: CreateWorkspaceInvitationBody,
     requestId: string | null,
   ) {
-    const workspace = await this.ensureManager(userId, workspaceId);
+    await this.ensureManager(userId, workspaceId);
 
     const token = createOpaqueToken(48);
     const invitationId = createId("wsi");
@@ -275,7 +275,7 @@ export class WorkspaceService {
   }
 
   async createShareCode(userId: string, workspaceId: string, requestId: string | null) {
-    const workspace = await this.ensureManager(userId, workspaceId);
+    await this.ensureManager(userId, workspaceId);
 
     for (let attempt = 0; attempt < 5; attempt += 1) {
       const code = createShareCode();
@@ -457,7 +457,7 @@ export class WorkspaceService {
     targetUserId: string,
     requestId: string | null,
   ) {
-    const workspace = await this.ensureManager(actorUserId, workspaceId);
+    await this.ensureManager(actorUserId, workspaceId);
 
     const members = await this.repository.listMembers(workspaceId);
     const target = members.find((member) => member.userId === targetUserId);

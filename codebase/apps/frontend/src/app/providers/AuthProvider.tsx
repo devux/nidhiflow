@@ -71,6 +71,18 @@ function isAuthFailure(error: unknown) {
   return error instanceof ApiRequestError && (error.status === 401 || error.status === 403);
 }
 
+function isAccessTokenExpired(accessToken: string) {
+  try {
+    const payload = accessToken.split(".")[1];
+    if (!payload) return false;
+    const normalized = payload.replaceAll("-", "+").replaceAll("_", "/");
+    const decoded = JSON.parse(atob(normalized)) as { exp?: number };
+    return !decoded.exp || decoded.exp * 1000 <= Date.now() + 30_000;
+  } catch {
+    return false;
+  }
+}
+
 function readStoredAuthSession(): StoredAuthSession | null {
   try {
     const snapshot = window.sessionStorage.getItem(sessionAuthSnapshotKey);
@@ -156,12 +168,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (isActive) {
         setIsCheckingSession(false);
       }
-    }, 1500);
+    }, 500);
 
     async function loadSession(accessTokenToLoad: string) {
       const [currentUser, currentWorkspaces] = await Promise.all([
-        getCurrentUser(accessTokenToLoad),
-        getWorkspaces(accessTokenToLoad),
+        getCurrentUser(accessTokenToLoad, { trackLoading: false }),
+        getWorkspaces(accessTokenToLoad, { trackLoading: false }),
       ]);
       const session = {
         accessToken: accessTokenToLoad,
@@ -187,7 +199,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     async function refreshSession() {
-      const token = await refreshAccessToken();
+      const token = await refreshAccessToken({ trackLoading: false });
       await loadSession(token);
     }
 
@@ -204,6 +216,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               null,
           );
           setIsCheckingSession(false);
+        }
+
+        if (isAccessTokenExpired(storedSession.accessToken)) {
+          await refreshSession();
+          return;
         }
 
         try {
@@ -309,16 +326,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new ApiRequestError("Authentication is required.", 401);
       }
 
-      const updatedUser = await updateCurrentUser(accessToken, input);
+      let currentAccessToken = accessToken;
+      let updatedUser;
+
+      try {
+        updatedUser = await updateCurrentUser(currentAccessToken, input);
+      } catch (error) {
+        if (!isAuthFailure(error)) throw error;
+        currentAccessToken = await refreshAccessToken();
+        setAccessToken(currentAccessToken);
+        updatedUser = await updateCurrentUser(currentAccessToken, input);
+      }
       setUser(updatedUser);
 
-      if (accessToken) {
-        storeAuthSession({
-          accessToken,
-          user: updatedUser,
-          workspaces,
-        });
-      }
+      storeAuthSession({
+        accessToken: currentAccessToken,
+        user: updatedUser,
+        workspaces,
+      });
 
       return updatedUser;
     },

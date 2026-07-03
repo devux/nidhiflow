@@ -22,6 +22,7 @@ export type IconName =
   | "health"
   | "home"
   | "income"
+  | "liability"
   | "lock"
   | "misc"
   | "moon"
@@ -147,6 +148,12 @@ export function Icon({ name, size = 24, ...props }: IconProps) {
       <>
         <rect x="4" y="6" width="16" height="14" rx="3" />
         <path d="M8 6V4h8v2m-4 3v7m-3-3 3 3 3-3" />
+      </>
+    ),
+    liability: (
+      <>
+        <rect x="3" y="6" width="18" height="13" rx="3" />
+        <path d="M3 10h18M7 15h4m6 0h.01" />
       </>
     ),
     lock: (

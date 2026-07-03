@@ -35,7 +35,6 @@ import type {
   GuestTransactionInput,
 } from "../../domain/transactions/transaction";
 import { ErrorState } from "../../shared/components/ErrorState";
-import { LoadingScreen } from "../../shared/components/LoadingScreen";
 
 interface GuestTransactionsContextValue {
   canWrite: boolean;
@@ -93,7 +92,7 @@ export function GuestTransactionsProvider({
   repository = defaultRepository,
 }: GuestTransactionsProviderProps) {
   const { accessToken, activeWorkspace, isAuthenticated, isCheckingSession, user } = useAuth();
-  const [transactions, setTransactions] = useState<GuestTransaction[]>();
+  const [transactions, setTransactions] = useState<GuestTransaction[]>([]);
   const [loadError, setLoadError] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const workspaceId = activeWorkspace?.id ?? null;
@@ -108,11 +107,9 @@ export function GuestTransactionsProvider({
       };
     }
 
-    setTransactions(undefined);
-
     const load =
       isAuthenticated && accessToken && workspaceId
-        ? listTransactions({ accessToken, workspaceId })
+        ? listTransactions({ accessToken, trackLoading: false, workspaceId })
         : repository.list();
 
     load
@@ -364,10 +361,6 @@ export function GuestTransactionsProvider({
         title="Transaction history is unavailable"
       />
     );
-  }
-
-  if (!contextValue) {
-    return <LoadingScreen />;
   }
 
   return (

@@ -10,11 +10,15 @@ import {
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import ConfirmationNumberOutlinedIcon from "@mui/icons-material/ConfirmationNumberOutlined";
 import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
+import CurrencyExchangeRoundedIcon from "@mui/icons-material/CurrencyExchangeRounded";
 import ErrorOutlineRoundedIcon from "@mui/icons-material/ErrorOutlineRounded";
 import LinkRoundedIcon from "@mui/icons-material/LinkRounded";
+import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
+import ManageAccountsRoundedIcon from "@mui/icons-material/ManageAccountsRounded";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import GroupsRoundedIcon from "@mui/icons-material/GroupsRounded";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
+import ShareRoundedIcon from "@mui/icons-material/ShareRounded";
 import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
@@ -31,7 +35,16 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import { type CSSProperties, type FormEvent, type MouseEvent, useMemo, useState } from "react";
+import {
+  type CSSProperties,
+  type FormEvent,
+  type MouseEvent,
+  type PointerEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
@@ -137,11 +150,14 @@ function TransactionHistoryRow({ locale, transaction }: TransactionHistoryRowPro
 }
 
 export function HomePage() {
-  const { accessToken, activeWorkspace, isAuthenticated, refreshWorkspaces } = useAuth();
+  const { accessToken, activeWorkspace, isAuthenticated, refreshWorkspaces, user } = useAuth();
   const { preferences } = useGuestPreferences();
   const { transactions } = useGuestTransactions();
   const [headerMenuAnchor, setHeaderMenuAnchor] = useState<HTMLElement | null>(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isShareSheetExpanded, setIsShareSheetExpanded] = useState(false);
+  const shareSheetDragStart = useRef<number | null>(null);
+  const shareSheetHandle = useRef<HTMLButtonElement | null>(null);
   const [joinCode, setJoinCode] = useState("");
   const [shareCode, setShareCode] = useState<WorkspaceShareCode | null>(null);
   const [shareStatus, setShareStatus] = useState<
@@ -180,6 +196,22 @@ export function HomePage() {
     ? "Tip: You're saving better than 68% of users!"
     : "Tip: Expenses are above income. Review spending.";
   const isHeaderMenuOpen = Boolean(headerMenuAnchor);
+
+  useEffect(() => {
+    if (!isShareModalOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeShareModal();
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+    shareSheetHandle.current?.focus();
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isShareModalOpen]);
+
   function openHeaderMenu(event: MouseEvent<HTMLButtonElement>) {
     setHeaderMenuAnchor(event.currentTarget);
   }
@@ -190,6 +222,7 @@ export function HomePage() {
 
   function openShareModal() {
     setIsShareModalOpen(true);
+    setIsShareSheetExpanded(false);
     setShareStatus("idle");
     setShareMessage("");
     setPendingJoinCode(null);
@@ -204,6 +237,18 @@ export function HomePage() {
     setShareStatus("idle");
     setShareMessage("");
     setPendingJoinCode(null);
+  }
+
+  function handleShareSheetPointerDown(event: PointerEvent) {
+    shareSheetDragStart.current = event.clientY;
+  }
+
+  function handleShareSheetPointerUp(event: PointerEvent) {
+    if (shareSheetDragStart.current === null) return;
+    const movement = event.clientY - shareSheetDragStart.current;
+    if (movement < -24) setIsShareSheetExpanded(true);
+    if (movement > 24) setIsShareSheetExpanded(false);
+    shareSheetDragStart.current = null;
   }
 
   async function handleCreateShareCode(workspaceId: string) {
@@ -286,14 +331,64 @@ export function HomePage() {
   async function handleCopyShareCode() {
     if (!shareCode) return;
 
-    try {
-      await navigator.clipboard.writeText(shareCode.code);
+    if (await copyText(shareCode.code)) {
       setShareStatus("copied");
       setShareMessage("Code copied.");
-    } catch {
+    } else {
       setShareStatus("error");
       setShareMessage("Copy failed. Select the code instead.");
     }
+  }
+
+  async function copyText(text: string) {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch {
+      // Continue to the legacy fallback for restricted browser contexts.
+    }
+
+    const input = document.createElement("textarea");
+    input.value = text;
+    input.setAttribute("readonly", "");
+    input.style.position = "fixed";
+    input.style.opacity = "0";
+    document.body.append(input);
+    input.select();
+    const copied = typeof document.execCommand === "function" && document.execCommand("copy");
+    input.remove();
+    return copied;
+  }
+
+  async function handleShareWorkspace() {
+    if (!shareCode || !activeWorkspace) return;
+    const text = `Join ${activeWorkspace.name} in NidhiFlow with code ${shareCode.code}`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          text,
+          title: `Join ${activeWorkspace.name}`,
+          url: window.location.origin,
+        });
+        setShareMessage("Invite shared.");
+        return;
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return;
+      }
+    }
+
+    const copied = await copyText(text);
+    setShareStatus(copied ? "copied" : "error");
+    setShareMessage(
+      copied
+        ? "Sharing is unavailable here, so the invite was copied."
+        : "Sharing is unavailable. Copy the code manually.",
+    );
   }
 
   return (
@@ -345,7 +440,22 @@ export function HomePage() {
           className="modal-backdrop"
           role="dialog"
         >
-          <section className="modal-card family-share-modal">
+          <section
+            className={`modal-card family-share-modal ${
+              isShareSheetExpanded ? "family-share-modal--expanded" : "family-share-modal--peek"
+            }`}
+          >
+            <button
+              aria-label={isShareSheetExpanded ? "Collapse shared space" : "Expand shared space"}
+              className="family-share-modal__drag-handle"
+              onClick={() => setIsShareSheetExpanded((expanded) => !expanded)}
+              onPointerDown={handleShareSheetPointerDown}
+              onPointerUp={handleShareSheetPointerUp}
+              ref={shareSheetHandle}
+              type="button"
+            >
+              <span />
+            </button>
             <IconButton
               aria-label="Close sharing"
               className="family-share-modal__close"
@@ -384,22 +494,44 @@ export function HomePage() {
                     className="family-share-modal__workspace"
                   >
                     <span className="family-share-modal__workspace-label">Current workspace</span>
-                    <strong>{activeWorkspace.name}</strong>
-                    <span>
-                      Managed by {activeWorkspace.ownerDisplayName ?? activeWorkspace.name}
-                    </span>
-                    <dl>
-                      <div>
-                        <dt>Your role</dt>
-                        <dd>
-                          {activeWorkspace.membershipRole === "manager" ? "Manager" : "Member"}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>Currency</dt>
-                        <dd>{activeWorkspace.reportingCurrency ?? "Not set"}</dd>
-                      </div>
-                    </dl>
+                    <div className="family-share-modal__workspace-identity">
+                      <span aria-hidden="true">
+                        {activeWorkspace.name.slice(0, 1).toUpperCase()}
+                      </span>
+                      <span>
+                        <strong>{activeWorkspace.name}</strong>
+                        <small>
+                          Managed by {activeWorkspace.ownerDisplayName ?? activeWorkspace.name}
+                        </small>
+                      </span>
+                    </div>
+                    <div className="family-share-modal__workspace-meta">
+                      <span
+                        aria-label={`Role: ${
+                          activeWorkspace.membershipRole === "manager" ? "Manager" : "Member"
+                        }`}
+                      >
+                        <ManageAccountsRoundedIcon aria-hidden="true" fontSize="small" />
+                        {activeWorkspace.membershipRole === "manager" ? "Manager" : "Member"}
+                      </span>
+                      <span
+                        aria-label={`Currency: ${activeWorkspace.reportingCurrency ?? "Not set"}`}
+                      >
+                        <CurrencyExchangeRoundedIcon aria-hidden="true" fontSize="small" />
+                        {activeWorkspace.reportingCurrency ?? "Not set"}
+                      </span>
+                    </div>
+                    {activeWorkspace.membershipRole === "member" ? (
+                      <Button
+                        className="family-share-modal__leave"
+                        disabled={shareStatus === "joining"}
+                        onClick={() => void handleLeaveWorkspace()}
+                        variant="quiet"
+                      >
+                        <LogoutRoundedIcon aria-hidden="true" fontSize="small" />
+                        Leave and create my workspace
+                      </Button>
+                    ) : null}
                   </section>
                 ) : null}
 
@@ -414,7 +546,6 @@ export function HomePage() {
                         </span>
                       </div>
                     </div>
-                    <small>For {activeWorkspace.name}</small>
                     <output
                       className={shareCode ? "share-code-panel__code" : "share-code-panel__pending"}
                     >
@@ -429,7 +560,7 @@ export function HomePage() {
                         startIcon={<RefreshRoundedIcon />}
                         variant="outlined"
                       >
-                        New code
+                        New
                       </MuiButton>
                       <MuiButton
                         className="family-share-modal__compact-action family-share-modal__compact-action--primary"
@@ -438,88 +569,129 @@ export function HomePage() {
                         startIcon={<ContentCopyRoundedIcon />}
                         variant="contained"
                       >
-                        Copy code
+                        Copy
+                      </MuiButton>
+                      <MuiButton
+                        className="family-share-modal__compact-action"
+                        disabled={!shareCode}
+                        onClick={() => void handleShareWorkspace()}
+                        startIcon={<ShareRoundedIcon />}
+                        variant="outlined"
+                      >
+                        Share
                       </MuiButton>
                     </div>
                   </div>
                 ) : null}
 
-                {pendingJoinCode ? (
-                  <section
-                    aria-labelledby="ownership-transfer-title"
-                    className="workspace-transfer-confirmation"
-                    role="alertdialog"
-                  >
-                    <h3 id="ownership-transfer-title">Transfer workspace ownership?</h3>
-                    <p>
-                      Members remain in your current workspace. Transfer management to the
-                      longest-standing member before joining the new workspace.
-                    </p>
-                    <div className="family-share-modal__actions">
-                      <Button
-                        onClick={() => {
-                          setPendingJoinCode(null);
-                          setShareStatus("idle");
-                        }}
-                        variant="secondary"
-                      >
-                        Stay in current workspace
-                      </Button>
-                      <Button
-                        onClick={() => void moveToWorkspace(pendingJoinCode, true)}
-                        variant="primary"
-                      >
-                        Transfer ownership and join
-                      </Button>
+                <div className="family-share-modal__expanded-content">
+                  {pendingJoinCode ? (
+                    <section
+                      aria-labelledby="ownership-transfer-title"
+                      className="workspace-transfer-confirmation"
+                      role="alertdialog"
+                    >
+                      <h3 id="ownership-transfer-title">Transfer workspace ownership?</h3>
+                      <p>
+                        Members remain in your current workspace. Transfer management to the
+                        longest-standing member before joining the new workspace.
+                      </p>
+                      <div className="family-share-modal__actions">
+                        <Button
+                          onClick={() => {
+                            setPendingJoinCode(null);
+                            setShareStatus("idle");
+                          }}
+                          variant="secondary"
+                        >
+                          Stay in current workspace
+                        </Button>
+                        <Button
+                          onClick={() => void moveToWorkspace(pendingJoinCode, true)}
+                          variant="primary"
+                        >
+                          Transfer ownership and join
+                        </Button>
+                      </div>
+                    </section>
+                  ) : (
+                    <form
+                      className="family-share-modal__join"
+                      onSubmit={(event) => void handleJoinWorkspace(event)}
+                    >
+                      <div className="family-share-modal__join-heading">
+                        <span aria-hidden="true">
+                          <LinkRoundedIcon />
+                        </span>
+                        <div>
+                          <label htmlFor="workspace-share-code">Join with code</label>
+                          <small>Joining replaces your current workspace membership.</small>
+                        </div>
+                      </div>
+                      <div className="family-share-modal__join-row">
+                        <div className="family-share-modal__join-input">
+                          <ConfirmationNumberOutlinedIcon aria-hidden="true" fontSize="small" />
+                          <input
+                            autoComplete="off"
+                            id="workspace-share-code"
+                            inputMode="text"
+                            onChange={(event) => setJoinCode(event.target.value)}
+                            placeholder="Enter code (e.g. ABCD-2345)"
+                            value={joinCode}
+                          />
+                        </div>
+                        <MuiButton
+                          className="family-share-modal__compact-action"
+                          disabled={shareStatus === "joining"}
+                          type="submit"
+                          variant="outlined"
+                        >
+                          {shareStatus === "joining" ? "Joining" : "Join"}
+                        </MuiButton>
+                      </div>
+                    </form>
+                  )}
+
+                  <section className="shared-space-section">
+                    <div className="section-heading">
+                      <h3>Members</h3>
+                      <small>Current workspace</small>
+                    </div>
+                    <div className="shared-space-member">
+                      <span className="profile-avatar">
+                        {user?.displayName?.slice(0, 1) ?? "Y"}
+                      </span>
+                      <span>
+                        <strong>{user?.displayName ?? "You"}</strong>
+                      </span>
+                      <span className="local-badge">
+                        {activeWorkspace?.membershipRole ?? "member"}
+                      </span>
                     </div>
                   </section>
-                ) : (
-                  <form
-                    className="family-share-modal__join"
-                    onSubmit={(event) => void handleJoinWorkspace(event)}
-                  >
-                    <div className="family-share-modal__join-heading">
-                      <span aria-hidden="true">
-                        <LinkRoundedIcon />
-                      </span>
-                      <div>
-                        <label htmlFor="workspace-share-code">Join with code</label>
-                        <small>Joining replaces your current workspace membership.</small>
-                      </div>
-                    </div>
-                    <div className="family-share-modal__join-row">
-                      <div className="family-share-modal__join-input">
-                        <ConfirmationNumberOutlinedIcon aria-hidden="true" fontSize="small" />
-                        <input
-                          autoComplete="off"
-                          id="workspace-share-code"
-                          inputMode="text"
-                          onChange={(event) => setJoinCode(event.target.value)}
-                          placeholder="Enter code (e.g. ABCD-2345)"
-                          value={joinCode}
-                        />
-                      </div>
-                      <MuiButton
-                        className="family-share-modal__compact-action"
-                        disabled={shareStatus === "joining"}
-                        type="submit"
-                        variant="outlined"
-                      >
-                        {shareStatus === "joining" ? "Joining" : "Join"}
-                      </MuiButton>
-                    </div>
-                  </form>
-                )}
-
-                {activeWorkspace?.membershipRole === "member" ? (
-                  <Button
-                    disabled={shareStatus === "joining"}
-                    onClick={() => void handleLeaveWorkspace()}
-                    variant="secondary"
-                  >
-                    Leave and create my workspace
-                  </Button>
-                ) : null}
+                  <section className="shared-space-section">
+                    <h3>Permissions</h3>
+                    <p>
+                      {activeWorkspace?.membershipRole === "manager"
+                        ? "You can invite people and manage this workspace."
+                        : "You can view and contribute to shared finances."}
+                    </p>
+                  </section>
+                  <section className="shared-space-section">
+                    <h3>Invite history</h3>
+                    <p>
+                      {shareCode
+                        ? `Current code expires ${new Intl.DateTimeFormat(preferences.locale, { dateStyle: "medium" }).format(new Date(shareCode.expiresAt))}.`
+                        : "No active invite code."}
+                    </p>
+                  </section>
+                  {activeWorkspace?.membershipRole === "manager" ? (
+                    <section className="shared-space-section">
+                      <h3>Workspace settings</h3>
+                      <p>Workspace managers control invitations and membership.</p>
+                    </section>
+                  ) : null}
+                </div>
               </div>
             )}
 
@@ -674,6 +846,18 @@ export function HomePage() {
                   <Icon name="report" />
                 </span>
                 <strong>Reports</strong>
+              </Link>
+              <Link aria-label="Open liabilities" className="quick-action" to="/liabilities">
+                <span className="quick-action__icon">
+                  <Icon name="liability" />
+                </span>
+                <strong>Liabilities</strong>
+              </Link>
+              <Link aria-label="Open goals" className="quick-action" to="/goals">
+                <span className="quick-action__icon">
+                  <Icon name="goal" />
+                </span>
+                <strong>Goals</strong>
               </Link>
             </div>
           </section>

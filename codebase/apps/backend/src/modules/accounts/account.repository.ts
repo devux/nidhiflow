@@ -9,7 +9,7 @@ export interface AccountRecord {
   isArchived: boolean;
   name: string;
   openingBalance: string;
-  type: "cash" | "bank" | "credit_card" | "loan" | "wallet" | "other";
+  type: "cash" | "bank" | "credit_card" | "loan" | "wallet" | "other" | "other_liability";
   updatedAt: string;
 }
 
@@ -222,10 +222,16 @@ export class AccountRepository {
   async summary(workspaceId: string, queryable: Queryable = this.database) {
     const accounts = await this.listByWorkspace(workspaceId, queryable);
     const assets = accounts.filter(
-      (account) => account.type !== "credit_card" && account.type !== "loan",
+      (account) =>
+        account.type !== "credit_card" &&
+        account.type !== "loan" &&
+        account.type !== "other_liability",
     );
     const liabilities = accounts.filter(
-      (account) => account.type === "credit_card" || account.type === "loan",
+      (account) =>
+        account.type === "credit_card" ||
+        account.type === "loan" ||
+        account.type === "other_liability",
     );
 
     const assetTotalMinor = assets.reduce(

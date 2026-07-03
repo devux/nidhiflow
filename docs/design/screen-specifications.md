@@ -7,8 +7,13 @@
 - Personal/family budget card: total, spent, remaining, progress
 - Prominent Add Expense and Add Income actions
 - Recent transactions: source/merchant, category, signed amount, date
-- Shared-space dialog shows the single current workspace, membership role,
-  invite-code management for managers, and code-based joining
+- Shared Space opens as a mobile bottom sheet. Its initial peek shows the
+  current workspace, role, currency, invite code, Copy, and Share
+- Role and currency use compact icon/value chips; member email is omitted
+- Members can leave and create a personal workspace directly from the current
+  workspace card
+- Expanding by the drag handle reveals code-based joining, members,
+  permissions, invite history, and workspace settings
 - Do not show Personal/Shared tabs or workspace switching controls
 - Joining replaces the current workspace membership
 - If joining would move a manager away from remaining members, show a
@@ -57,8 +62,27 @@
 
 - Active and completed sections
 - Clear add action
+- Create, edit, contribute, complete, and archive flows use authenticated
+  workspace goal records
 - Image/icon, name, saved amount, target, percentage, and progress
 - Positive non-manipulative completed-goal celebration
+
+## Liabilities
+
+- Secondary destination opened from Home quick actions and You/Profile tools;
+  it is not a primary navigation tab
+- Authenticated balances derive from credit-card, loan, and other-liability
+  accounts and the existing transaction ledger
+- Active total is grouped by currency; unlike currencies are never combined
+- Account cards identify the account type, balance, due date, and minimum
+  payment; unsupported due-date or payment data is labeled `Not provided`
+- Payment-planning guidance remains visually separate from ledger balances and
+  does not infer interest, minimum payments, or payoff dates
+- Archived liabilities appear in a clearly identified history section and do
+  not contribute to the active total
+- Guests receive a privacy-preserving login/create-account state because
+  account balances are authenticated workspace data
+- Loading, empty, populated, and retryable error states are required
 
 ## Reports
 
@@ -93,12 +117,12 @@
 - Feedback opens from a single page action into a modal form
 - Guest local-data explanation and non-blocking Create Account action
 - No invented guest email or cloud identity
-- Activity and Reports shortcuts
+- Activity, Reports, Goals, and Liabilities shortcuts use a compact icon grid
 - Feedback form
 - Appearance, Language, Currency, and Privacy preferences
 - Optional avatar with safe default
-- Android app section provides an APK download action, supported Android
-  version, build type, and installation-source warning
+- Android app section uses one compact horizontal card with version,
+  compatibility, APK download, and trust indicator
 - On supported Android builds when enabled, Transaction detection explains
   notification-access scope, default-SMS transaction detection, and shared
   visibility; requires an INR destination account plus explicit consent; opens

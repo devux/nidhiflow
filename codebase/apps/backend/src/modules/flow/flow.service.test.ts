@@ -325,7 +325,9 @@ describe("FlowService read-only transaction policy", () => {
     });
 
     const ollamaRequest = vi.mocked(fetch).mock.calls[0]?.[1];
-    const ollamaBody = JSON.parse(String(ollamaRequest?.body)) as {
+    const ollamaBody = JSON.parse(
+      typeof ollamaRequest?.body === "string" ? ollamaRequest.body : "{}",
+    ) as {
       format: {
         properties: {
           filters: {

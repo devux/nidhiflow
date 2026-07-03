@@ -179,7 +179,10 @@ const createAccountRequest = {
     currency: { example: "INR", pattern: "^[A-Z]{3}$", type: "string" },
     name: { maxLength: 80, minLength: 1, type: "string" },
     openingBalance: moneySchema,
-    type: { enum: ["cash", "bank", "credit_card", "loan", "wallet", "other"], type: "string" },
+    type: {
+      enum: ["cash", "bank", "credit_card", "loan", "wallet", "other", "other_liability"],
+      type: "string",
+    },
   },
 };
 
@@ -987,7 +990,7 @@ const paths = {
       tags: ["Accounts"],
       summary: "Create account",
       description:
-        "Creates a manual cash, bank, credit card, loan, wallet, or other account. Exact duplicate create requests return the existing account so safe retries do not fail.",
+        "Creates a manual cash, bank, credit card, loan, wallet, other asset, or other liability account. Exact duplicate create requests return the existing account so safe retries do not fail.",
       operationId: "createAccount",
       security: bearerSecurity,
       parameters: [parameterRef("workspaceId")],
@@ -2259,7 +2262,7 @@ export const openApiDocument = {
           id,
           name: { type: "string" },
           type: {
-            enum: ["cash", "bank", "credit_card", "loan", "wallet", "other"],
+            enum: ["cash", "bank", "credit_card", "loan", "wallet", "other", "other_liability"],
             type: "string",
           },
           openingBalance: { type: "string" },

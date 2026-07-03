@@ -129,8 +129,10 @@
 - Initial-load and API performance work is the highest-priority backlog item.
 - Profile and shared-workspace screens receive mobile-first UI optimization
   without changing privacy, authentication, or single-workspace rules.
-- Goals and Liabilities become dedicated secondary destinations without adding
-  more primary navigation tabs or duplicating ledger data.
+- Goals and Liabilities are implemented secondary destinations without adding
+  primary navigation tabs. Goals uses the workspace goal and contribution
+  records; Liabilities derives balances from the existing account and
+  transaction ledger.
 - Detailed scope and release gates are defined in
   [Product Backlog](backlog.md).
 

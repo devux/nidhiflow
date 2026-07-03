@@ -6,7 +6,15 @@ const currencySchema = z
   .transform((value) => value.toUpperCase())
   .refine((value) => /^[A-Z]{3}$/.test(value), "Currency must be a valid ISO 4217 code.");
 
-const accountTypeSchema = z.enum(["cash", "bank", "credit_card", "loan", "wallet", "other"]);
+const accountTypeSchema = z.enum([
+  "cash",
+  "bank",
+  "credit_card",
+  "loan",
+  "wallet",
+  "other",
+  "other_liability",
+]);
 
 const moneySchema = z.object({
   amount: z

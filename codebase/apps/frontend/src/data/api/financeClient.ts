@@ -24,11 +24,21 @@ const sessionAccessTokenKey = "nidhiflow.accessToken";
 const sessionAuthSnapshotKey = "nidhiflow.authSession";
 
 export interface AccountResource {
+  archivedAt?: string | null;
   currency: SupportedCurrency;
+  currentBalance?: string;
   id: string;
   isArchived: boolean;
   name: string;
+  openingBalance?: string;
   type: string;
+}
+
+export interface AccountSummaryResource {
+  accounts: AccountResource[];
+  assetTotalMinor: string;
+  liabilityTotalMinor: string;
+  netWorthMinor: string;
 }
 
 export interface CategoryResource {
@@ -49,6 +59,22 @@ export interface BudgetResource {
   progressPercent: string;
   remainingAmount: string;
   spentAmount: string;
+  updatedAt: string;
+  workspaceId: string;
+}
+
+export interface GoalResource {
+  createdAt: string;
+  currency: SupportedCurrency;
+  fundedAmount: string;
+  id: string;
+  name: string;
+  progressPercent: string;
+  remainingAmount: string;
+  status: "active" | "completed" | "archived";
+  targetAmount: string;
+  targetDate: string | null;
+  type: "savings" | "debt";
   updatedAt: string;
   workspaceId: string;
 }
@@ -110,8 +136,9 @@ async function sendApiRequest<Data>(
   path: string,
   accessToken: string,
   options: RequestInit,
+  config: { trackLoading?: boolean },
 ): Promise<ApiEnvelope<Data>> {
-  return trackApiRequest(async () => {
+  const request = async () => {
     const response = await fetch(`${environment.NIDHIFLOW_API_BASE_URL}/api/v1${path}`, {
       credentials: "include",
       headers: {
@@ -123,16 +150,19 @@ async function sendApiRequest<Data>(
     });
 
     return parseResponse<Data>(response);
-  });
+  };
+
+  return config.trackLoading === false ? request() : trackApiRequest(request);
 }
 
 async function apiRequest<Data>(
   path: string,
   accessToken: string,
   options: RequestInit = {},
+  config: { trackLoading?: boolean } = {},
 ): Promise<ApiEnvelope<Data>> {
   try {
-    return await sendApiRequest<Data>(path, accessToken, options);
+    return await sendApiRequest<Data>(path, accessToken, options, config);
   } catch (error) {
     if (!(error instanceof FinanceApiRequestError) || error.status !== 401) {
       throw error;
@@ -141,7 +171,7 @@ async function apiRequest<Data>(
     const refreshedAccessToken = await refreshAccessToken();
     storeRefreshedAccessToken(refreshedAccessToken);
 
-    return sendApiRequest<Data>(path, refreshedAccessToken, options);
+    return sendApiRequest<Data>(path, refreshedAccessToken, options, config);
   }
 }
 
@@ -279,6 +309,19 @@ export async function listAccounts(input: {
   return result.data;
 }
 
+export async function getAccountSummary(input: {
+  accessToken: string;
+  workspaceId: string;
+}): Promise<AccountSummaryResource> {
+  const result = await apiRequest<AccountSummaryResource>(
+    `/workspaces/${input.workspaceId}/accounts/summary`,
+    input.accessToken,
+    { method: "GET" },
+  );
+
+  return result.data;
+}
+
 export async function restoreAccount(input: {
   accessToken: string;
   accountId: string;
@@ -286,6 +329,71 @@ export async function restoreAccount(input: {
 }): Promise<AccountResource> {
   const result = await apiRequest<AccountResource>(
     `/workspaces/${input.workspaceId}/accounts/${input.accountId}/restore`,
+    input.accessToken,
+    { method: "POST" },
+  );
+
+  return result.data;
+}
+
+export async function createLiabilityAccount(input: {
+  accessToken: string;
+  currency: SupportedCurrency;
+  name: string;
+  openingBalance: string;
+  type: "credit_card" | "loan" | "other_liability";
+  workspaceId: string;
+}): Promise<AccountResource> {
+  const result = await apiRequest<AccountResource>(
+    `/workspaces/${input.workspaceId}/accounts`,
+    input.accessToken,
+    {
+      body: JSON.stringify({
+        currency: input.currency,
+        name: input.name,
+        openingBalance: { amount: input.openingBalance, currency: input.currency },
+        type: input.type,
+      }),
+      method: "POST",
+    },
+  );
+
+  return result.data;
+}
+
+export async function updateLiabilityAccount(input: {
+  accessToken: string;
+  accountId: string;
+  currency: SupportedCurrency;
+  name: string;
+  openingBalance: string;
+  type: "credit_card" | "loan" | "other_liability";
+  workspaceId: string;
+}): Promise<AccountResource> {
+  const result = await apiRequest<AccountResource>(
+    `/workspaces/${input.workspaceId}/accounts/${input.accountId}`,
+    input.accessToken,
+    {
+      body: JSON.stringify({
+        currency: input.currency,
+        name: input.name,
+        openingBalance: { amount: input.openingBalance, currency: input.currency },
+        type: input.type,
+      }),
+      method: "PATCH",
+    },
+  );
+
+  return result.data;
+}
+
+export async function archiveAccount(input: {
+  accessToken: string;
+  accountId: string;
+  workspaceId: string;
+}): Promise<AccountResource> {
+  const result = await apiRequest<AccountResource>(
+    `/workspaces/${input.workspaceId}/accounts/${input.accountId}/archive`,
     input.accessToken,
     { method: "POST" },
   );
@@ -342,12 +450,14 @@ export async function createAccount(input: {
 
 export async function listCategories(input: {
   accessToken: string;
+  trackLoading?: boolean;
   workspaceId: string;
 }): Promise<CategoryResource[]> {
   const result = await apiRequest<CategoryResource[]>(
     `/workspaces/${input.workspaceId}/categories`,
     input.accessToken,
     { method: "GET" },
+    { trackLoading: input.trackLoading },
   );
 
   return result.data.filter((category) => !category.isArchived);
@@ -355,14 +465,18 @@ export async function listCategories(input: {
 
 export async function listTransactions(input: {
   accessToken: string;
+  trackLoading?: boolean;
   workspaceId: string;
 }): Promise<GuestTransaction[]> {
-  const categories = await listCategories(input);
-  const result = await apiRequest<TransactionResource[]>(
-    `/workspaces/${input.workspaceId}/transactions`,
-    input.accessToken,
-    { method: "GET" },
-  );
+  const [categories, result] = await Promise.all([
+    listCategories(input),
+    apiRequest<TransactionResource[]>(
+      `/workspaces/${input.workspaceId}/transactions`,
+      input.accessToken,
+      { method: "GET" },
+      { trackLoading: input.trackLoading },
+    ),
+  ]);
 
   return result.data
     .map((transaction) => toTransaction(transaction, categories))
@@ -534,5 +648,106 @@ export async function deleteBudget(input: {
     `/workspaces/${input.workspaceId}/budgets/${input.budgetId}`,
     input.accessToken,
     { method: "DELETE" },
+  );
+}
+
+export async function listGoals(input: {
+  accessToken: string;
+  workspaceId: string;
+}): Promise<GoalResource[]> {
+  const result = await apiRequest<GoalResource[]>(
+    `/workspaces/${input.workspaceId}/goals`,
+    input.accessToken,
+    { method: "GET" },
+  );
+  return result.data;
+}
+
+export async function createGoal(input: {
+  accessToken: string;
+  currency: SupportedCurrency;
+  name: string;
+  targetAmount: string;
+  targetDate?: string;
+  type: "savings" | "debt";
+  workspaceId: string;
+}): Promise<GoalResource> {
+  const result = await apiRequest<GoalResource>(
+    `/workspaces/${input.workspaceId}/goals`,
+    input.accessToken,
+    {
+      body: JSON.stringify({
+        currency: input.currency,
+        name: input.name,
+        targetAmount: { amount: input.targetAmount, currency: input.currency },
+        ...(input.targetDate ? { targetDate: input.targetDate } : {}),
+        type: input.type,
+      }),
+      method: "POST",
+    },
+  );
+  return result.data;
+}
+
+export async function updateGoal(input: {
+  accessToken: string;
+  currency: SupportedCurrency;
+  goalId: string;
+  name: string;
+  status?: "active" | "completed" | "archived";
+  targetAmount: string;
+  targetDate?: string;
+  type: "savings" | "debt";
+  workspaceId: string;
+}): Promise<GoalResource> {
+  const result = await apiRequest<GoalResource>(
+    `/workspaces/${input.workspaceId}/goals/${input.goalId}`,
+    input.accessToken,
+    {
+      body: JSON.stringify({
+        currency: input.currency,
+        name: input.name,
+        ...(input.status ? { status: input.status } : {}),
+        targetAmount: { amount: input.targetAmount, currency: input.currency },
+        ...(input.targetDate ? { targetDate: input.targetDate } : {}),
+        type: input.type,
+      }),
+      method: "PATCH",
+    },
+  );
+  return result.data;
+}
+
+export async function archiveGoal(input: {
+  accessToken: string;
+  goalId: string;
+  workspaceId: string;
+}): Promise<GoalResource> {
+  const result = await apiRequest<GoalResource>(
+    `/workspaces/${input.workspaceId}/goals/${input.goalId}`,
+    input.accessToken,
+    { method: "DELETE" },
+  );
+  return result.data;
+}
+
+export async function createGoalContribution(input: {
+  accessToken: string;
+  amount: string;
+  contributionDate: string;
+  currency: SupportedCurrency;
+  goalId: string;
+  workspaceId: string;
+}): Promise<void> {
+  await apiRequest(
+    `/workspaces/${input.workspaceId}/goals/${input.goalId}/contributions`,
+    input.accessToken,
+    {
+      body: JSON.stringify({
+        amount: { amount: input.amount, currency: input.currency },
+        contributionDate: input.contributionDate,
+      }),
+      method: "POST",
+    },
   );
 }
