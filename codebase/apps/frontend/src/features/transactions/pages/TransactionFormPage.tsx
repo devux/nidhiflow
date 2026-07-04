@@ -10,6 +10,8 @@ import { Link, useLocation, useNavigate, useParams, useSearchParams } from "reac
 
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
 import { useGuestTransactions } from "../../../app/providers/GuestTransactionsProvider";
+import { useAuth } from "../../../app/providers/AuthProvider";
+import { listCategories, type CategoryResource } from "../../../data/api/financeClient";
 import { formatMoney } from "../../../domain/money/money";
 import {
   expenseCategories,
@@ -85,6 +87,7 @@ export function TransactionFormPage() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { accessToken, activeWorkspace } = useAuth();
   const { preferences } = useGuestPreferences();
   const {
     canWrite,
@@ -121,10 +124,32 @@ export function TransactionFormPage() {
   const [saveError, setSaveError] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const [workspaceCategories, setWorkspaceCategories] = useState<CategoryResource[]>([]);
   const dateInputRef = useRef<HTMLInputElement | null>(null);
   const [showAllCategories, setShowAllCategories] = useState(
     existing ? initialCategories.indexOf(existing.category) >= COLLAPSED_CATEGORY_COUNT : false,
   );
+
+  useEffect(() => {
+    if (!accessToken || !activeWorkspace) return;
+    let active = true;
+
+    void listCategories({
+      accessToken,
+      trackLoading: false,
+      workspaceId: activeWorkspace.id,
+    })
+      .then((categories) => {
+        if (active) setWorkspaceCategories(categories);
+      })
+      .catch(() => {
+        if (active) setWorkspaceCategories([]);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [accessToken, activeWorkspace]);
   useEffect(() => {
     if (existing) return;
 
@@ -189,8 +214,15 @@ export function TransactionFormPage() {
     );
   }
 
-  const categories: readonly string[] =
+  const defaultCategories: readonly string[] =
     values.type === "income" ? incomeCategories : expenseFormCategories;
+  const customCategoryNames = workspaceCategories
+    .filter(
+      (category) =>
+        !category.isSystem && !category.isArchived && category.transactionType === values.type,
+    )
+    .map((category) => category.name);
+  const categories = [...new Set([...defaultCategories, ...customCategoryNames])];
   const shouldCollapseCategories =
     categories.length > COLLAPSED_CATEGORY_COUNT + 1 && !showAllCategories;
   const visibleCategories = shouldCollapseCategories

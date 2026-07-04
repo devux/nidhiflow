@@ -35,6 +35,10 @@ export interface FlowLaunchSubscriptionRecord {
   userId: string | null;
 }
 
+export interface WorkspaceNotificationRecipient {
+  userId: string;
+}
+
 export class NotificationRepository {
   constructor(private readonly database: Queryable) {}
 
@@ -98,6 +102,80 @@ export class NotificationRepository {
     );
 
     return Number(result.rows[0]?.count ?? "0");
+  }
+
+  async listWorkspaceNotificationRecipients(
+    workspaceId: string,
+    actorUserId: string,
+    queryable: Queryable = this.database,
+  ) {
+    const result = await queryable.query<WorkspaceNotificationRecipient>(
+      `SELECT wm.user_id AS "userId"
+         FROM workspace_members wm
+         LEFT JOIN notification_preferences np
+           ON np.user_id = wm.user_id
+        WHERE wm.workspace_id = $1
+          AND wm.user_id <> $2
+          AND COALESCE(np.in_app_enabled, TRUE) = TRUE`,
+      [workspaceId, actorUserId],
+    );
+
+    return result.rows;
+  }
+
+  async getWorkspaceNotificationContext(
+    workspaceId: string,
+    actorUserId: string,
+    queryable: Queryable = this.database,
+  ) {
+    const result = await queryable.query<{ actorDisplayName: string; workspaceName: string }>(
+      `SELECT u.display_name AS "actorDisplayName",
+              w.name AS "workspaceName"
+         FROM users u
+         JOIN workspaces w
+           ON w.id = $1
+        WHERE u.id = $2
+          AND u.deleted_at IS NULL
+          AND w.deleted_at IS NULL
+        LIMIT 1`,
+      [workspaceId, actorUserId],
+    );
+
+    return result.rows[0] ?? null;
+  }
+
+  async createNotification(
+    input: {
+      body: string;
+      id: string;
+      payload: Record<string, unknown>;
+      title: string;
+      type: string;
+      userId: string;
+      workspaceId: string;
+    },
+    queryable: Queryable = this.database,
+  ) {
+    await queryable.query(
+      `INSERT INTO notifications (
+         id,
+         user_id,
+         workspace_id,
+         type,
+         title,
+         body,
+         payload
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)`,
+      [
+        input.id,
+        input.userId,
+        input.workspaceId,
+        input.type,
+        input.title,
+        input.body,
+        JSON.stringify(input.payload),
+      ],
+    );
   }
 
   async findPreferences(userId: string, queryable: Queryable = this.database) {

@@ -1,4 +1,6 @@
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import EditRoundedIcon from "@mui/icons-material/EditRounded";
+import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
 import { Capacitor } from "@capacitor/core";
 import Dialog from "@mui/material/Dialog";
@@ -6,13 +8,20 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import IconButton from "@mui/material/IconButton";
 import { useEffect, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
 
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { trackApiRequest } from "../../../app/providers/apiLoadingState";
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
 import { environment } from "../../../config/environment";
-import { listAccounts, type AccountResource } from "../../../data/api/financeClient";
+import {
+  archiveCategory,
+  createCategory,
+  listAccounts,
+  listCategories,
+  updateCategory,
+  type AccountResource,
+  type CategoryResource,
+} from "../../../data/api/financeClient";
 import {
   supportedCurrencies,
   supportedLocales,
@@ -23,39 +32,12 @@ import {
 } from "../../../domain/preferences/guestPreferences";
 import { Button } from "../../../shared/components/Button";
 import { Card } from "../../../shared/components/Card";
-import { Icon, type IconName } from "../../../shared/components/Icon";
+import { Icon } from "../../../shared/components/Icon";
 import {
   notificationTransactions,
   supportsNotificationTransactions,
   type NotificationTransactionStatus,
 } from "../../notifications/native/notificationTransactions";
-
-const tools: Array<{ description: string; href: string; icon: IconName; title: string }> = [
-  {
-    description: "Review income and expenses",
-    href: "/activity",
-    icon: "activity",
-    title: "Activity",
-  },
-  {
-    description: "Understand your financial story",
-    href: "/reports",
-    icon: "report",
-    title: "Reports",
-  },
-  {
-    description: "Review credit cards and loans",
-    href: "/liabilities",
-    icon: "liability",
-    title: "Liabilities",
-  },
-  {
-    description: "Track savings and debt goals",
-    href: "/goals",
-    icon: "goal",
-    title: "Goals",
-  },
-];
 
 const localeLabels: Record<SupportedLocale, string> = {
   "en-GB": "English (United Kingdom)",
@@ -93,6 +75,14 @@ export function YouPage() {
   const [notificationStatus, setNotificationStatus] =
     useState<NotificationTransactionStatus | null>(null);
   const [notificationAccountId, setNotificationAccountId] = useState("");
+  const [categories, setCategories] = useState<CategoryResource[]>([]);
+  const [categoryName, setCategoryName] = useState("");
+  const [categoryType, setCategoryType] = useState<"expense" | "income">("expense");
+  const [categoryState, setCategoryState] = useState<"error" | "idle" | "loading" | "saving">(
+    "idle",
+  );
+  const [editingCategory, setEditingCategory] = useState<CategoryResource | null>(null);
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const showNotificationTransactions =
     environment.ANDROID_NOTIFICATION_TRANSACTIONS_ENABLED &&
     supportsNotificationTransactions() &&
@@ -102,6 +92,59 @@ export function YouPage() {
   useEffect(() => {
     setDisplayName(profileName);
   }, [profileName]);
+
+  useEffect(() => {
+    if (!user) return;
+    const nextLocale = (supportedLocales as readonly string[]).includes(user.locale)
+      ? (user.locale as SupportedLocale)
+      : preferences.locale;
+    const nextCurrency = (supportedCurrencies as readonly string[]).includes(user.preferredCurrency)
+      ? (user.preferredCurrency as SupportedCurrency)
+      : preferences.currency;
+    const nextTheme = (themePreferences as readonly string[]).includes(user.theme)
+      ? (user.theme as GuestPreferences["theme"])
+      : preferences.theme;
+
+    if (
+      nextLocale === preferences.locale &&
+      nextCurrency === preferences.currency &&
+      nextTheme === preferences.theme
+    ) {
+      return;
+    }
+
+    void savePreferences({
+      ...preferences,
+      currency: nextCurrency,
+      locale: nextLocale,
+      theme: nextTheme,
+      timezone: user.timezone,
+    });
+  }, [preferences, savePreferences, user]);
+
+  useEffect(() => {
+    if (!accessToken || !activeWorkspace) return;
+    let active = true;
+    setCategoryState("loading");
+
+    void listCategories({
+      accessToken,
+      trackLoading: false,
+      workspaceId: activeWorkspace.id,
+    })
+      .then((records) => {
+        if (!active) return;
+        setCategories(records);
+        setCategoryState("idle");
+      })
+      .catch(() => {
+        if (active) setCategoryState("error");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [accessToken, activeWorkspace]);
 
   useEffect(() => {
     if (!showNotificationTransactions || !accessToken || !activeWorkspace) return;
@@ -147,6 +190,13 @@ export function YouPage() {
     setSaveState("idle");
 
     try {
+      if (!user) throw new Error("AUTHENTICATION_REQUIRED");
+      await updateProfile({
+        locale: updatedPreferences.locale,
+        preferredCurrency: updatedPreferences.currency,
+        theme: updatedPreferences.theme,
+        timezone: updatedPreferences.timezone,
+      });
       await savePreferences(updatedPreferences);
       setSaveState("saved");
     } catch {
@@ -165,7 +215,7 @@ export function YouPage() {
 
     setFieldError("");
 
-    if (isAuthenticated && user) {
+    if (user) {
       setSaveState("idle");
       void updateProfile({ displayName: normalizedName })
         .then(() => setSaveState("saved"))
@@ -174,8 +224,7 @@ export function YouPage() {
       return;
     }
 
-    void persist({ ...preferences, displayName: normalizedName });
-    setIsNameModalOpen(false);
+    setSaveState("error");
   }
 
   async function handleFeedbackSubmit(event: FormEvent<HTMLFormElement>) {
@@ -214,6 +263,61 @@ export function YouPage() {
       setLogoutState("idle");
     } catch {
       setLogoutState("error");
+    }
+  }
+
+  function openCategoryDialog(category?: CategoryResource) {
+    setEditingCategory(category ?? null);
+    setCategoryName(category?.name ?? "");
+    setCategoryType(category?.transactionType === "income" ? "income" : "expense");
+    setCategoryState("idle");
+    setIsCategoryDialogOpen(true);
+  }
+
+  async function handleCategorySubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const normalizedName = categoryName.trim();
+    if (!accessToken || !activeWorkspace || !normalizedName) return;
+    setCategoryState("saving");
+
+    try {
+      const category = editingCategory
+        ? await updateCategory({
+            accessToken,
+            categoryId: editingCategory.id,
+            name: normalizedName,
+            transactionType: categoryType,
+            workspaceId: activeWorkspace.id,
+          })
+        : await createCategory({
+            accessToken,
+            name: normalizedName,
+            transactionType: categoryType,
+            workspaceId: activeWorkspace.id,
+          });
+      setCategories((current) => [...current.filter((item) => item.id !== category.id), category]);
+      setCategoryState("idle");
+      setIsCategoryDialogOpen(false);
+    } catch {
+      setCategoryState("error");
+    }
+  }
+
+  async function handleCategoryDelete() {
+    if (!accessToken || !activeWorkspace || !editingCategory) return;
+    setCategoryState("saving");
+
+    try {
+      await archiveCategory({
+        accessToken,
+        categoryId: editingCategory.id,
+        workspaceId: activeWorkspace.id,
+      });
+      setCategories((current) => current.filter((item) => item.id !== editingCategory.id));
+      setCategoryState("idle");
+      setIsCategoryDialogOpen(false);
+    } catch {
+      setCategoryState("error");
     }
   }
 
@@ -272,14 +376,26 @@ export function YouPage() {
           <h1>Profile</h1>
           <p>Manage your account and preferences</p>
         </span>
-        <IconButton
-          aria-label="Open preferences"
-          className="profile-page-header__settings"
-          component="a"
-          href="#preferences"
-        >
-          <SettingsRoundedIcon aria-hidden="true" />
-        </IconButton>
+        <span className="profile-page-header__actions">
+          <button
+            aria-label="Log out"
+            className="profile-page-header__logout"
+            disabled={logoutState === "saving"}
+            onClick={() => void handleLogout()}
+            type="button"
+          >
+            <LogoutRoundedIcon aria-hidden="true" fontSize="small" />
+            <span>{logoutState === "saving" ? "Logging out" : "Log out"}</span>
+          </button>
+          <IconButton
+            aria-label="Open preferences"
+            className="profile-page-header__settings"
+            component="a"
+            href="#preferences"
+          >
+            <SettingsRoundedIcon aria-hidden="true" />
+          </IconButton>
+        </span>
       </header>
 
       <section className="profile-card profile-card--compact">
@@ -296,51 +412,24 @@ export function YouPage() {
             <span className="profile-card__identity-copy">
               <span className="profile-card__name-row">
                 <h2>{profileName}</h2>
-                <span className="local-badge">
-                  <Icon name="user" size={15} />
-                  {isAuthenticated ? "Signed in" : "Guest user"}
-                </span>
               </span>
-              <small>{isAuthenticated && user ? user.email : "Local profile on this device"}</small>
             </span>
-            <Icon name="chevron" size={18} />
+            <span className="profile-card__edit" aria-hidden="true">
+              <EditRoundedIcon fontSize="small" />
+            </span>
           </button>
         </div>
-        {isAuthenticated && user ? (
-          <button
-            className="profile-logout-row"
-            disabled={logoutState === "saving"}
-            onClick={() => void handleLogout()}
-            type="button"
-          >
-            <Icon name="user" size={20} />
-            {logoutState === "saving" ? "Logging out" : "Log out"}
-          </button>
-        ) : (
-          <div className="account-actions">
-            <Link className="button button--primary button--full" to="/signup">
-              <Icon name="cloud" size={20} />
-              Create an account for backup
-            </Link>
-            <Link className="button button--secondary button--full" to="/login">
-              <Icon name="user" size={20} />
-              Log in
-            </Link>
-          </div>
-        )}
       </section>
 
       {saveState === "saved" ? (
         <div className="success-message" role="status">
           <Icon name="check" size={20} />
-          {isAuthenticated ? "Profile updated." : "Preferences saved on this device."}
+          Profile updated.
         </div>
       ) : null}
       {saveState === "error" ? (
         <div className="error-message" role="alert">
-          {isAuthenticated
-            ? "Profile could not be updated. Your previous name remains unchanged."
-            : "Preferences could not be saved. Your previous settings remain unchanged."}
+          Profile or preferences could not be updated. Your previous settings remain unchanged.
         </div>
       ) : null}
       {feedbackState === "sent" ? (
@@ -359,54 +448,6 @@ export function YouPage() {
           Logout could not complete. Please try again.
         </div>
       ) : null}
-
-      <nav aria-label="Profile shortcuts" className="profile-compact-menu">
-        <Card className="settings-list">
-          {tools.map((tool) => (
-            <Link key={tool.title} to={tool.href}>
-              <span className="icon-tile">
-                <Icon name={tool.icon} size={18} />
-              </span>
-              <strong>{tool.title}</strong>
-              <Icon name="chevron" size={18} />
-            </Link>
-          ))}
-          <button onClick={() => setIsFeedbackModalOpen(true)} type="button">
-            <span className="icon-tile">
-              <Icon name="feedback" size={18} />
-            </span>
-            <strong>Feedback</strong>
-            <Icon name="chevron" size={18} />
-          </button>
-          <a href="#preferences">
-            <span className="icon-tile">
-              <SettingsRoundedIcon aria-hidden="true" fontSize="small" />
-            </span>
-            <strong>Preferences</strong>
-            <Icon name="chevron" size={18} />
-          </a>
-        </Card>
-      </nav>
-
-      <section aria-labelledby="tools-title" className="profile-quick-access">
-        <div className="section-heading">
-          <h2 id="tools-title">Quick access</h2>
-        </div>
-        <Card className="settings-list profile-quick-access__list">
-          {tools.map((tool) => (
-            <Link key={tool.title} to={tool.href}>
-              <span className="icon-tile">
-                <Icon name={tool.icon} />
-              </span>
-              <span>
-                <strong>{tool.title}</strong>
-                <small>{tool.description}</small>
-              </span>
-              <Icon name="chevron" />
-            </Link>
-          ))}
-        </Card>
-      </section>
 
       <section aria-labelledby="feedback-title" className="profile-feedback-entry">
         <div className="section-heading">
@@ -439,6 +480,7 @@ export function YouPage() {
               <strong>NidhiFlow for Android</strong>
               <small>v1.0.6 · Android 7 or newer</small>
             </span>
+            <Icon name="shield" size={22} />
             <a
               className="button button--primary"
               download="nidhiflow-android-debug-v1.0.6.apk"
@@ -446,7 +488,6 @@ export function YouPage() {
             >
               Download APK
             </a>
-            <Icon name="shield" size={22} />
           </Card>
         </section>
       ) : null}
@@ -615,17 +656,68 @@ export function YouPage() {
             </select>
           </label>
         </Card>
-      </section>
+        <Card className="profile-category-preferences">
+          <div className="profile-category-preferences__heading">
+            <span>
+              <strong>Categories</strong>
+              <small>
+                Default categories stay read-only. Your categories belong to this workspace.
+              </small>
+            </span>
+            <Button onClick={() => openCategoryDialog()} variant="secondary">
+              <Icon name="plus" size={18} />
+              Add
+            </Button>
+          </div>
 
-      {!isAuthenticated ? (
-        <Card className="privacy-card" subtle>
-          <Icon name="lock" />
-          <span>
-            <h2>Privacy by default</h2>
-            <p>NidhiFlow has not uploaded this guest profile or created a hidden server account.</p>
-          </span>
+          {categoryState === "loading" ? <p>Loading categories…</p> : null}
+          {categoryState === "error" ? (
+            <p className="form-error" role="alert">
+              Categories could not be loaded or saved.
+            </p>
+          ) : null}
+
+          <div className="profile-category-preferences__group">
+            <strong>Default</strong>
+            <div className="profile-category-chips">
+              {categories
+                .filter((category) => category.isSystem)
+                .map((category) => (
+                  <span key={category.id}>
+                    {category.name}
+                    <small>{category.transactionType}</small>
+                  </span>
+                ))}
+            </div>
+          </div>
+
+          <div className="profile-category-preferences__group">
+            <strong>Your categories</strong>
+            {categories.some((category) => !category.isSystem) ? (
+              <div className="profile-custom-categories">
+                {categories
+                  .filter((category) => !category.isSystem)
+                  .map((category) => (
+                    <button
+                      aria-label={`Edit ${category.name} category`}
+                      key={category.id}
+                      onClick={() => openCategoryDialog(category)}
+                      type="button"
+                    >
+                      <span>
+                        <strong>{category.name}</strong>
+                        <small>{category.transactionType}</small>
+                      </span>
+                      <span>Edit</span>
+                    </button>
+                  ))}
+              </div>
+            ) : (
+              <p>No custom categories yet.</p>
+            )}
+          </div>
         </Card>
-      ) : null}
+      </section>
 
       <footer className="profile-page-footer">
         <span>NidhiFlow v1.0.0</span>
@@ -653,9 +745,7 @@ export function YouPage() {
           <form className="settings-form" onSubmit={handleDisplayNameSubmit}>
             <label htmlFor="display-name">Display name</label>
             <p className="field-help" id="display-name-help">
-              {isAuthenticated
-                ? "This name appears across your NidhiFlow profile."
-                : "This name is stored only in this browser."}
+              This name appears across your NidhiFlow profile.
             </p>
             <input
               aria-describedby={`display-name-help${fieldError ? " display-name-error" : ""}`}
@@ -673,6 +763,71 @@ export function YouPage() {
             <Button fullWidth type="submit">
               Save
             </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        aria-labelledby="category-dialog-title"
+        fullWidth
+        maxWidth="xs"
+        onClose={() => setIsCategoryDialogOpen(false)}
+        open={isCategoryDialogOpen}
+        slotProps={{ paper: { className: "profile-dialog" } }}
+      >
+        <DialogTitle id="category-dialog-title">
+          {editingCategory ? "Edit category" : "Add category"}
+        </DialogTitle>
+        <IconButton
+          aria-label="Close category editor"
+          className="profile-dialog__close"
+          onClick={() => setIsCategoryDialogOpen(false)}
+          size="small"
+        >
+          <CloseRoundedIcon aria-hidden="true" />
+        </IconButton>
+        <DialogContent>
+          <form
+            className="settings-form profile-category-form"
+            onSubmit={(event) => void handleCategorySubmit(event)}
+          >
+            <label htmlFor="category-name">Name</label>
+            <input
+              autoFocus
+              id="category-name"
+              maxLength={80}
+              onChange={(event) => setCategoryName(event.target.value)}
+              required
+              value={categoryName}
+            />
+            <label htmlFor="category-type">Transaction type</label>
+            <select
+              id="category-type"
+              onChange={(event) => setCategoryType(event.target.value as typeof categoryType)}
+              value={categoryType}
+            >
+              <option value="expense">Expense</option>
+              <option value="income">Income</option>
+            </select>
+            {categoryState === "error" ? (
+              <p className="form-error" role="alert">
+                This category could not be saved. Check the name and try again.
+              </p>
+            ) : null}
+            <div className="profile-category-form__actions">
+              {editingCategory ? (
+                <Button
+                  disabled={categoryState === "saving"}
+                  onClick={() => void handleCategoryDelete()}
+                  variant="quiet"
+                >
+                  Delete
+                </Button>
+              ) : null}
+              <Button disabled={categoryState === "saving"} type="submit">
+                {categoryState === "saving" ? "Saving" : "Save category"}
+              </Button>
+            </div>
           </form>
         </DialogContent>
       </Dialog>

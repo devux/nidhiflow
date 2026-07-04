@@ -31,9 +31,9 @@ const capabilities: Array<{
     title: "Goals you can grow into",
   },
   {
-    copy: "Keep loans, credit cards, and other liabilities visible alongside the rest of your financial picture.",
+    copy: "Keep loans, credit cards, and other borrowing visible alongside the rest of your financial picture.",
     icon: "liability",
-    title: "Liabilities in view",
+    title: "Loans in view",
   },
   {
     copy: "Invite people you trust, choose their permissions, and manage household finances in one shared space.",
@@ -49,7 +49,7 @@ const steps = [
     title: "Create your account",
   },
   {
-    copy: "Add income, expenses, accounts, budgets, goals, and liabilities as you need them.",
+    copy: "Add income, expenses, accounts, budgets, goals, and loans as you need them.",
     number: "02",
     title: "Build your picture",
   },

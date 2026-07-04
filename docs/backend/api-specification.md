@@ -335,6 +335,13 @@ and optional bounded raw/parsed callback fields. Responses always expose
 | POST       | `/flow-launch-subscriptions`          | Public consent or protected |
 | DELETE     | `/flow-launch-subscriptions/:token`   | Unsubscribe token           |
 
+The notification list includes privacy-safe collaboration events generated
+when another member changes a transaction, budget, goal, contribution, or loan.
+These events contain actor/action references and an allowlisted destination,
+not financial values, account identifiers, descriptions, or notes. Read
+operations are recipient-scoped. `POST /notifications/read-all` returns
+`{ "markedRead": number }`.
+
 Flow launch subscriptions require an email address when used without an
 account. Store only hashed unsubscribe tokens server-side; non-production
 responses may include a `debugToken` for local testing.

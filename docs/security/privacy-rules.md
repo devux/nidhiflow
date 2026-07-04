@@ -53,6 +53,12 @@ Tell users that all family members can view shared data and edit collaborative
 finance resources. Avoid placing private personal records into a shared
 workspace without clear intent. Define behavior when a member leaves.
 
+In-app collaboration alerts may identify which member changed a transaction,
+budget, goal, contribution, or loan and link to that feature. Do not copy
+amounts, notes, account names or numbers, merchant text, goal names, or other
+financial content into notification titles, bodies, or payloads. Honor each
+recipient's in-app notification preference.
+
 ## Analytics
 
 Use privacy-preserving product analytics with no transaction descriptions,

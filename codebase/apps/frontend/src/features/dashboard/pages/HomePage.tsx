@@ -15,7 +15,6 @@ import ErrorOutlineRoundedIcon from "@mui/icons-material/ErrorOutlineRounded";
 import LinkRoundedIcon from "@mui/icons-material/LinkRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import ManageAccountsRoundedIcon from "@mui/icons-material/ManageAccountsRounded";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
 import GroupsRoundedIcon from "@mui/icons-material/GroupsRounded";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
 import ShareRoundedIcon from "@mui/icons-material/ShareRounded";
@@ -29,16 +28,12 @@ import IconButton from "@mui/material/IconButton";
 import List from "@mui/material/List";
 import ListItemAvatar from "@mui/material/ListItemAvatar";
 import ListItemButton from "@mui/material/ListItemButton";
-import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
-import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import {
   type CSSProperties,
   type FormEvent,
-  type MouseEvent,
   type PointerEvent,
   useEffect,
   useMemo,
@@ -49,7 +44,7 @@ import {
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
 import { useGuestTransactions } from "../../../app/providers/GuestTransactionsProvider";
-import { environment } from "../../../config/environment";
+import { listNotifications } from "../../../data/api/financeClient";
 import {
   createWorkspaceShareCode,
   joinWorkspaceByShareCode,
@@ -153,7 +148,8 @@ export function HomePage() {
   const { accessToken, activeWorkspace, isAuthenticated, refreshWorkspaces, user } = useAuth();
   const { preferences } = useGuestPreferences();
   const { transactions } = useGuestTransactions();
-  const [headerMenuAnchor, setHeaderMenuAnchor] = useState<HTMLElement | null>(null);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [tipSlide, setTipSlide] = useState(0);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isShareSheetExpanded, setIsShareSheetExpanded] = useState(false);
   const shareSheetDragStart = useRef<number | null>(null);
@@ -195,7 +191,46 @@ export function HomePage() {
   const showcaseTip = isBudgetUnderControl
     ? "Tip: You're saving better than 68% of users!"
     : "Tip: Expenses are above income. Review spending.";
-  const isHeaderMenuOpen = Boolean(headerMenuAnchor);
+  const tipSlides = [
+    {
+      action: "See insights",
+      copy: showcaseTip,
+      href: "/reports",
+      icon: "tip",
+      title: "Savings tip",
+    },
+    {
+      action: "Explore Flow",
+      copy: "Flow helps turn your financial activity into clearer questions and next steps.",
+      href: "/flow",
+      icon: "flow",
+      title: "Flow AI",
+    },
+  ] as const;
+  const activeTip = tipSlides[tipSlide] ?? tipSlides[0];
+  useEffect(() => {
+    if (!accessToken) {
+      setUnreadNotificationCount(0);
+      return;
+    }
+
+    let active = true;
+    void listNotifications({ accessToken })
+      .then((notifications) => {
+        if (active) {
+          setUnreadNotificationCount(
+            notifications.filter((notification) => !notification.readAt).length,
+          );
+        }
+      })
+      .catch(() => {
+        if (active) setUnreadNotificationCount(0);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [accessToken]);
 
   useEffect(() => {
     if (!isShareModalOpen) return;
@@ -211,14 +246,6 @@ export function HomePage() {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isShareModalOpen]);
-
-  function openHeaderMenu(event: MouseEvent<HTMLButtonElement>) {
-    setHeaderMenuAnchor(event.currentTarget);
-  }
-
-  function closeHeaderMenu() {
-    setHeaderMenuAnchor(null);
-  }
 
   function openShareModal() {
     setIsShareModalOpen(true);
@@ -407,29 +434,22 @@ export function HomePage() {
             <GroupsRoundedIcon aria-hidden="true" focusable="false" fontSize="small" />
           </IconButton>
           <IconButton
-            aria-controls={isHeaderMenuOpen ? "home-header-menu" : undefined}
-            aria-expanded={isHeaderMenuOpen}
-            aria-haspopup="menu"
-            aria-label="More options"
-            className="home-header-menu__button"
-            onClick={openHeaderMenu}
+            aria-label="Notifications"
+            className="home-header-menu__button home-notification-button"
+            component={Link}
             size="small"
+            to="/notifications"
           >
-            <MoreVertIcon aria-hidden="true" focusable="false" fontSize="small" />
+            <Icon name="bell" size={19} />
+            {unreadNotificationCount > 0 ? (
+              <span
+                aria-label={`${unreadNotificationCount} unread notifications`}
+                className="home-notification-button__count"
+              >
+                {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
+              </span>
+            ) : null}
           </IconButton>
-          <Menu
-            anchorEl={headerMenuAnchor}
-            id="home-header-menu"
-            onClose={closeHeaderMenu}
-            open={isHeaderMenuOpen}
-          >
-            <MenuItem component={Link} onClick={closeHeaderMenu} to="/you#preferences">
-              <ListItemIcon>
-                <Icon name="bell" size={18} />
-              </ListItemIcon>
-              <Typography variant="body2">Notification preferences</Typography>
-            </MenuItem>
-          </Menu>
         </Box>
       </Stack>
 
@@ -636,6 +656,7 @@ export function HomePage() {
                             id="workspace-share-code"
                             inputMode="text"
                             onChange={(event) => setJoinCode(event.target.value)}
+                            onFocus={() => setIsShareSheetExpanded(true)}
                             placeholder="Enter code (e.g. ABCD-2345)"
                             value={joinCode}
                           />
@@ -792,72 +813,73 @@ export function HomePage() {
                 </Box>
               </List>
 
-              <Box className="transaction-showcase-card__tip">
-                <span className="transaction-showcase-card__tip-icon" aria-hidden="true">
-                  <FontAwesomeIcon icon={faLightbulb} />
-                </span>
-                <Typography component="span">{showcaseTip}</Typography>
-                <Link className="transaction-showcase-card__insights" to="/reports">
-                  See Insights
-                  <FontAwesomeIcon icon={faArrowTrendUp} />
-                </Link>
+              <Box
+                aria-label="Savings and Flow tips"
+                aria-roledescription="carousel"
+                className="transaction-showcase-card__tip-slider"
+                role="region"
+              >
+                <Box
+                  aria-live="polite"
+                  className="transaction-showcase-card__tip"
+                  key={activeTip.title}
+                >
+                  <span className="transaction-showcase-card__tip-icon" aria-hidden="true">
+                    {activeTip.icon === "flow" ? (
+                      <Icon name="flow" size={16} />
+                    ) : (
+                      <FontAwesomeIcon icon={faLightbulb} />
+                    )}
+                  </span>
+                  <span>
+                    <strong>{activeTip.title}</strong>
+                    <Typography component="span">{activeTip.copy}</Typography>
+                  </span>
+                  <Link className="transaction-showcase-card__insights" to={activeTip.href}>
+                    {activeTip.action}
+                    <FontAwesomeIcon icon={faArrowTrendUp} />
+                  </Link>
+                </Box>
+                <div className="transaction-showcase-card__tip-dots">
+                  {tipSlides.map((slide, index) => (
+                    <button
+                      aria-label={`Show ${slide.title}`}
+                      aria-pressed={tipSlide === index}
+                      key={slide.title}
+                      onClick={() => setTipSlide(index)}
+                      type="button"
+                    />
+                  ))}
+                </div>
               </Box>
             </CardContent>
           </MuiCard>
 
           <section aria-label="Quick actions" className="home-actions-section">
             <div className="quick-actions">
-              <Link
-                aria-label="Add income"
-                className="quick-action"
-                to="/transactions/new?type=income"
-              >
-                <span className="quick-action__icon">
-                  <Icon name="income" />
-                </span>
-                <strong>Add income</strong>
-              </Link>
-              <Link
-                aria-label="Add expense"
-                className="quick-action"
-                to="/transactions/new?type=expense"
-              >
-                <span className="quick-action__icon">
-                  <Icon name="expense" />
-                </span>
-                <strong>Add expense</strong>
-              </Link>
               <Link aria-label="Open budget" className="quick-action" to="/budget">
                 <span className="quick-action__icon">
                   <Icon name="plan" />
                 </span>
                 <strong>Budget</strong>
               </Link>
-              {environment.DIRECT_UPI_ENABLED ? (
-                <Link aria-label="Pay with UPI" className="quick-action" to="/pay">
-                  <span className="quick-action__icon">
-                    <Icon name="expense" />
-                  </span>
-                  <strong>Pay with UPI</strong>
-                </Link>
-              ) : null}
               <Link aria-label="Open reports" className="quick-action" to="/reports">
                 <span className="quick-action__icon">
                   <Icon name="report" />
                 </span>
                 <strong>Reports</strong>
               </Link>
-              <Link aria-label="Open liabilities" className="quick-action" to="/liabilities">
-                <span className="quick-action__icon">
-                  <Icon name="liability" />
-                </span>
-                <strong>Liabilities</strong>
-              </Link>
               <Link aria-label="Open goals" className="quick-action" to="/goals">
                 <span className="quick-action__icon">
                   <Icon name="goal" />
                 </span>
                 <strong>Goals</strong>
+              </Link>
+              <Link aria-label="Open loans" className="quick-action" to="/liabilities">
+                <span className="quick-action__icon">
+                  <Icon name="liability" />
+                </span>
+                <strong>Loans</strong>
               </Link>
             </div>
           </section>

@@ -53,6 +53,9 @@ const PayPage = lazy(async () => ({
 const AboutPage = lazy(async () => ({
   default: (await import("../features/about/pages/AboutPage")).AboutPage,
 }));
+const NotificationsPage = lazy(async () => ({
+  default: (await import("../features/notifications/pages/NotificationsPage")).NotificationsPage,
+}));
 
 interface AppProps {
   repository?: GuestPreferencesRepository;
@@ -93,6 +96,7 @@ function AppRoutes() {
         <Route element={<BudgetPage />} path="budget" />
         <Route element={<LiabilitiesPage />} path="liabilities" />
         <Route element={<GoalsPage />} path="goals" />
+        <Route element={<NotificationsPage />} path="notifications" />
         <Route element={<Navigate replace to="/budget" />} path="plan" />
         <Route element={<YouPage />} path="you" />
         <Route element={<Navigate replace to="/" />} path="signup" />

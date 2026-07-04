@@ -73,6 +73,8 @@ idempotent so retries do not create duplicate transactions.
 
 Notifications belong to users because delivery/read state is personal. They
 may reference a workspace or resource through a safe typed reference.
+Collaboration notifications are created for other opted-in members, never the
+actor, and contain no denormalized financial values or free-form finance text.
 
 ## Feedback
 

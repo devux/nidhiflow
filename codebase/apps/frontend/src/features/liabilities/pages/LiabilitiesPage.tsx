@@ -28,7 +28,7 @@ import { summarizeLiabilities, type LiabilityAccount } from "../domain/liability
 function accountTypeLabel(type: string) {
   if (type === "credit_card") return "Credit card";
   if (type === "loan") return "Loan";
-  return "Other liability";
+  return "Other loan";
 }
 
 export function LiabilitiesPage() {
@@ -139,7 +139,7 @@ export function LiabilitiesPage() {
       setIsEditorOpen(false);
       setReloadKey((key) => key + 1);
     } catch {
-      setFormError("The liability could not be saved. Check the values and try again.");
+      setFormError("The loan could not be saved. Check the values and try again.");
     } finally {
       setSaving(false);
     }
@@ -160,7 +160,7 @@ export function LiabilitiesPage() {
       setIsEditorOpen(false);
       setReloadKey((key) => key + 1);
     } catch {
-      setFormError("The liability could not be archived.");
+      setFormError("The loan could not be archived.");
     } finally {
       setSaving(false);
     }
@@ -179,9 +179,9 @@ export function LiabilitiesPage() {
   if (isCheckingSession) {
     return (
       <main aria-busy="true" className="page page--liabilities" id="main-content">
-        <PageHeader title="Liabilities" />
+        <PageHeader title="Loans" />
         <Card className="liabilities-loading" role="status">
-          Loading liabilities…
+          Loading loans…
         </Card>
       </main>
     );
@@ -190,7 +190,7 @@ export function LiabilitiesPage() {
   if (!isAuthenticated || !accessToken || !activeWorkspace) {
     return (
       <main className="page page--liabilities" id="main-content">
-        <PageHeader title="Liabilities" />
+        <PageHeader title="Loans" />
         <Card>
           <EmptyState
             action={
@@ -203,9 +203,9 @@ export function LiabilitiesPage() {
                 </Link>
               </div>
             }
-            description="Liability balances come from workspace accounts and their transaction ledger. Log in to review them securely."
+            description="Loan balances come from workspace accounts and their transaction ledger. Log in to review them securely."
             icon="liability"
-            title="Your liabilities stay private"
+            title="Your loans stay private"
           />
         </Card>
       </main>
@@ -217,19 +217,19 @@ export function LiabilitiesPage() {
       <PageHeader
         action={
           <button
-            aria-label="Add liability"
+            aria-label="Add loan"
             className="icon-button icon-button--flat"
             onClick={openCreate}
           >
             <Icon name="plus" />
           </button>
         }
-        title="Liabilities"
+        title="Loans"
       />
 
       {loadState === "loading" ? (
         <Card aria-busy="true" className="liabilities-loading" role="status">
-          Loading liabilities…
+          Loading loans…
         </Card>
       ) : null}
 
@@ -239,7 +239,7 @@ export function LiabilitiesPage() {
             <Icon name="liability" />
           </span>
           <div>
-            <h2>Liabilities could not be loaded</h2>
+            <h2>Loans could not be loaded</h2>
             <p>Your account data was not changed. Check your connection and try again.</p>
           </div>
           <Button onClick={() => setReloadKey((key) => key + 1)} variant="secondary">
@@ -252,9 +252,9 @@ export function LiabilitiesPage() {
         summary.activeAccounts.length === 0 && summary.archivedAccounts.length === 0 ? (
           <Card>
             <EmptyState
-              description="Credit-card, loan, and other-liability accounts will appear here. Balances are always derived from the transaction ledger."
+              description="Credit-card, loan, and other borrowing accounts will appear here. Balances are always derived from the transaction ledger."
               icon="liability"
-              title="No liabilities yet"
+              title="No loans yet"
             />
           </Card>
         ) : (
@@ -264,7 +264,7 @@ export function LiabilitiesPage() {
                 <Icon name="liability" size={28} />
               </span>
               <div>
-                <p id="liability-total-title">Active liabilities</p>
+                <p id="liability-total-title">Active loans</p>
                 {displayedTotals.map((total) => (
                   <strong key={total.currency}>{formatMoney(total, preferences.locale)}</strong>
                 ))}
@@ -301,7 +301,7 @@ export function LiabilitiesPage() {
                       </div>
                     </dl>
                     <Button onClick={() => openEdit(account)} variant="quiet">
-                      Edit liability
+                      Edit loan
                     </Button>
                   </Card>
                 ))}
@@ -357,7 +357,7 @@ export function LiabilitiesPage() {
         open={isEditorOpen}
         slotProps={{ paper: { className: "profile-dialog finance-editor-dialog" } }}
       >
-        <DialogTitle>{editingAccount ? "Edit liability" : "Add liability"}</DialogTitle>
+        <DialogTitle>{editingAccount ? "Edit loan" : "Add loan"}</DialogTitle>
         <IconButton
           aria-label="Close"
           className="profile-dialog__close"
@@ -377,7 +377,7 @@ export function LiabilitiesPage() {
               />
             </label>
             <label>
-              Liability type
+              Loan type
               <select
                 onChange={(event) =>
                   setAccountType(event.target.value as "credit_card" | "loan" | "other_liability")
@@ -386,7 +386,7 @@ export function LiabilitiesPage() {
               >
                 <option value="credit_card">Credit card</option>
                 <option value="loan">Loan</option>
-                <option value="other_liability">Other liability</option>
+                <option value="other_liability">Other loan</option>
               </select>
             </label>
             <label>
@@ -418,7 +418,7 @@ export function LiabilitiesPage() {
               </p>
             ) : null}
             <Button disabled={saving} fullWidth type="submit">
-              {saving ? "Saving…" : "Save liability"}
+              {saving ? "Saving…" : "Save loan"}
             </Button>
             {editingAccount ? (
               <Button
@@ -427,7 +427,7 @@ export function LiabilitiesPage() {
                 onClick={() => void archiveCurrentAccount()}
                 variant="quiet"
               >
-                Archive liability
+                Archive loan
               </Button>
             ) : null}
           </form>

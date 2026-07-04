@@ -58,7 +58,7 @@ const defaultPreferences: GuestPreferences = {
 
 async function expectHomeHeader(): Promise<void> {
   expect(await screen.findByLabelText("NidhiFlow")).toBeDefined();
-  expect(screen.getByRole("button", { name: "More options" })).toBeDefined();
+  expect(screen.getByRole("link", { name: "Notifications" })).toBeDefined();
 }
 
 function createRepository(
@@ -116,9 +116,11 @@ function mockAuthenticatedFinanceSession(
   options: {
     accounts?: Array<Record<string, unknown>>;
     budgets?: Array<Record<string, unknown>>;
+    categories?: Array<Record<string, unknown>>;
     failAccountCreateAsConflict?: boolean;
     failFirstBudgetCreateAsUnauthenticated?: boolean;
     goals?: Array<Record<string, unknown>>;
+    notifications?: Array<Record<string, unknown>>;
     reportingCurrency?: string;
     transactions?: unknown[];
   } = {},
@@ -136,8 +138,134 @@ function mockAuthenticatedFinanceSession(
   ];
   let budgets = [...(options.budgets ?? [])];
   let goals = [...(options.goals ?? [])];
+  let categories = [
+    ...(options.categories ?? [
+      {
+        id: "cat_salary",
+        isArchived: false,
+        isSystem: true,
+        name: "Salary",
+        transactionType: "income",
+        workspaceId: null,
+      },
+      {
+        id: "cat_freelance",
+        isArchived: false,
+        isSystem: true,
+        name: "Freelance",
+        transactionType: "income",
+        workspaceId: null,
+      },
+      {
+        id: "cat_business",
+        isArchived: false,
+        isSystem: true,
+        name: "Business",
+        transactionType: "income",
+        workspaceId: null,
+      },
+      {
+        id: "cat_interest",
+        isArchived: false,
+        isSystem: true,
+        name: "Interest",
+        transactionType: "income",
+        workspaceId: null,
+      },
+      {
+        id: "cat_food",
+        isArchived: false,
+        isSystem: true,
+        name: "Food",
+        transactionType: "expense",
+        workspaceId: null,
+      },
+      {
+        id: "cat_shopping",
+        isArchived: false,
+        isSystem: true,
+        name: "Shopping",
+        transactionType: "expense",
+        workspaceId: null,
+      },
+      {
+        id: "cat_transport",
+        isArchived: false,
+        isSystem: true,
+        name: "Transport",
+        transactionType: "expense",
+        workspaceId: null,
+      },
+      {
+        id: "cat_bills",
+        isArchived: false,
+        isSystem: true,
+        name: "Bills",
+        transactionType: "expense",
+        workspaceId: null,
+      },
+      {
+        id: "cat_entertainment",
+        isArchived: false,
+        isSystem: true,
+        name: "Entertainment",
+        transactionType: "expense",
+        workspaceId: null,
+      },
+      {
+        id: "cat_health",
+        isArchived: false,
+        isSystem: true,
+        name: "Health",
+        transactionType: "expense",
+        workspaceId: null,
+      },
+      {
+        id: "cat_education",
+        isArchived: false,
+        isSystem: true,
+        name: "Education",
+        transactionType: "expense",
+        workspaceId: null,
+      },
+      {
+        id: "cat_travel",
+        isArchived: false,
+        isSystem: true,
+        name: "Travel",
+        transactionType: "expense",
+        workspaceId: null,
+      },
+      {
+        id: "cat_home",
+        isArchived: false,
+        isSystem: true,
+        name: "Home",
+        transactionType: "expense",
+        workspaceId: null,
+      },
+      {
+        id: "cat_misc",
+        isArchived: false,
+        isSystem: true,
+        name: "Misc",
+        transactionType: "expense",
+        workspaceId: null,
+      },
+    ]),
+  ];
+  let notifications = [...(options.notifications ?? [])];
   let hasRejectedBudgetCreate = false;
   const reportingCurrency = options.reportingCurrency ?? "USD";
+  let profile = {
+    displayName: "Nila",
+    email: "nila@example.com",
+    id: "usr_finance",
+    locale: "en-US",
+    preferredCurrency: "USD",
+    theme: "system",
+    timezone: "UTC",
+  };
 
   fetchMock.mockImplementation((input, init) => {
     const url = getRequestUrl(input);
@@ -156,16 +284,19 @@ function mockAuthenticatedFinanceSession(
     if (url.endsWith("/api/v1/users/me") && method === "GET") {
       return Promise.resolve(
         createJsonResponse({
-          data: {
-            displayName: "Nila",
-            email: "nila@example.com",
-            id: "usr_finance",
-            locale: "en-US",
-            preferredCurrency: "USD",
-            theme: "system",
-            timezone: "UTC",
-          },
+          data: profile,
           message: "Current user retrieved successfully.",
+          success: true,
+        }),
+      );
+    }
+
+    if (url.endsWith("/api/v1/users/me") && method === "PATCH") {
+      profile = { ...profile, ...(JSON.parse(getRequestBody(init)) as Partial<typeof profile>) };
+      return Promise.resolve(
+        createJsonResponse({
+          data: profile,
+          message: "Profile updated successfully.",
           success: true,
         }),
       );
@@ -191,43 +322,109 @@ function mockAuthenticatedFinanceSession(
     if (url.endsWith("/api/v1/workspaces/wsp_finance/categories") && method === "GET") {
       return Promise.resolve(
         createJsonResponse({
-          data: [
-            { id: "cat_salary", isArchived: false, name: "Salary", transactionType: "income" },
-            {
-              id: "cat_freelance",
-              isArchived: false,
-              name: "Freelance",
-              transactionType: "income",
-            },
-            { id: "cat_business", isArchived: false, name: "Business", transactionType: "income" },
-            { id: "cat_interest", isArchived: false, name: "Interest", transactionType: "income" },
-            { id: "cat_food", isArchived: false, name: "Food", transactionType: "expense" },
-            { id: "cat_shopping", isArchived: false, name: "Shopping", transactionType: "expense" },
-            {
-              id: "cat_transport",
-              isArchived: false,
-              name: "Transport",
-              transactionType: "expense",
-            },
-            { id: "cat_bills", isArchived: false, name: "Bills", transactionType: "expense" },
-            {
-              id: "cat_entertainment",
-              isArchived: false,
-              name: "Entertainment",
-              transactionType: "expense",
-            },
-            { id: "cat_health", isArchived: false, name: "Health", transactionType: "expense" },
-            {
-              id: "cat_education",
-              isArchived: false,
-              name: "Education",
-              transactionType: "expense",
-            },
-            { id: "cat_travel", isArchived: false, name: "Travel", transactionType: "expense" },
-            { id: "cat_home", isArchived: false, name: "Home", transactionType: "expense" },
-            { id: "cat_misc", isArchived: false, name: "Misc", transactionType: "expense" },
-          ],
+          data: categories,
           message: "Categories retrieved successfully.",
+          success: true,
+        }),
+      );
+    }
+
+    if (url.endsWith("/api/v1/workspaces/wsp_finance/categories") && method === "POST") {
+      const body = JSON.parse(getRequestBody(init)) as {
+        name: string;
+        transactionType: "expense" | "income";
+      };
+      const category = {
+        id: `cat_custom_${categories.length + 1}`,
+        isArchived: false,
+        isSystem: false,
+        name: body.name,
+        transactionType: body.transactionType,
+        workspaceId: "wsp_finance",
+      };
+      categories = [...categories, category];
+      return Promise.resolve(
+        createJsonResponse({
+          data: category,
+          message: "Category created successfully.",
+          success: true,
+        }),
+      );
+    }
+
+    const categoryMatch = /\/api\/v1\/workspaces\/wsp_finance\/categories\/([^/]+)$/.exec(url);
+    if (categoryMatch && method === "PATCH") {
+      const body = JSON.parse(getRequestBody(init)) as {
+        name: string;
+        transactionType: "expense" | "income";
+      };
+      const category = {
+        ...(categories.find((item) => item.id === categoryMatch[1]) ?? {}),
+        isArchived: false,
+        isSystem: false,
+        name: body.name,
+        transactionType: body.transactionType,
+        workspaceId: "wsp_finance",
+      };
+      categories = categories.map((item) => (item.id === categoryMatch[1] ? category : item));
+      return Promise.resolve(
+        createJsonResponse({
+          data: category,
+          message: "Category updated successfully.",
+          success: true,
+        }),
+      );
+    }
+
+    if (categoryMatch && method === "DELETE") {
+      const category = categories.find((item) => item.id === categoryMatch[1]);
+      categories = categories.filter((item) => item.id !== categoryMatch[1]);
+      return Promise.resolve(
+        createJsonResponse({
+          data: { ...category, isArchived: true },
+          message: "Category archived successfully.",
+          success: true,
+        }),
+      );
+    }
+
+    if (url.endsWith("/api/v1/notifications") && method === "GET") {
+      return Promise.resolve(
+        createJsonResponse({
+          data: notifications,
+          message: "Notifications retrieved successfully.",
+          success: true,
+        }),
+      );
+    }
+
+    const notificationReadMatch = /\/api\/v1\/notifications\/([^/]+)\/read$/.exec(url);
+    if (notificationReadMatch && method === "PATCH") {
+      const notification = {
+        ...(notifications.find((item) => item.id === notificationReadMatch[1]) ?? {}),
+        readAt: "2026-07-04T12:00:00.000Z",
+      };
+      notifications = notifications.map((item) =>
+        item.id === notificationReadMatch[1] ? notification : item,
+      );
+      return Promise.resolve(
+        createJsonResponse({
+          data: notification,
+          message: "Notification marked read.",
+          success: true,
+        }),
+      );
+    }
+
+    if (url.endsWith("/api/v1/notifications/read-all") && method === "POST") {
+      notifications = notifications.map((notification) => ({
+        ...notification,
+        readAt: notification.readAt ?? "2026-07-04T12:00:00.000Z",
+      }));
+      return Promise.resolve(
+        createJsonResponse({
+          data: { markedRead: notifications.length },
+          message: "Notifications marked read.",
           success: true,
         }),
       );
@@ -786,7 +983,115 @@ describe("App", () => {
     });
   });
 
-  it("shows ledger-derived liabilities by currency and keeps archived accounts in history", async () => {
+  it("shows the five-item finance navigation and Home shortcuts with Flow tips", async () => {
+    mockAuthenticatedFinanceSession(globalThis.fetch as jest.MockedFunction<typeof fetch>);
+    window.history.replaceState({}, "", "/");
+    const user = userEvent.setup();
+    render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    await expectHomeHeader();
+    const navigation = screen.getByRole("navigation", { name: "Primary navigation" });
+    expect(
+      within(navigation)
+        .getAllByRole("button")
+        .map((button) => button.textContent?.trim()),
+    ).toEqual(["Home", "Add income", "Add expense", "Budget", "You"]);
+
+    const shortcuts = screen.getByRole("region", { name: "Quick actions" });
+    expect(within(shortcuts).getAllByRole("link")).toHaveLength(4);
+    expect(within(shortcuts).getByRole("link", { name: "Open budget" })).toBeDefined();
+    expect(within(shortcuts).getByRole("link", { name: "Open reports" })).toBeDefined();
+    expect(within(shortcuts).getByRole("link", { name: "Open goals" })).toBeDefined();
+    expect(within(shortcuts).getByRole("link", { name: "Open loans" })).toBeDefined();
+
+    await user.click(screen.getByRole("button", { name: "Show Flow AI" }));
+    expect(screen.getByText("Flow AI")).toBeDefined();
+    expect(screen.getByRole("link", { name: /Explore Flow/ })).toBeDefined();
+    expect(screen.getByRole("link", { name: "Notifications" }).getAttribute("href")).toBe(
+      "/notifications",
+    );
+  });
+
+  it("manages workspace categories and persists profile preferences through the API", async () => {
+    const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
+    mockAuthenticatedFinanceSession(fetchMock);
+    window.history.replaceState({}, "", "/you");
+    const user = userEvent.setup();
+    render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    await screen.findByRole("heading", { name: "Profile" });
+    expect(screen.queryByRole("button", { name: "Edit Food category" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Add" }));
+    let dialog = screen.getByRole("dialog", { name: "Add category" });
+    await user.type(within(dialog).getByLabelText("Name"), "Pet care");
+    await user.click(within(dialog).getByRole("button", { name: "Save category" }));
+
+    const customCategory = await screen.findByRole("button", {
+      name: "Edit Pet care category",
+    });
+    await user.click(customCategory);
+    dialog = screen.getByRole("dialog", { name: "Edit category" });
+    const categoryName = within(dialog).getByLabelText("Name");
+    await user.clear(categoryName);
+    await user.type(categoryName, "Pets");
+    await user.click(within(dialog).getByRole("button", { name: "Save category" }));
+    await user.click(await screen.findByRole("button", { name: "Edit Pets category" }));
+    dialog = screen.getByRole("dialog", { name: "Edit category" });
+    await user.click(within(dialog).getByRole("button", { name: "Delete" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Edit Pets category" })).toBeNull(),
+    );
+
+    await user.selectOptions(screen.getByLabelText("Appearance"), "dark");
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining("/api/v1/users/me"),
+        expect.objectContaining({
+          body: expect.stringContaining('"theme":"dark"'),
+          method: "PATCH",
+        }),
+      ),
+    );
+  });
+
+  it("opens workspace notifications, marks them read, and routes to the changed resource", async () => {
+    mockAuthenticatedFinanceSession(globalThis.fetch as jest.MockedFunction<typeof fetch>, {
+      notifications: [
+        {
+          body: "Maya edited a budget in Home team.",
+          createdAt: "2026-07-04T10:00:00.000Z",
+          id: "ntf_budget",
+          payload: {
+            action: "budget.updated",
+            path: "/budget",
+            resourceId: "bgt_one",
+            resourceType: "budget",
+          },
+          readAt: null,
+          title: "Budget updated",
+          type: "workspace_activity",
+          workspaceId: "wsp_finance",
+        },
+      ],
+    });
+    window.history.replaceState({}, "", "/notifications");
+    const user = userEvent.setup();
+    const view = render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    expect(await screen.findByText("Maya edited a budget in Home team.")).toBeDefined();
+    expect((await axe(view.container)).violations).toHaveLength(0);
+    await user.click(screen.getByRole("button", { name: /Budget updated/ }));
+    expect(await screen.findByRole("heading", { name: "Budget" })).toBeDefined();
+    expect(window.location.pathname).toBe("/budget");
+  });
+
+  it("shows ledger-derived loans by currency and keeps archived accounts in history", async () => {
     mockAuthenticatedFinanceSession(globalThis.fetch as jest.MockedFunction<typeof fetch>, {
       accounts: [
         {
@@ -820,7 +1125,7 @@ describe("App", () => {
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    expect(await screen.findByRole("heading", { name: "Liabilities" })).toBeDefined();
+    expect(await screen.findByRole("heading", { name: "Loans" })).toBeDefined();
     expect(await screen.findByText("Everyday card")).toBeDefined();
     expect(screen.getByText("Vehicle loan")).toBeDefined();
     expect(screen.getAllByText("$1,200.25")).toHaveLength(2);
@@ -831,7 +1136,7 @@ describe("App", () => {
     expect((await axe(view.container)).violations).toHaveLength(0);
   });
 
-  it("creates a liability from the dedicated screen", async () => {
+  it("creates a loan from the dedicated screen", async () => {
     mockAuthenticatedFinanceSession(globalThis.fetch as jest.MockedFunction<typeof fetch>, {
       accounts: [],
       reportingCurrency: "INR",
@@ -842,13 +1147,13 @@ describe("App", () => {
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    expect(await screen.findByText("No liabilities yet")).toBeDefined();
-    await user.click(screen.getByRole("button", { name: "Add liability" }));
-    const dialog = screen.getByRole("dialog", { name: "Add liability" });
+    expect(await screen.findByText("No loans yet")).toBeDefined();
+    await user.click(screen.getByRole("button", { name: "Add loan" }));
+    const dialog = screen.getByRole("dialog", { name: "Add loan" });
     await user.type(within(dialog).getByLabelText("Account name"), "Home loan");
-    await user.selectOptions(within(dialog).getByLabelText("Liability type"), "loan");
+    await user.selectOptions(within(dialog).getByLabelText("Loan type"), "loan");
     await user.type(within(dialog).getByLabelText(/Opening balance/), "500000");
-    await user.click(within(dialog).getByRole("button", { name: "Save liability" }));
+    await user.click(within(dialog).getByRole("button", { name: "Save loan" }));
 
     expect(await screen.findByText("Home loan")).toBeDefined();
     expect(screen.getAllByText("₹500,000.00").length).toBeGreaterThan(0);
@@ -1002,19 +1307,34 @@ describe("App", () => {
     expect(screen.queryByRole("button", { name: /Switch to/ })).toBeNull();
   });
 
-  it("links the Home notification entry to the profile preferences page", async () => {
-    mockAuthenticatedFinanceSession(globalThis.fetch as jest.MockedFunction<typeof fetch>);
+  it("shows unread notifications on Home without an overflow menu", async () => {
+    mockAuthenticatedFinanceSession(globalThis.fetch as jest.MockedFunction<typeof fetch>, {
+      notifications: [
+        {
+          body: "Maya added a transaction in Home team.",
+          createdAt: "2026-07-04T10:00:00.000Z",
+          id: "ntf_home_unread",
+          payload: {
+            action: "transaction.created",
+            path: "/activity",
+            resourceId: "txn_one",
+            resourceType: "transaction",
+          },
+          readAt: null,
+          title: "Transaction added",
+          type: "workspace_activity",
+          workspaceId: "wsp_finance",
+        },
+      ],
+    });
     window.history.replaceState({}, "", "/");
-    const user = userEvent.setup();
     render(
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
     await expectHomeHeader();
-    await user.click(screen.getByRole("button", { name: "More options" }));
-    await user.click(screen.getByRole("menuitem", { name: "Notification preferences" }));
-
-    expect(await screen.findByRole("heading", { name: "Profile" })).toBeDefined();
+    expect(await screen.findByLabelText("1 unread notifications")).toBeDefined();
+    expect(screen.queryByRole("button", { name: "More options" })).toBeNull();
   });
 
   it("applies report date presets and custom ranges from bottom sheets", async () => {
@@ -1322,7 +1642,7 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Create account" }));
 
     await expectHomeHeader();
-    expect(screen.getByRole("button", { name: "More options" })).toBeDefined();
+    expect(screen.getByRole("link", { name: "Notifications" })).toBeDefined();
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining("/api/v1/auth/register"),
       expect.objectContaining({ method: "POST" }),
@@ -1495,9 +1815,9 @@ describe("App", () => {
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    expect(await screen.findByText("Signed in")).toBeDefined();
-    expect(screen.getByText(/nila@example.com/)).toBeDefined();
-    expect(screen.queryByText("Guest user")).toBeNull();
+    expect(await screen.findByRole("heading", { name: "Nila" })).toBeDefined();
+    expect(screen.queryByText("Signed in")).toBeNull();
+    expect(screen.queryByText(/nila@example.com/)).toBeNull();
     expect(screen.queryByRole("dialog", { name: "Continue in guest mode?" })).toBeNull();
   });
 
@@ -1554,9 +1874,9 @@ describe("App", () => {
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    expect(await screen.findByText("Signed in")).toBeDefined();
-    expect(screen.getByText(/nila@example.com/)).toBeDefined();
-    expect(screen.queryByText("Guest user")).toBeNull();
+    expect(await screen.findByRole("heading", { name: "Nila" })).toBeDefined();
+    expect(screen.queryByText("Signed in")).toBeNull();
+    expect(screen.queryByText(/nila@example.com/)).toBeNull();
   });
 
   it("keeps the signed-in profile when the access token is restored from session storage", async () => {
@@ -1607,9 +1927,9 @@ describe("App", () => {
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    expect(await screen.findByText("Signed in")).toBeDefined();
-    expect(screen.getByText(/nila@example.com/)).toBeDefined();
-    expect(screen.queryByText("Guest user")).toBeNull();
+    expect(await screen.findByRole("heading", { name: "Nila" })).toBeDefined();
+    expect(screen.queryByText("Signed in")).toBeNull();
+    expect(screen.queryByText(/nila@example.com/)).toBeNull();
     expect(fetchMock).not.toHaveBeenCalledWith(
       expect.stringContaining("/api/v1/auth/refresh"),
       expect.anything(),
@@ -2420,9 +2740,10 @@ describe("App", () => {
     );
 
     await screen.findByRole("heading", { name: "Profile" });
-    expect(screen.getAllByRole("link", { name: /Activity/ }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("link", { name: /Goals/ }).length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: "Feedback" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Log out" })).toBeDefined();
+    expect(screen.getByRole("button", { name: /Edit display name/ })).toBeDefined();
+    expect(screen.getByRole("button", { name: /Share feedback/ })).toBeDefined();
+    expect(screen.getByText("Categories")).toBeDefined();
     expect(screen.getByRole("link", { name: "Download APK" }).getAttribute("href")).toBe(
       "/downloads/nidhiflow-android-debug-v1.0.6.apk",
     );

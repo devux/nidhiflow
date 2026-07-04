@@ -32,6 +32,8 @@ interfaces and authenticated API clients.
 Use route-based code splitting. Public routes are About, Login, and Signup.
 Every finance and app-shell route uses a global authentication guard.
 Unauthorized workspace resources render a safe not-found state.
+The authenticated notification control routes to `/notifications`; notification
+destinations are selected from a fixed client allowlist before navigation.
 
 ## Public and Account Modes
 
@@ -112,6 +114,8 @@ behavior and terminology.
 Semantic design tokens support light/dark themes. Theme preference respects
 system default until explicitly chosen. Use `Intl` APIs for money, dates,
 numbers, and relative time. Currency comes from the workspace/user context.
+Authenticated theme, locale, and currency controls initialize from the user
+profile and persist through the profile API rather than device-only storage.
 
 ## Quality
 

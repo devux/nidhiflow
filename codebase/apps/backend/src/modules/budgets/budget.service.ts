@@ -3,6 +3,7 @@ import { createId } from "../../shared/security/ids.js";
 import type { Database } from "../../shared/database/database.js";
 import { AuthRepository } from "../auth/auth.repository.js";
 import { WorkspaceCategoryRepository } from "../categories/workspace-category.repository.js";
+import { notifyWorkspaceMembers } from "../notifications/workspaceNotification.service.js";
 import { WorkspaceRepository } from "../workspaces/workspace.repository.js";
 import { BudgetRepository } from "./budget.repository.js";
 import type { CreateBudgetBody, UpdateBudgetBody } from "./budget.schemas.js";
@@ -150,6 +151,17 @@ export class BudgetService {
         },
         transaction,
       );
+      if (budget) {
+        await notifyWorkspaceMembers(
+          {
+            action: "budget.created",
+            actorUserId: userId,
+            resourceId: budget.id,
+            workspaceId,
+          },
+          transaction,
+        );
+      }
 
       return budget;
     });
@@ -260,6 +272,15 @@ export class BudgetService {
         },
         transaction,
       );
+      await notifyWorkspaceMembers(
+        {
+          action: "budget.updated",
+          actorUserId: userId,
+          resourceId: budgetId,
+          workspaceId,
+        },
+        transaction,
+      );
 
       return budget;
     });
@@ -290,6 +311,15 @@ export class BudgetService {
           requestId,
           resourceId: budgetId,
           resourceType: "budget",
+          workspaceId,
+        },
+        transaction,
+      );
+      await notifyWorkspaceMembers(
+        {
+          action: "budget.archived",
+          actorUserId: userId,
+          resourceId: budgetId,
           workspaceId,
         },
         transaction,

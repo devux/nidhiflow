@@ -226,6 +226,12 @@ p {
   padding-inline: var(--space-4);
 }
 
+@media (max-width: 39.9375rem) {
+  .page--budget > .page-header {
+    padding-inline: var(--space-4);
+  }
+}
+
 .page-header,
 .home-header,
 .section-heading,
@@ -377,48 +383,34 @@ p {
   box-shadow: none;
 }
 
+.home-notification-button {
+  position: relative;
+}
+
+.home-notification-button__count {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: inline-grid;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding-inline: 0.2rem;
+  border: 2px solid var(--color-surface);
+  border-radius: var(--radius-pill);
+  place-items: center;
+  color: #fff;
+  background: var(--color-danger);
+  font-size: 0.625rem;
+  font-weight: 900;
+  line-height: 1;
+  transform: translate(20%, -20%);
+}
+
 .home-share-button {
   width: 2rem;
   height: 2rem;
   min-width: 2rem;
   color: var(--color-brand-strong);
-}
-
-.home-header-menu__items {
-  position: absolute;
-  z-index: 20;
-  top: calc(100% + var(--space-2));
-  right: 0;
-  display: grid;
-  min-width: 13.5rem;
-  padding: var(--space-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-control);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-card);
-}
-
-.home-header-menu__item {
-  display: flex;
-  min-height: 2.75rem;
-  align-items: center;
-  gap: var(--space-2);
-  padding-inline: var(--space-3);
-  border-radius: calc(var(--radius-control) - 0.25rem);
-  color: var(--color-text-primary);
-  font-size: 0.875rem;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.home-header-menu__item svg {
-  flex: 0 0 auto;
-  color: var(--color-brand-strong);
-}
-
-.home-header-menu__item:hover,
-.home-header-menu__item:focus-visible {
-  background: var(--color-brand-faint);
 }
 
 .greeting {
@@ -648,6 +640,12 @@ p {
   color: #b42318 !important;
 }
 
+.transaction-showcase-card__tip-slider {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 0.35rem;
+}
+
 .transaction-showcase-card__tip {
   display: grid;
   grid-column: 1 / -1;
@@ -664,6 +662,35 @@ p {
   box-shadow: inset 0 0 1.1rem rgb(19 174 84 / 7%);
   font-size: 10px;
   font-weight: 650;
+}
+
+.transaction-showcase-card__tip > span:nth-child(2) {
+  display: grid;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.transaction-showcase-card__tip-dots {
+  display: flex;
+  min-height: 1rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.transaction-showcase-card__tip-dots button {
+  width: 0.45rem;
+  height: 0.45rem;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--color-border);
+  cursor: pointer;
+}
+
+.transaction-showcase-card__tip-dots button[aria-pressed="true"] {
+  width: 1.25rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-brand);
 }
 
 .transaction-showcase-card__tip .MuiTypography-root {
@@ -3838,6 +3865,31 @@ p {
   background: var(--color-brand-faint);
 }
 
+.profile-page-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.profile-page-header__logout {
+  display: inline-flex;
+  min-width: 3rem;
+  min-height: 3rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-control);
+  color: var(--color-brand-strong);
+  background: var(--color-brand-faint);
+  cursor: pointer;
+  font-weight: 800;
+  gap: var(--space-2);
+}
+
+.profile-page-header__logout > span {
+  display: none;
+}
+
 .profile-card.MuiCard-root {
   border-color: color-mix(in srgb, var(--color-brand) 18%, var(--color-border));
   box-shadow: none;
@@ -3868,6 +3920,7 @@ p {
 
 .profile-card__identity-copy {
   display: grid;
+  flex: 1 1 auto;
   min-width: 0;
   align-content: center;
   gap: var(--space-2);
@@ -3885,6 +3938,14 @@ p {
   overflow-wrap: anywhere;
   margin: 0;
   font-size: 1.25rem;
+}
+
+.profile-card__edit {
+  flex: 0 0 auto;
+  display: inline-grid;
+  margin-left: auto;
+  place-items: center;
+  color: var(--color-brand-strong);
 }
 
 .profile-card__identity-copy > small {
@@ -4116,6 +4177,213 @@ p {
   color: var(--color-brand-strong);
 }
 
+.profile-category-preferences.MuiCard-root {
+  display: grid;
+  margin-top: var(--space-3);
+  gap: var(--space-5);
+}
+
+.profile-category-preferences__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.profile-category-preferences__heading > span {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.profile-category-preferences__heading small,
+.profile-category-preferences__group > p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.profile-category-preferences__group {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.profile-category-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.profile-category-chips > span {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-primary);
+  background: var(--color-surface-subtle);
+  font-size: 0.82rem;
+  font-weight: 750;
+  gap: var(--space-2);
+}
+
+.profile-category-chips small,
+.profile-custom-categories small {
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  text-transform: capitalize;
+}
+
+.profile-custom-categories {
+  display: grid;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+
+.profile-custom-categories > button {
+  display: flex;
+  min-height: 3.5rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.profile-custom-categories > button:last-child {
+  border-bottom: 0;
+}
+
+.profile-custom-categories > button > span:first-child {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.profile-custom-categories > button > span:last-child {
+  color: var(--color-brand-strong);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.profile-category-form select {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+}
+
+.profile-category-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.page--notifications {
+  width: min(100%, 48rem);
+}
+
+.notifications-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.notifications-heading :is(h1, p) {
+  margin: 0;
+}
+
+.notifications-heading h1 {
+  font-size: clamp(1.75rem, 8vw, 2.5rem);
+}
+
+.notifications-heading p {
+  margin-top: var(--space-2);
+}
+
+.notifications-heading .button {
+  flex: 0 0 auto;
+}
+
+.notifications-state {
+  min-height: 8rem;
+  display: grid;
+  place-items: center;
+  color: var(--color-text-secondary);
+}
+
+.notifications-list {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.notification-card {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 6.2rem;
+  align-items: center;
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  background: transparent;
+  cursor: pointer;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  gap: var(--space-3);
+  text-align: left;
+}
+
+.notification-card:last-child {
+  border-bottom: 0;
+}
+
+.notification-card--unread {
+  background: color-mix(in srgb, var(--color-brand-faint) 72%, var(--color-surface));
+}
+
+.notification-card__icon {
+  display: grid;
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 0.9rem;
+  color: var(--color-brand-strong);
+  background: var(--color-brand-soft);
+  place-items: center;
+}
+
+.notification-card__copy {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.notification-card__copy > span {
+  color: var(--color-text-secondary);
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.notification-card__copy time {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+}
+
+.notification-card__unread {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--color-brand);
+}
+
 @media (max-width: 424px) {
   .profile-page-header p {
     display: none;
@@ -4128,6 +4396,21 @@ p {
   .profile-page-header__settings.MuiIconButton-root {
     width: 2.5rem;
     height: 2.5rem;
+  }
+
+  .notifications-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .notifications-heading .button {
+    align-self: flex-start;
+  }
+}
+
+@media (min-width: 425px) {
+  .profile-page-header__logout > span {
+    display: inline;
   }
 }
 
@@ -4361,8 +4644,10 @@ p {
 }
 
 .family-share-modal {
+  display: flex;
   width: min(100%, 42rem);
   max-height: 92dvh;
+  flex-direction: column;
   padding: var(--space-4);
   padding-top: var(--space-3);
   border-radius: 1.5rem 1.5rem 0 0;
@@ -4376,7 +4661,8 @@ p {
 }
 
 .family-share-modal--expanded {
-  max-height: 94dvh;
+  height: min(94dvh, 56rem);
+  max-height: calc(100dvh - env(safe-area-inset-top));
 }
 
 .family-share-modal__drag-handle {
@@ -4397,10 +4683,12 @@ p {
 }
 
 .family-share-modal__panel-content {
+  flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding-bottom: max(var(--space-3), env(safe-area-inset-bottom));
+  scrollbar-gutter: stable;
 }
 
 .family-share-modal__actions {
@@ -4567,12 +4855,16 @@ p {
   }
 
   .android-download-card.MuiCard-root {
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    gap: var(--space-2);
+    padding-inline: var(--space-3);
   }
 
   .android-download-card > .button {
-    grid-column: 1 / -1;
-    width: 100%;
+    grid-column: auto;
+    min-width: 0;
+    padding-inline: var(--space-2);
+    font-size: 0.78rem;
   }
 
   .profile-quick-access__list.MuiCard-root {
@@ -5046,23 +5338,27 @@ p {
   content: "";
 }
 
-.bottom-navigation .MuiBottomNavigationAction-root[value="/flow"] {
+.bottom-navigation .bottom-navigation__expense-action {
   transform: translateY(-0.55rem);
 }
 
-.bottom-navigation .MuiBottomNavigationAction-root[value="/flow"] .MuiSvgIcon-root {
+.bottom-navigation .bottom-navigation__expense-action .MuiSvgIcon-root {
   box-sizing: content-box;
-  width: 1.75rem;
-  height: 1.75rem;
-  padding: 0.65rem;
-  border: 0.3rem solid var(--color-surface);
-  border-radius: 50%;
+  width: 1.55rem;
+  height: 1.55rem;
+  padding: 0.55rem;
+  border: 0.2rem solid var(--color-surface);
+  border-radius: 0.9rem;
   color: #fff;
-  background: radial-gradient(circle at 35% 30%, #86efac, #16a34a 45%, #075f27);
-  box-shadow: 0 0.5rem 1.25rem rgb(22 163 74 / 22%);
+  background: var(--color-brand);
+  box-shadow: 0 0.35rem 0.9rem rgb(22 163 74 / 18%);
 }
 
-.bottom-navigation .MuiBottomNavigationAction-root[value="/flow"].Mui-selected .MuiSvgIcon-root {
+.bottom-navigation .bottom-navigation__income-action .MuiSvgIcon-root {
+  color: var(--color-brand-strong);
+}
+
+.bottom-navigation .bottom-navigation__expense-action.Mui-selected .MuiSvgIcon-root {
   outline: 3px solid var(--color-brand);
   outline-offset: 2px;
 }
@@ -5488,13 +5784,18 @@ p {
     bottom: auto;
     right: auto;
     left: 0;
+    grid-row: 1;
+    grid-column: 1;
     display: flex;
     align-self: start;
     width: 15rem;
+    height: 100vh;
+    height: 100dvh;
     min-height: 100vh;
     align-items: center;
     justify-content: center;
     gap: var(--space-2);
+    overflow-y: auto;
     padding: var(--space-8) var(--space-4);
     border-top: 0;
     border-right: 1px solid var(--color-border);
@@ -5537,15 +5838,15 @@ p {
     transform: translateY(-50%);
   }
 
-  .bottom-navigation .MuiBottomNavigationAction-root[value="/flow"] {
+  .bottom-navigation .bottom-navigation__expense-action {
     transform: none;
   }
 
-  .bottom-navigation .MuiBottomNavigationAction-root[value="/flow"] .MuiSvgIcon-root {
-    width: 1.55rem;
-    height: 1.55rem;
-    padding: 0.55rem;
-    border-width: 0.25rem;
+  .bottom-navigation .bottom-navigation__expense-action .MuiSvgIcon-root {
+    width: 1.4rem;
+    height: 1.4rem;
+    padding: 0.45rem;
+    border-width: 0.15rem;
   }
 }
 

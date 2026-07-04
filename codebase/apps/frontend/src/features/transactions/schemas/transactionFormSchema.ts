@@ -1,10 +1,9 @@
 import { z } from "zod";
 
 import { parseMoneyInput } from "../../../domain/money/money";
-import {
-  isCategoryForType,
-  type GuestTransactionInput,
-  type TransactionType,
+import type {
+  GuestTransactionInput,
+  TransactionType,
 } from "../../../domain/transactions/transaction";
 import type { SupportedCurrency } from "../../../domain/preferences/guestPreferences";
 
@@ -58,10 +57,6 @@ export function validateTransactionForm(
     errors.amount = "Enter an amount greater than zero with up to 2 decimal places.";
   }
 
-  if (values.category && !isCategoryForType(values.category, values.type)) {
-    errors.category = `Choose an ${values.type} category.`;
-  }
-
   if (Object.keys(errors).length > 0 || !money) {
     return { errors };
   }
@@ -69,7 +64,7 @@ export function validateTransactionForm(
   return {
     input: {
       amountMinor: money.amountMinor,
-      category: values.category as GuestTransactionInput["category"],
+      category: values.category,
       currency,
       note: values.note.trim(),
       transactionDate: values.transactionDate,

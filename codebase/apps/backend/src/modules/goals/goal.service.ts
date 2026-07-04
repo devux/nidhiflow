@@ -3,6 +3,7 @@ import { createId } from "../../shared/security/ids.js";
 import { decimalStringToMinorUnits } from "../../shared/money/decimal.js";
 import type { Database } from "../../shared/database/database.js";
 import { AuthRepository } from "../auth/auth.repository.js";
+import { notifyWorkspaceMembers } from "../notifications/workspaceNotification.service.js";
 import { WorkspaceRepository } from "../workspaces/workspace.repository.js";
 import { GoalRepository } from "./goal.repository.js";
 import type { CreateContributionBody, CreateGoalBody, UpdateGoalBody } from "./goal.schemas.js";
@@ -104,6 +105,17 @@ export class GoalService {
         },
         transaction,
       );
+      if (goal) {
+        await notifyWorkspaceMembers(
+          {
+            action: "goal.created",
+            actorUserId: userId,
+            resourceId: goal.id,
+            workspaceId,
+          },
+          transaction,
+        );
+      }
 
       return goal;
     });
@@ -192,6 +204,15 @@ export class GoalService {
         },
         transaction,
       );
+      await notifyWorkspaceMembers(
+        {
+          action: "goal.updated",
+          actorUserId: userId,
+          resourceId: goalId,
+          workspaceId,
+        },
+        transaction,
+      );
 
       return updated;
     });
@@ -217,6 +238,15 @@ export class GoalService {
           requestId,
           resourceId: goalId,
           resourceType: "goal",
+          workspaceId,
+        },
+        transaction,
+      );
+      await notifyWorkspaceMembers(
+        {
+          action: "goal.archived",
+          actorUserId: userId,
+          resourceId: goalId,
           workspaceId,
         },
         transaction,
@@ -287,6 +317,17 @@ export class GoalService {
         },
         transaction,
       );
+      if (contribution) {
+        await notifyWorkspaceMembers(
+          {
+            action: "goal.contribution.created",
+            actorUserId: userId,
+            resourceId: goalId,
+            workspaceId,
+          },
+          transaction,
+        );
+      }
 
       return contribution;
     });
@@ -319,6 +360,15 @@ export class GoalService {
           requestId,
           resourceId: contributionId,
           resourceType: "goal_contribution",
+          workspaceId,
+        },
+        transaction,
+      );
+      await notifyWorkspaceMembers(
+        {
+          action: "goal.contribution.deleted",
+          actorUserId: userId,
+          resourceId: goalId,
           workspaceId,
         },
         transaction,

@@ -4,6 +4,7 @@ import type { Database, Queryable } from "../../shared/database/database.js";
 import { AuthRepository } from "../auth/auth.repository.js";
 import { AccountRepository } from "../accounts/account.repository.js";
 import { WorkspaceCategoryRepository } from "../categories/workspace-category.repository.js";
+import { notifyWorkspaceMembers } from "../notifications/workspaceNotification.service.js";
 import { WorkspaceRepository } from "../workspaces/workspace.repository.js";
 import { TransactionRepository } from "./transaction.repository.js";
 import type {
@@ -288,6 +289,17 @@ export class TransactionService {
         },
         transaction,
       );
+      if (created) {
+        await notifyWorkspaceMembers(
+          {
+            action: "transaction.created",
+            actorUserId: userId,
+            resourceId: created.id,
+            workspaceId,
+          },
+          transaction,
+        );
+      }
 
       return created;
     });
@@ -385,6 +397,15 @@ export class TransactionService {
         },
         transaction,
       );
+      await notifyWorkspaceMembers(
+        {
+          action: "transaction.created",
+          actorUserId: userId,
+          resourceId: created.id,
+          workspaceId,
+        },
+        transaction,
+      );
 
       return { duplicate: false, transaction: created };
     });
@@ -444,6 +465,15 @@ export class TransactionService {
         },
         transaction,
       );
+      await notifyWorkspaceMembers(
+        {
+          action: "transaction.updated",
+          actorUserId: userId,
+          resourceId: transactionId,
+          workspaceId,
+        },
+        transaction,
+      );
 
       return updated;
     });
@@ -474,6 +504,15 @@ export class TransactionService {
           requestId,
           resourceId: transactionId,
           resourceType: "transaction",
+          workspaceId,
+        },
+        transaction,
+      );
+      await notifyWorkspaceMembers(
+        {
+          action: "transaction.deleted",
+          actorUserId: userId,
+          resourceId: transactionId,
           workspaceId,
         },
         transaction,

@@ -2,6 +2,7 @@ import { AppError } from "../../shared/errors/appError.js";
 import { createId } from "../../shared/security/ids.js";
 import type { Database } from "../../shared/database/database.js";
 import { AuthRepository } from "../auth/auth.repository.js";
+import { notifyWorkspaceMembers } from "../notifications/workspaceNotification.service.js";
 import { WorkspaceRepository } from "../workspaces/workspace.repository.js";
 import { AccountRepository } from "./account.repository.js";
 import type { CreateAccountBody, UpdateAccountBody } from "./account.schemas.js";
@@ -23,6 +24,10 @@ function normalizeDecimal(value: string) {
   const magnitude = wholePart * 10_000n + BigInt(normalizedFraction);
 
   return negative ? -magnitude : magnitude;
+}
+
+function isLiabilityAccountType(type: string) {
+  return type === "credit_card" || type === "loan" || type === "other_liability";
 }
 
 export class AccountService {
@@ -135,6 +140,17 @@ export class AccountService {
         },
         transaction,
       );
+      if (account && isLiabilityAccountType(account.type)) {
+        await notifyWorkspaceMembers(
+          {
+            action: "liability.created",
+            actorUserId: userId,
+            resourceId: account.id,
+            workspaceId,
+          },
+          transaction,
+        );
+      }
 
       return { account, created: true };
     });
@@ -211,6 +227,17 @@ export class AccountService {
         },
         transaction,
       );
+      if (isLiabilityAccountType(account.type)) {
+        await notifyWorkspaceMembers(
+          {
+            action: "liability.updated",
+            actorUserId: userId,
+            resourceId: accountId,
+            workspaceId,
+          },
+          transaction,
+        );
+      }
 
       return account;
     });
@@ -248,6 +275,17 @@ export class AccountService {
         },
         transaction,
       );
+      if (isLiabilityAccountType(account.type)) {
+        await notifyWorkspaceMembers(
+          {
+            action: "liability.archived",
+            actorUserId: userId,
+            resourceId: accountId,
+            workspaceId,
+          },
+          transaction,
+        );
+      }
 
       return account;
     });
@@ -285,6 +323,17 @@ export class AccountService {
         },
         transaction,
       );
+      if (isLiabilityAccountType(account.type)) {
+        await notifyWorkspaceMembers(
+          {
+            action: "liability.restored",
+            actorUserId: userId,
+            resourceId: accountId,
+            workspaceId,
+          },
+          transaction,
+        );
+      }
 
       return account;
     });

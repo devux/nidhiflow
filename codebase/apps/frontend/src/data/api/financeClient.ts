@@ -5,7 +5,6 @@ import type { SupportedCurrency } from "../../domain/preferences/guestPreference
 import type {
   GuestTransaction,
   GuestTransactionInput,
-  TransactionCategory,
   TransactionType,
 } from "../../domain/transactions/transaction";
 
@@ -44,8 +43,27 @@ export interface AccountSummaryResource {
 export interface CategoryResource {
   id: string;
   isArchived: boolean;
-  name: TransactionCategory;
+  isSystem: boolean;
+  name: string;
   transactionType: TransactionType;
+  workspaceId: string | null;
+}
+
+export interface NotificationResource {
+  body: string;
+  createdAt: string;
+  id: string;
+  payload: {
+    action?: string;
+    actorUserId?: string;
+    path?: string;
+    resourceId?: string;
+    resourceType?: "budget" | "goal" | "liability" | "transaction";
+  };
+  readAt: string | null;
+  title: string;
+  type: string;
+  workspaceId: string | null;
 }
 
 export interface BudgetResource {
@@ -461,6 +479,95 @@ export async function listCategories(input: {
   );
 
   return result.data.filter((category) => !category.isArchived);
+}
+
+export async function createCategory(input: {
+  accessToken: string;
+  name: string;
+  transactionType: TransactionType;
+  workspaceId: string;
+}): Promise<CategoryResource> {
+  const result = await apiRequest<CategoryResource>(
+    `/workspaces/${input.workspaceId}/categories`,
+    input.accessToken,
+    {
+      body: JSON.stringify({
+        name: input.name,
+        transactionType: input.transactionType,
+      }),
+      method: "POST",
+    },
+  );
+
+  return result.data;
+}
+
+export async function updateCategory(input: {
+  accessToken: string;
+  categoryId: string;
+  name: string;
+  transactionType: TransactionType;
+  workspaceId: string;
+}): Promise<CategoryResource> {
+  const result = await apiRequest<CategoryResource>(
+    `/workspaces/${input.workspaceId}/categories/${input.categoryId}`,
+    input.accessToken,
+    {
+      body: JSON.stringify({
+        name: input.name,
+        transactionType: input.transactionType,
+      }),
+      method: "PATCH",
+    },
+  );
+
+  return result.data;
+}
+
+export async function archiveCategory(input: {
+  accessToken: string;
+  categoryId: string;
+  workspaceId: string;
+}): Promise<CategoryResource> {
+  const result = await apiRequest<CategoryResource>(
+    `/workspaces/${input.workspaceId}/categories/${input.categoryId}`,
+    input.accessToken,
+    { method: "DELETE" },
+  );
+
+  return result.data;
+}
+
+export async function listNotifications(input: {
+  accessToken: string;
+}): Promise<NotificationResource[]> {
+  const result = await apiRequest<NotificationResource[]>("/notifications", input.accessToken, {
+    method: "GET",
+  });
+  return result.data;
+}
+
+export async function markNotificationRead(input: {
+  accessToken: string;
+  notificationId: string;
+}): Promise<NotificationResource> {
+  const result = await apiRequest<NotificationResource>(
+    `/notifications/${input.notificationId}/read`,
+    input.accessToken,
+    { method: "PATCH" },
+  );
+  return result.data;
+}
+
+export async function markAllNotificationsRead(input: {
+  accessToken: string;
+}): Promise<{ markedRead: number }> {
+  const result = await apiRequest<{ markedRead: number }>(
+    "/notifications/read-all",
+    input.accessToken,
+    { method: "POST" },
+  );
+  return result.data;
 }
 
 export async function listTransactions(input: {

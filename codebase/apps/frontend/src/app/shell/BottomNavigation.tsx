@@ -1,4 +1,6 @@
-import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
+import AccountBalanceWalletRoundedIcon from "@mui/icons-material/AccountBalanceWalletRounded";
+import CallMadeRoundedIcon from "@mui/icons-material/CallMadeRounded";
+import CallReceivedRoundedIcon from "@mui/icons-material/CallReceivedRounded";
 import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
 import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
 import MuiBottomNavigation from "@mui/material/BottomNavigation";
@@ -11,21 +13,41 @@ const destinations: Array<{
   icon: ReactElement;
   label: string;
   path: string;
+  featured?: boolean;
 }> = [
   { icon: <HomeRoundedIcon />, label: "Home", path: "/" },
-  { icon: <AutoAwesomeRoundedIcon />, label: "Flow", path: "/flow" },
+  {
+    icon: <CallReceivedRoundedIcon />,
+    label: "Add income",
+    path: "/transactions/new?type=income",
+  },
+  {
+    featured: true,
+    icon: <CallMadeRoundedIcon />,
+    label: "Add expense",
+    path: "/transactions/new?type=expense",
+  },
+  {
+    icon: <AccountBalanceWalletRoundedIcon />,
+    label: "Budget",
+    path: "/budget",
+  },
   { icon: <PersonRoundedIcon />, label: "You", path: "/you" },
 ];
 
 export function BottomNavigation() {
   const location = useLocation();
   const navigate = useNavigate();
-  const currentPath =
-    destinations.find((destination) =>
-      destination.path === "/"
-        ? location.pathname === "/"
-        : location.pathname.startsWith(destination.path),
-    )?.path ?? false;
+  const transactionType = new URLSearchParams(location.search).get("type");
+  const currentPath = location.pathname.startsWith("/transactions/new")
+    ? transactionType === "income"
+      ? "/transactions/new?type=income"
+      : "/transactions/new?type=expense"
+    : (destinations.find((destination) =>
+        destination.path === "/"
+          ? location.pathname === "/"
+          : location.pathname.startsWith(destination.path),
+      )?.path ?? false);
 
   return (
     <Paper
@@ -43,6 +65,13 @@ export function BottomNavigation() {
       >
         {destinations.map((destination) => (
           <BottomNavigationAction
+            className={
+              destination.featured
+                ? "bottom-navigation__expense-action"
+                : destination.label === "Add income"
+                  ? "bottom-navigation__income-action"
+                  : undefined
+            }
             icon={destination.icon}
             key={destination.path}
             label={destination.label}

@@ -23,7 +23,7 @@ export const expenseCategories = [
 
 export type IncomeCategory = (typeof incomeCategories)[number];
 export type ExpenseCategory = (typeof expenseCategories)[number];
-export type TransactionCategory = IncomeCategory | ExpenseCategory;
+export type TransactionCategory = string;
 export type TransactionType = "income" | "expense";
 
 export interface GuestTransaction {

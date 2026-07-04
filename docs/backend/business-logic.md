@@ -76,6 +76,19 @@ All members view shared finance data and may add/edit transactions, budgets,
 and goals. Membership administration uses the minimal manager capability
 described in product rules. Every shared write records actor attribution.
 
+## Collaboration Notifications
+
+- After a successful transaction, budget, goal, contribution, or liability
+  write, notify each other workspace member whose in-app notifications are
+  enabled.
+- Never notify the actor about their own action.
+- Notification creation is part of the financial write transaction so activity
+  and its alert cannot diverge.
+- Store only the actor, action, resource type/ID, and allowlisted destination.
+  Notification title, body, and payload must not contain amounts, notes,
+  account identifiers, merchant text, or other financial details.
+- Read and read-all operations are always scoped to the authenticated recipient.
+
 ## Feedback
 
 Anonymous feedback excludes account identity unless consented. Authenticated

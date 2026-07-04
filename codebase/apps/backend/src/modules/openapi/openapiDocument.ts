@@ -1773,7 +1773,8 @@ const paths = {
     get: operation({
       tags: ["Notifications"],
       summary: "List notifications",
-      description: "Lists notifications for the authenticated user.",
+      description:
+        "Lists notifications for the authenticated user, including privacy-safe workspace activity alerts when another member creates, updates, or deletes a transaction, budget, goal, or loan.",
       operationId: "listNotifications",
       security: bearerSecurity,
       responses: responseSet(
@@ -1791,7 +1792,7 @@ const paths = {
     patch: operation({
       tags: ["Notifications"],
       summary: "Mark notification read",
-      description: "Marks one notification as read.",
+      description: "Marks one notification owned by the authenticated user as read.",
       operationId: "markNotificationRead",
       security: bearerSecurity,
       parameters: [parameterRef("notificationId")],
@@ -1809,7 +1810,15 @@ const paths = {
       operationId: "markAllNotificationsRead",
       security: bearerSecurity,
       responses: responseSet(
-        { "200": successResponse("Notifications marked read.", emptyStatus) },
+        {
+          "200": successResponse("Notifications marked read.", {
+            type: "object",
+            required: ["markedRead"],
+            properties: {
+              markedRead: { type: "integer", minimum: 0 },
+            },
+          }),
+        },
         { auth: true },
       ),
     }),
@@ -2446,6 +2455,8 @@ export const openApiDocument = {
       },
       Notification: {
         type: "object",
+        description:
+          "A user-owned notification. Workspace activity payloads contain routing and resource references only; financial values, notes, and transaction descriptions are excluded.",
         properties: {
           id,
           userId: { type: "string" },
@@ -2453,7 +2464,23 @@ export const openApiDocument = {
           type: { type: "string" },
           title: { type: "string" },
           body: { type: "string" },
-          payload: { additionalProperties: true, type: "object" },
+          payload: {
+            additionalProperties: true,
+            type: "object",
+            properties: {
+              action: { type: "string" },
+              actorUserId: { type: "string" },
+              path: {
+                enum: ["/activity", "/budget", "/goals", "/liabilities"],
+                type: "string",
+              },
+              resourceId: { type: "string" },
+              resourceType: {
+                enum: ["transaction", "budget", "goal", "liability"],
+                type: "string",
+              },
+            },
+          },
           readAt: { nullable: true, ...timestamp },
           createdAt: timestamp,
           updatedAt: timestamp,

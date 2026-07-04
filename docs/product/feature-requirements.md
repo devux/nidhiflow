@@ -27,6 +27,8 @@
   - Income: Salary, Freelance, Business, Interest
   - Expense: Food, Shopping, Transport, Bills, Entertainment, Health,
     Education, Travel, Home
+- System categories remain read-only. Authenticated members can create, rename,
+  and archive categories scoped to their current workspace.
 
 ## Accounts and Balances
 
@@ -108,6 +110,12 @@
 
 - In-app and email reminders for budgets, goals, and recurring entries
 - Notification preferences
+- In-app collaboration alerts notify other opted-in workspace members when a
+  member creates, updates, or deletes transactions, budgets, goals, or loans.
+- Collaboration alerts identify the actor and action without copying financial
+  values, notes, account identifiers, or descriptions into notification data.
+- Notifications support unread state, per-item read, read all, and navigation
+  to an allowlisted relevant destination.
 - Flow launch notification
 - Useful, non-spammy delivery with clear disable controls
 - On supported Android devices, explicit notification-access opt-in can create
@@ -124,9 +132,9 @@
 - Initial-load and API performance work is the highest-priority backlog item.
 - Profile and shared-workspace screens receive mobile-first UI optimization
   without changing privacy, authentication, or single-workspace rules.
-- Goals and Liabilities are implemented secondary destinations without adding
+- Goals and Loans are implemented secondary destinations without adding
   primary navigation tabs. Goals uses the workspace goal and contribution
-  records; Liabilities derives balances from the existing account and
+  records; Loans derives balances from the existing account and
   transaction ledger.
 - Detailed scope and release gates are defined in
   [Product Backlog](backlog.md).

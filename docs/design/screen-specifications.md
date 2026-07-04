@@ -4,8 +4,12 @@
 
 - Time-appropriate greeting and authenticated user identity
 - Notification entry and Insights entry point
+- The notification entry shows a compact unread-count badge when unread items
+  exist; do not show a redundant overflow menu beside it
 - Personal/family budget card: total, spent, remaining, progress
-- Prominent Add Expense and Add Income actions
+- Savings guidance uses a compact slide carousel with a practical tip and a
+  clearly identified Flow AI preview slide
+- Quick destinations are Budget, Reports, Goals, and Loans
 - Recent transactions: source/merchant, category, signed amount, date
 - Shared Space opens as a mobile bottom sheet. Its initial peek shows the
   current workspace, role, currency, invite code, Copy, and Share
@@ -67,7 +71,7 @@
 - Image/icon, name, saved amount, target, percentage, and progress
 - Positive non-manipulative completed-goal celebration
 
-## Liabilities
+## Loans
 
 - Secondary destination opened from Home quick actions and You/Profile tools;
   it is not a primary navigation tab
@@ -78,9 +82,9 @@
   payment; unsupported due-date or payment data is labeled `Not provided`
 - Payment-planning guidance remains visually separate from ledger balances and
   does not infer interest, minimum payments, or payoff dates
-- Archived liabilities appear in a clearly identified history section and do
+- Archived loans appear in a clearly identified history section and do
   not contribute to the active total
-- Signed-out visitors cannot access the Liabilities route because account
+- Signed-out visitors cannot access the Loans route because account
   balances are authenticated workspace data
 - Loading, empty, populated, and retryable error states are required
 
@@ -112,15 +116,21 @@
 ## You
 
 - Keep `You` as the navigation destination and use `Profile` as the page heading
-- Authenticated profile state
-- Selecting the profile name opens display-name editing in a modal
+- Authenticated profile header shows avatar, display name, and a right-aligned
+  icon-only Edit action without repeating email or sign-in status
+- Logout precedes Settings in the page header; compact widths show its icon
+  while larger widths may include its label
+- Selecting Edit opens display-name editing in a modal
 - Feedback opens from a single page action into a modal form
-- Activity, Reports, Goals, and Liabilities shortcuts use a compact icon grid
+- Do not show a Quick access section
 - Feedback form
-- Appearance, Language, Currency, and Privacy preferences
+- Appearance, Language, and Currency initialize from the authenticated profile
+  and persist changes to the backend
+- Category preferences list read-only system categories and allow workspace
+  members to create, rename, and archive workspace-owned categories
 - Optional avatar with safe default
 - Android app section uses one compact horizontal card with version,
-  compatibility, APK download, and trust indicator
+  compatibility, trust indicator, and APK download on the same row
 - On supported Android builds when enabled, Transaction detection explains
   notification-access scope, default-SMS transaction detection, and shared
   visibility; requires an INR destination account plus explicit consent; opens
@@ -140,6 +150,18 @@
 Every screen defines loading, empty, populated, validation, offline, permission,
 and unexpected-error behavior. Empty states provide one relevant next action.
 Skeletons are used only when content loading is noticeable.
+
+## Notifications
+
+- Selecting the header notification control opens a dedicated notification page
+- Show unread state, event title, actor-aware summary, timestamp, per-item read
+  behavior, and a Mark all read action
+- Shared workspace alerts cover another member's transaction, budget, goal, and
+  loan creates, updates, deletes, archives, restores, and contributions where
+  applicable
+- Selecting an alert opens its allowlisted destination
+- Alert text and payloads never include amounts, notes, account identifiers, or
+  other financial details
 
 ## Public About
 

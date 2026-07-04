@@ -164,6 +164,8 @@ Unique active budget per workspace/category/period.
 - `id`, `user_id`, nullable `workspace_id`
 - `type`, safe payload/reference, `read_at`, `sent_at`
 - timestamps
+- Collaboration payloads may reference actor, action, resource, and an
+  allowlisted UI path, but never duplicate financial values or free-form notes
 
 ### notification_preferences
 
