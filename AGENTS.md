@@ -5,14 +5,15 @@ live under `docs/`; do not duplicate them in code comments or new root files.
 
 ## Product Summary
 
-NidhiFlow is a mobile-first, guest-first personal finance application for
+NidhiFlow is a mobile-first, account-based personal finance application for
 individuals, families, and self-employed users. Phase 1 delivers reliable core
 finance workflows. Phase 2 introduces the Flow AI assistant.
 
 ## Non-Negotiable Principles
 
 1. Mobile first, desktop second, tablet third.
-2. Guest first: login is optional for local core features.
+2. Public discovery first: signed-out users see the About experience; login is
+   required for every finance workspace and product screen.
 3. Security, privacy, and accessibility are required, not deferred work.
 4. Personal and household finance remain the primary scope.
 5. Complete and stabilize Phase 1 before implementing Phase 2 AI.
@@ -129,7 +130,8 @@ it changes product behavior, security, stored data, or public contracts.
 - When changing any backend API route, request schema, response schema,
   authentication requirement, validation rule, status code, or error code,
   update the Swagger/OpenAPI documentation in the same change.
-- Do not upload guest financial data without explicit migration confirmation.
+- Keep legacy guest financial data isolated and inaccessible unless a future
+  explicitly approved recovery flow is implemented.
 - Never expose stack traces, database errors, secrets, or sensitive data.
 - Include loading, empty, success, validation, and error states in UI work.
 - Add focused tests for changed behavior and broader tests for shared contracts.
@@ -140,7 +142,7 @@ it changes product behavior, security, stored data, or public contracts.
 A change is complete only when:
 
 - It follows the relevant documentation.
-- Guest and authenticated behavior are both considered.
+- Public signed-out and authenticated behavior are both considered.
 - Mobile behavior is verified before desktop and tablet.
 - Accessibility and localization are considered.
 - Validation, error handling, authorization, privacy, and audit needs are met.

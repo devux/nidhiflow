@@ -5,7 +5,7 @@ import type { GuestPreferencesRepository } from "../data/guest/guestPreferencesR
 import type { GuestTransactionRepository } from "../data/guest/guestTransactionRepository";
 import { environment } from "../config/environment";
 import { LoadingScreen } from "../shared/components/LoadingScreen";
-import { AuthProvider } from "./providers/AuthProvider";
+import { AuthProvider, useAuth } from "./providers/AuthProvider";
 import { GuestPreferencesProvider } from "./providers/GuestPreferencesProvider";
 import { GuestTransactionsProvider } from "./providers/GuestTransactionsProvider";
 import { ThemeProvider } from "./providers/ThemeProvider";
@@ -50,6 +50,9 @@ const LoginPage = lazy(async () => ({
 const PayPage = lazy(async () => ({
   default: (await import("../features/payments/pages/PayPage")).PayPage,
 }));
+const AboutPage = lazy(async () => ({
+  default: (await import("../features/about/pages/AboutPage")).AboutPage,
+}));
 
 interface AppProps {
   repository?: GuestPreferencesRepository;
@@ -61,6 +64,51 @@ function RouteLoadingFallback() {
   return <LoadingScreen routePath={location.pathname} />;
 }
 
+function AppRoutes() {
+  const { isAuthenticated, isCheckingSession } = useAuth();
+  const location = useLocation();
+
+  if (isCheckingSession) {
+    return <LoadingScreen routePath={location.pathname} />;
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <Routes>
+        <Route element={<AboutPage />} path="/" />
+        <Route element={<LoginPage />} path="/login" />
+        <Route element={<SignupPage />} path="/signup" />
+        <Route element={<Navigate replace to="/" />} path="*" />
+      </Routes>
+    );
+  }
+
+  return (
+    <Routes>
+      <Route element={<AppShell />}>
+        <Route element={<HomePage />} index />
+        <Route element={<ActivityPage />} path="activity" />
+        <Route element={<FlowPage />} path="flow" />
+        <Route element={<ReportsPage />} path="reports" />
+        <Route element={<BudgetPage />} path="budget" />
+        <Route element={<LiabilitiesPage />} path="liabilities" />
+        <Route element={<GoalsPage />} path="goals" />
+        <Route element={<Navigate replace to="/budget" />} path="plan" />
+        <Route element={<YouPage />} path="you" />
+        <Route element={<Navigate replace to="/" />} path="signup" />
+        <Route element={<Navigate replace to="/" />} path="login" />
+        <Route
+          element={environment.DIRECT_UPI_ENABLED ? <PayPage /> : <Navigate replace to="/" />}
+          path="pay"
+        />
+        <Route element={<TransactionFormPage />} path="transactions/new" />
+        <Route element={<TransactionFormPage />} path="transactions/:id/edit" />
+        <Route element={<Navigate replace to="/" />} path="*" />
+      </Route>
+    </Routes>
+  );
+}
+
 export function App({ repository, transactionRepository }: AppProps) {
   return (
     <GuestPreferencesProvider repository={repository}>
@@ -69,30 +117,7 @@ export function App({ repository, transactionRepository }: AppProps) {
           <ThemeProvider>
             <BrowserRouter>
               <Suspense fallback={<RouteLoadingFallback />}>
-                <Routes>
-                  <Route element={<AppShell />}>
-                    <Route element={<HomePage />} index />
-                    <Route element={<ActivityPage />} path="activity" />
-                    <Route element={<FlowPage />} path="flow" />
-                    <Route element={<ReportsPage />} path="reports" />
-                    <Route element={<BudgetPage />} path="budget" />
-                    <Route element={<LiabilitiesPage />} path="liabilities" />
-                    <Route element={<GoalsPage />} path="goals" />
-                    <Route element={<Navigate replace to="/budget" />} path="plan" />
-                    <Route element={<YouPage />} path="you" />
-                    <Route element={<SignupPage />} path="signup" />
-                    <Route element={<LoginPage />} path="login" />
-                    <Route
-                      element={
-                        environment.DIRECT_UPI_ENABLED ? <PayPage /> : <Navigate replace to="/" />
-                      }
-                      path="pay"
-                    />
-                    <Route element={<TransactionFormPage />} path="transactions/new" />
-                    <Route element={<TransactionFormPage />} path="transactions/:id/edit" />
-                    <Route element={<Navigate replace to="/" />} path="*" />
-                  </Route>
-                </Routes>
+                <AppRoutes />
               </Suspense>
             </BrowserRouter>
           </ThemeProvider>

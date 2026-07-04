@@ -8,10 +8,7 @@ import {
   type ReactNode,
 } from "react";
 
-import {
-  IndexedDbGuestTransactionRepository,
-  type GuestTransactionRepository,
-} from "../../data/guest/guestTransactionRepository";
+import type { GuestTransactionRepository } from "../../data/guest/guestTransactionRepository";
 import { useAuth } from "./AuthProvider";
 import {
   createAccount,
@@ -34,7 +31,6 @@ import type {
   GuestTransaction,
   GuestTransactionInput,
 } from "../../domain/transactions/transaction";
-import { ErrorState } from "../../shared/components/ErrorState";
 
 interface GuestTransactionsContextValue {
   canWrite: boolean;
@@ -51,8 +47,6 @@ interface GuestTransactionsProviderProps {
 }
 
 const GuestTransactionsContext = createContext<GuestTransactionsContextValue | null>(null);
-const defaultRepository = new IndexedDbGuestTransactionRepository();
-
 async function findOrCreateWritableAccount(input: {
   accessToken: string;
   accounts: AccountResource[];
@@ -87,19 +81,13 @@ async function findOrCreateWritableAccount(input: {
   });
 }
 
-export function GuestTransactionsProvider({
-  children,
-  repository = defaultRepository,
-}: GuestTransactionsProviderProps) {
+export function GuestTransactionsProvider({ children }: GuestTransactionsProviderProps) {
   const { accessToken, activeWorkspace, isAuthenticated, isCheckingSession, user } = useAuth();
   const [transactions, setTransactions] = useState<GuestTransaction[]>([]);
-  const [loadError, setLoadError] = useState(false);
-  const [loadAttempt, setLoadAttempt] = useState(0);
   const workspaceId = activeWorkspace?.id ?? null;
 
   useEffect(() => {
     let isActive = true;
-    setLoadError(false);
 
     if (isCheckingSession) {
       return () => {
@@ -107,10 +95,14 @@ export function GuestTransactionsProvider({
       };
     }
 
-    const load =
-      isAuthenticated && accessToken && workspaceId
-        ? listTransactions({ accessToken, trackLoading: false, workspaceId })
-        : repository.list();
+    if (!isAuthenticated || !accessToken || !workspaceId) {
+      setTransactions([]);
+      return () => {
+        isActive = false;
+      };
+    }
+
+    const load = listTransactions({ accessToken, trackLoading: false, workspaceId });
 
     load
       .then((records) => {
@@ -118,17 +110,13 @@ export function GuestTransactionsProvider({
       })
       .catch(() => {
         if (!isActive) return;
-        if (isAuthenticated) {
-          setTransactions((current) => current ?? []);
-          return;
-        }
-        setLoadError(true);
+        setTransactions((current) => current ?? []);
       });
 
     return () => {
       isActive = false;
     };
-  }, [accessToken, isAuthenticated, isCheckingSession, loadAttempt, repository, workspaceId]);
+  }, [accessToken, isAuthenticated, isCheckingSession, workspaceId]);
 
   useEffect(() => {
     if (!supportsNotificationTransactions() || isCheckingSession) return;
@@ -351,17 +339,6 @@ export function GuestTransactionsProvider({
         : null,
     [createTransaction, isAuthenticated, removeTransaction, transactions, updateTransaction],
   );
-
-  if (loadError) {
-    return (
-      <ErrorState
-        actionLabel="Try again"
-        description="Your local transactions could not be opened. No data was uploaded."
-        onAction={() => setLoadAttempt((attempt) => attempt + 1)}
-        title="Transaction history is unavailable"
-      />
-    );
-  }
 
   return (
     <GuestTransactionsContext.Provider value={contextValue}>

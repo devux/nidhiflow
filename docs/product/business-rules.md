@@ -16,42 +16,19 @@
 - Yearly budget totals and reports must be calculated from the last 12 monthly
   budget plans and must not be entered or stored as a separate yearly plan.
 
-## Guest Rules
+## Signed-Out Access
 
-- Login is optional for read-only product access.
-- Guest users may view/read available data and product screens, but they must
-  not create, update, delete, migrate, upload, or otherwise modify finance
+- Signed-out visitors may access only the public About, login, and account
+  creation experiences.
+- Authentication is required before rendering Home, Activity, Reports, Budget,
+  Goals, Liabilities, Flow, You, transaction forms, payments, or workspace data.
+- Do not create hidden server-side guest profiles or new local guest finance
   records.
-- Guest write attempts must be blocked and replaced with a login/signup prompt
-  that preserves the user's intent where practical.
-- Legacy guest data remains on the device and is not silently uploaded.
-- Explain that legacy guest data cannot be changed in guest mode and may be
-  permanently lost if browser/app storage is cleared, the app is uninstalled,
-  or the device is lost.
-- Do not create hidden server-side guest profiles.
-- Guests may not locally manage transactions, accounts, categories, budgets,
-  goals, reports, preferences that affect server data, education
-  progress, achievements, or export.
-- Anonymous feedback may use a narrowly scoped public endpoint.
-- Authentication is required for every CRUD operation, server persistence,
-  cloud backup/recovery, multi-device sync, shared workspaces, saved contact
-  preferences, cloud attachments, persistent support history, account
-  export/deletion, and persistent personalized AI.
-- Preserve the current task when prompting for authentication.
-- Account conversion must preview migration, detect duplicates, require
-  confirmation, and never lose the local source on failed migration.
-- After five minutes of active foreground guest use, the app may show a
-  non-blocking data-protection reminder explaining that creating an account
-  enables backup, recovery, and synchronization.
-- The reminder must say that guest mode is read-only and any legacy local data
-  may be lost if local app/browser data is cleared, the app is uninstalled, or
-  the device is lost.
-- The first reminder may appear automatically. Repeating it every five minutes
-  requires the guest to explicitly enable `Remind me every 5 minutes`.
-- A guest can dismiss the reminder, select `Don't remind me again`, or disable
-  it later in preferences without losing access to any guest feature.
-- Count only active foreground use. Reset or pause the timer while the app is
-  hidden, the device is idle, a login flow is open, or the reminder is visible.
+- Legacy guest records remain isolated on the device and must not be silently
+  displayed, changed, uploaded, merged, or deleted.
+- Anonymous feedback may use a narrowly scoped public endpoint only when a
+  separately approved public feedback entry point exists.
+- Logout clears account credentials and returns to the public About page.
 
 ## Family Collaboration
 
@@ -80,14 +57,12 @@ finance collaboration.
 
 ## Feature Gating
 
-- Prompt for login only at the moment a requested capability needs identity,
-  server persistence, synchronization, or communication.
-- Explain the benefit and allow cancellation back to guest mode.
-- All CRUD actions need identity and server persistence, so they must always be
-  gated for guest users.
-- The optional five-minute guest data-protection reminder is an exception to
-  contextual feature gating, but it must remain informational and non-blocking.
-- Flow preview is public/guest-compatible.
+- The public About page explains the value of the product and provides clear
+  Log in and Create account actions.
+- Protected deep links return signed-out visitors to the About page. A future
+  intent-preserving login redirect requires an explicit design.
+- All finance views, Flow preview, workspace data, and CRUD actions require an
+  authenticated account.
 - Flow launch notifications require an account or explicit contact consent.
 - Persistent personalized Flow history requires authentication.
 
@@ -120,8 +95,6 @@ finance collaboration.
 - Gamification is optional, transparent, and easy to disable.
 - Challenges reward healthy actions, not screen time or transaction volume.
 - Notifications are useful, configurable, and easy to disable.
-- Never repeat the guest login reminder every five minutes unless the user has
-  explicitly opted into that frequency.
 - Do not use misleading controls, artificial urgency, endless prompts, or
   excessive rewards.
 

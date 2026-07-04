@@ -9,7 +9,7 @@
 - A lightweight client-state store only where React context/state is
   insufficient
 - React Hook Form with a shared schema validator such as Zod
-- IndexedDB through the typed `idb` adapter for guest finance data
+- IndexedDB adapter retained only for parked legacy guest-data compatibility
 
 Webpack 5 provides frontend development and production builds. Jest, Testing
 Library, and `jest-axe` cover frontend behavior and accessibility smoke tests.
@@ -21,35 +21,25 @@ library remain feature-driven decisions.
 1. **App shell:** providers, routing, navigation, themes, error boundaries
 2. **Feature modules:** screens, feature components, hooks, schemas, mappings
 3. **Domain:** framework-light finance types, calculations, and policies
-4. **Data:** API client, server repositories, guest repositories, migrations
+4. **Data:** API client, server repositories, and parked legacy guest adapters
 5. **Shared UI:** design-system components and accessibility primitives
 
 Feature code must not read storage or call `fetch` directly. It uses repository
-interfaces so guest and authenticated implementations share domain behavior.
+interfaces and authenticated API clients.
 
 ## Routing
 
-Use route-based code splitting. Public/guest routes include Home, Activity,
-Budget, Goals, Reports, You, transaction forms, education, feedback, and Flow
-preview. Protected capabilities use an intent-preserving authentication guard,
-not a global login wall.
+Use route-based code splitting. Public routes are About, Login, and Signup.
+Every finance and app-shell route uses a global authentication guard.
+Unauthorized workspace resources render a safe not-found state.
 
-After authentication, return to the original route and action. Unauthorized
-workspace resources render a safe not-found state.
+## Public and Account Modes
 
-## Guest and Account Modes
-
-- Guest data is stored in IndexedDB or an equivalent secure structured local
-  store, not raw localStorage.
-- Guest transaction amounts are stored as integer minor-unit strings and
-  calculated with `BigInt`; derived dashboard totals are never persisted.
-- Small non-sensitive preferences may use localStorage.
-- A local data version supports client-side migrations.
-- Account mode uses the API and server state cache.
-- Guest-to-account conversion runs an explicit migration workflow with
-  preview, duplicate detection, idempotent upload, confirmation, and rollback.
-- Logout clears credentials and account caches, then creates a separate guest
-  context without mixing data.
+- Public mode renders About, Login, and Signup without finance data.
+- Account mode uses the API and server-state cache.
+- Legacy guest IndexedDB adapters remain parked for compatibility but are not
+  mounted as a user-accessible finance mode.
+- Logout clears credentials and account caches, then returns to public About.
 
 ## API Layer
 
@@ -126,6 +116,6 @@ numbers, and relative time. Currency comes from the workspace/user context.
 ## Quality
 
 Use unit tests for domain helpers and repositories, component tests for
-interactions/accessibility, and end-to-end tests for guest entry,
-guest-to-account migration, authentication, transaction creation, budgets,
-goals, reports, and family collaboration.
+interactions/accessibility, and end-to-end tests for public entry,
+authentication, transaction creation, budgets, goals, reports, and family
+collaboration.

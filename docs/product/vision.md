@@ -7,16 +7,16 @@ money management feel intimidating, tedious, or inaccessible.
 
 ## Product Promise
 
-Users can begin immediately without an account, read available finance views,
-and choose an account when they need to create, update, delete, persist,
-recover, synchronize, collaborate on, or personalize financial data.
+Signed-out visitors can understand NidhiFlow through a public About experience.
+An account is required before entering finance views or accessing workspace
+data.
 
 ## Core Principles
 
 - **Mobile first:** optimize mobile implementation, testing, and performance
   first; desktop second; tablet third.
-- **Guest first:** useful read-only discovery works without mandatory login;
-  financial changes require authentication.
+- **Public discovery first:** explain the product without requiring login;
+  authenticated accounts protect all finance and workspace experiences.
 - **Security first:** protect financial data through least privilege, secure
   defaults, validation, and auditable operations.
 - **Accessibility first:** support diverse abilities, devices, languages, and
@@ -49,8 +49,8 @@ recommendations.
 
 ## Success Outcomes
 
-- A guest can inspect the product and read available finance views without
-  creating an account.
+- A signed-out visitor can understand the product and move clearly to login or
+  account creation without seeing workspace finance data.
 - A user can understand current spending, remaining budget, and goal progress
   within seconds.
 - Families can collaborate without learning a complex permission model.

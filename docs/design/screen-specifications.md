@@ -2,7 +2,7 @@
 
 ## Home
 
-- Time-appropriate greeting and guest/user identity
+- Time-appropriate greeting and authenticated user identity
 - Notification entry and Insights entry point
 - Personal/family budget card: total, spent, remaining, progress
 - Prominent Add Expense and Add Income actions
@@ -80,8 +80,8 @@
   does not infer interest, minimum payments, or payoff dates
 - Archived liabilities appear in a clearly identified history section and do
   not contribute to the active total
-- Guests receive a privacy-preserving login/create-account state because
-  account balances are authenticated workspace data
+- Signed-out visitors cannot access the Liabilities route because account
+  balances are authenticated workspace data
 - Loading, empty, populated, and retryable error states are required
 
 ## Reports
@@ -112,11 +112,9 @@
 ## You
 
 - Keep `You` as the navigation destination and use `Profile` as the page heading
-- Guest/authenticated state
+- Authenticated profile state
 - Selecting the profile name opens display-name editing in a modal
 - Feedback opens from a single page action into a modal form
-- Guest local-data explanation and non-blocking Create Account action
-- No invented guest email or cloud identity
 - Activity, Reports, Goals, and Liabilities shortcuts use a compact icon grid
 - Feedback form
 - Appearance, Language, Currency, and Privacy preferences
@@ -134,7 +132,7 @@
 - Explain personalized insights, savings recommendations, smart alerts, and
   natural conversations
 - Optional Notify Me and feedback
-- Viewing is guest-compatible; saved launch contact requires consent/account
+- Viewing and saved launch contact require authentication
 - Clearly identify unavailable functionality; never fake AI output
 
 ## Common States
@@ -143,19 +141,16 @@ Every screen defines loading, empty, populated, validation, offline, permission,
 and unexpected-error behavior. Empty states provide one relevant next action.
 Skeletons are used only when content loading is noticeable.
 
-## Guest Data-Protection Reminder
+## Public About
 
-- After five minutes of active foreground guest use, show a dismissible banner,
-  toast, or bottom sheet that does not block the current task.
-- Explain that account creation protects history through backup, recovery, and
-  synchronization; do not imply that local guest data has already been lost.
-- Provide Create Account, Log In, and Continue as Guest actions.
-- Offer `Remind me every 5 minutes` as an unchecked opt-in choice.
-- Offer `Don't remind me again` and make the setting reversible from You.
-- Preserve the current screen and unsaved form values through login or
-  dismissal.
-- Do not show the reminder over confirmations, errors, sensitive entry, or
-  another modal.
+- Signed-out visitors see About before any finance or workspace screen.
+- Use a spacious editorial layout inspired by the approved marketing reference:
+  compact header, large hero, alternating feature stories, capability grid,
+  onboarding steps, security section, final call to action, and footer.
+- Show only currently available NidhiFlow capabilities.
+- Provide persistent Log in and Get started actions and no Continue as Guest
+  action.
+- Support 320, 425, 768, 1024, 1440, and 2560 pixel breakpoints.
 
 ## Responsive Behavior
 

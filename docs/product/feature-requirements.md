@@ -2,13 +2,11 @@
 
 ## Account and Profile
 
-- Optional email signup/login/logout and email verification
+- Account-required email signup/login/logout and email verification
 - Forgot/reset password
 - Secure account sessions
-- Legacy guest-to-account migration
-- Optional guest data-protection reminder after five minutes of active use
-- Reminder actions: Create Account, Log In, Continue as Guest, Remind Me Every
-  5 Minutes, and Don't Remind Me Again
+- Signed-out About page with clear Log in and Create account actions
+- Legacy guest mode and guest-to-account migration are parked
 - Profile, currency, locale, timezone, date format, theme, avatar, and
   notification preferences
 - Account data export and deletion
@@ -18,8 +16,7 @@
 
 - Authenticated users can create, view, edit, and delete/reverse income,
   expense, and transfer entries through backend APIs
-- Guest users can view/read available transaction data but cannot create, edit,
-  delete, or otherwise modify transactions
+- Signed-out visitors cannot access transaction data or transaction screens
 - Amount, currency, type, account, category, date, payment method, note, tags,
   and optional attachment
 - Phase 1 note maximum: 100 characters
@@ -58,8 +55,7 @@
 
 - Personal/family budget summary
 - Add Income and Add Expense quick actions
-- Guest quick actions that would change data must show a login/signup prompt
-  instead of opening an editable form
+- Dashboard quick actions are available only after authentication
 - Goal preview and recent activity
 - Income/expense activity tabs, date grouping, search, and filters
 - Monthly cash flow and income-versus-expense trends
@@ -112,7 +108,6 @@
 
 - In-app and email reminders for budgets, goals, and recurring entries
 - Notification preferences
-- Guest login/data-protection reminder preference stored locally
 - Flow launch notification
 - Useful, non-spammy delivery with clear disable controls
 - On supported Android devices, explicit notification-access opt-in can create
@@ -148,9 +143,9 @@ user-approved actions. See [Flow Assistant](../ai/flow-assistant.md).
 ## Cross-Cutting Requirements
 
 - Mobile-first responsive behavior
-- Guest and authenticated paths
-- Guest paths are read-only; authenticated paths perform CRUD through APIs and
-  persist data to the database
+- Public signed-out About/login/signup paths and authenticated finance paths
+- Authenticated finance paths perform reads and CRUD through APIs and persist
+  workspace data to the database
 - Loading, empty, success, validation, offline, and error states
 - Accessibility and localization
 - Auditability for sensitive/shared changes

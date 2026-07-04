@@ -48,14 +48,14 @@ information architectures by breakpoint.
 
 ## Authentication Navigation
 
-- Do not place an account wall before guest-supported destinations.
-- Prompt at the moment a user selects a protected capability.
-- Explain the benefit, allow cancellation, preserve intent, and return to the
-  original task after authentication.
-- The You destination clearly distinguishes guest and authenticated states.
+- Signed-out visitors land on the public About page.
+- About provides persistent Log in and Get started actions across breakpoints.
+- All app-shell destinations require authentication and are not rendered for a
+  signed-out visitor.
+- Logout returns to About.
 
 ## Deep Links
 
-Protected deep links retain their intended destination through login. Invalid
-or inaccessible resources use a safe not-found state without revealing whether
-another user's resource exists.
+Protected deep links return signed-out visitors to About. Invalid or
+inaccessible authenticated resources use a safe not-found state without
+revealing whether another user's resource exists.

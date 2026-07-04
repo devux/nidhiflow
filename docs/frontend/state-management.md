@@ -23,11 +23,10 @@ Use TanStack Query or equivalent for authenticated API data. Define stable
 query keys by workspace and resource. Mutations invalidate or update only
 affected caches.
 
-### Guest Domain State
+### Legacy Guest Domain State
 
-Guest domain state is read-only. Legacy local IndexedDB records may be read for
-display and explicit migration, but guest users must not create, update, or
-delete finance records locally.
+Legacy local IndexedDB records remain isolated and inaccessible while guest
+mode is parked. Do not display, change, merge, upload, or delete them.
 
 ### App State
 
@@ -47,28 +46,14 @@ The same browser session may also retain the current authenticated user and
 current workspace summary in `sessionStorage` so a page refresh can render the
 signed-in state immediately while the token is revalidated or refreshed.
 
-### Guest Reminder State
+## Public/Account Separation
 
-Store the guest data-protection reminder preference locally. Track active
-foreground time rather than wall-clock session duration.
-
-- First eligible reminder threshold: five active minutes
-- Repeating interval: five active minutes only after explicit opt-in
-- Pause while hidden, idle, authenticating, or displaying another blocking
-  surface
-- Stop immediately after successful authentication or `Don't remind me again`
-- Do not synchronize this preference or use it to upload guest finance data
-
-## Guest/Account Separation
-
-- Use explicit `guest`, `authenticating`, and `authenticated` modes.
-- Guest mode is read-only. Block write attempts with an authentication prompt.
-- Namespace any legacy local records by installation/guest profile.
-- Never merge guest and account caches implicitly.
-- Migration produces a preview and only marks local data migrated after the
-  server confirms the complete idempotent operation.
+- Use explicit `public`, `authenticating`, and `authenticated` modes.
+- Public mode contains no finance-domain state.
+- Namespace and preserve legacy guest records without exposing them.
+- Never merge legacy guest and account caches implicitly.
 - Logout removes tokens, server cache, and account-sensitive memory before
-  creating or restoring guest state.
+  returning to public About.
 
 ## Optimistic Updates
 
@@ -78,10 +63,9 @@ success before appearing final.
 
 ## Offline Behavior
 
-Guest mode remains locally readable. Guest writes and authenticated offline
-writes require a future explicit synchronization design; do not silently queue
-financial writes in Phase 1 unless conflict and idempotency behavior is
-implemented.
+Authenticated offline writes require a future explicit synchronization design;
+do not silently queue financial writes in Phase 1 unless conflict and
+idempotency behavior is implemented.
 
 ## Derived State
 
@@ -93,7 +77,7 @@ snapshots with defined provenance.
 
 Do not persist access tokens in `localStorage`. If `sessionStorage` is used as
 a browser-session fallback, keep only the short-lived access token plus the
-current user/workspace summary needed to avoid a refresh-time guest fallback,
+current user/workspace summary needed to avoid a refresh-time public fallback,
 and clear it on logout or confirmed authentication failure. Do not place
 passwords, reset tokens, full financial payloads, or sensitive attachments in
 logs, analytics, URLs, or generic global stores.

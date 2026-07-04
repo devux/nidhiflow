@@ -164,7 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let isActive = true;
-    const guestFirstFallback = window.setTimeout(() => {
+    const publicPageFallback = window.setTimeout(() => {
       if (isActive) {
         setIsCheckingSession(false);
       }
@@ -260,7 +260,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       })
       .finally(() => {
-        window.clearTimeout(guestFirstFallback);
+        window.clearTimeout(publicPageFallback);
         if (isActive) {
           setIsCheckingSession(false);
         }
@@ -268,7 +268,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       isActive = false;
-      window.clearTimeout(guestFirstFallback);
+      window.clearTimeout(publicPageFallback);
     };
   }, []);
 

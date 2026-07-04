@@ -13,7 +13,7 @@ export function SignupPage() {
   const navigate = useNavigate();
   const { register } = useAuth();
   const { preferences } = useGuestPreferences();
-  const [displayName, setDisplayName] = useState(preferences.displayName);
+  const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<"idle" | "saving">("idle");

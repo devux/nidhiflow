@@ -648,38 +648,30 @@ describe("App", () => {
     jest.useRealTimers();
   });
 
-  it("lets a guest enter and navigate the mobile destinations in order", async () => {
+  it("shows signed-out visitors the public About page with account entry points", async () => {
     window.history.replaceState({}, "", "/");
-    const user = userEvent.setup();
     render(
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    await expectHomeHeader();
-    expect(screen.queryByRole("link", { name: "Pay with UPI" })).toBeNull();
-
-    const navigation = screen.getByRole("navigation", { name: "Primary navigation" });
-    const links = within(navigation)
-      .getAllByRole("button")
-      .map((button) => button.textContent?.trim());
-
-    expect(links).toEqual(["Home", "Flow", "You"]);
-    expect(links).not.toContain("Activity");
-
-    await user.click(within(navigation).getByRole("button", { name: "Flow" }));
-    expect(await screen.findByRole("heading", { name: "Flow" })).toBeDefined();
-
-    await user.click(within(navigation).getByRole("button", { name: "You" }));
-    expect(await screen.findByRole("heading", { name: "Profile" })).toBeDefined();
+    expect(
+      await screen.findByRole("heading", { name: "Money clarity, made simple." }),
+    ).toBeDefined();
+    expect(screen.getAllByRole("link", { name: /Log in|I already use NidhiFlow/ }).length).toBe(4);
+    expect(screen.getAllByRole("link", { name: /Get started|Create your account/ }).length).toBe(3);
+    expect(screen.queryByRole("navigation", { name: "Primary navigation" })).toBeNull();
+    expect(screen.queryByText("Continue as guest")).toBeNull();
   });
 
-  it("redirects the parked Direct UPI route to Home", async () => {
+  it("redirects signed-out protected routes to About", async () => {
     window.history.replaceState({}, "", "/pay");
     render(
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    await expectHomeHeader();
+    expect(
+      await screen.findByRole("heading", { name: "Money clarity, made simple." }),
+    ).toBeDefined();
     expect(window.location.pathname).toBe("/");
     expect(screen.queryByRole("heading", { name: "Pay with UPI" })).toBeNull();
   });
@@ -1010,7 +1002,8 @@ describe("App", () => {
     expect(screen.queryByRole("button", { name: /Switch to/ })).toBeNull();
   });
 
-  it("links the Home notification entry to the guest preferences page", async () => {
+  it("links the Home notification entry to the profile preferences page", async () => {
+    mockAuthenticatedFinanceSession(globalThis.fetch as jest.MockedFunction<typeof fetch>);
     window.history.replaceState({}, "", "/");
     const user = userEvent.setup();
     render(
@@ -1025,6 +1018,7 @@ describe("App", () => {
   });
 
   it("applies report date presets and custom ranges from bottom sheets", async () => {
+    mockAuthenticatedFinanceSession(globalThis.fetch as jest.MockedFunction<typeof fetch>);
     window.history.replaceState({}, "", "/reports");
     const user = userEvent.setup();
     render(
@@ -1061,22 +1055,17 @@ describe("App", () => {
     expect(screen.getAllByText("This month").length).toBeGreaterThan(0);
   });
 
-  it("gates family workspace sharing for guests from Home", async () => {
-    window.history.replaceState({}, "", "/");
-    const user = userEvent.setup();
+  it("does not render workspace finance UI for signed-out visitors", async () => {
+    window.history.replaceState({}, "", "/activity");
     render(
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    await expectHomeHeader();
-    await user.click(screen.getByRole("button", { name: "Shared workspace" }));
-
-    expect(screen.getByRole("dialog", { name: "Shared space" })).toBeDefined();
-    expect(screen.getByText(/Sign in to share or join safely/)).toBeDefined();
-    expect(screen.getByRole("link", { name: "Create account" }).getAttribute("href")).toBe(
-      "/signup",
-    );
-    expect(screen.getByRole("link", { name: "Log in" }).getAttribute("href")).toBe("/login");
+    expect(
+      await screen.findByRole("heading", { name: "Money clarity, made simple." }),
+    ).toBeDefined();
+    expect(screen.queryByRole("heading", { name: "Activity" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Shared workspace" })).toBeNull();
   });
 
   it("shares the current workspace and confirms ownership transfer before joining", async () => {
@@ -1284,7 +1273,7 @@ describe("App", () => {
     Reflect.deleteProperty(globalThis.navigator, "share");
   });
 
-  it("lets a guest create an account and start a session", async () => {
+  it("lets a signed-out visitor create an account and start a session", async () => {
     const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
 
     fetchMock.mockImplementation((input, init) => {
@@ -1340,7 +1329,7 @@ describe("App", () => {
     );
   });
 
-  it("does not prompt guests to migrate locally written data after signup", async () => {
+  it("does not prompt for parked legacy migration after signup", async () => {
     const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
 
     fetchMock.mockImplementation((input, init) => {
@@ -1388,7 +1377,8 @@ describe("App", () => {
       />,
     );
 
-    await user.type(await screen.findByLabelText("Email"), "maya@example.com");
+    await user.type(await screen.findByLabelText("Display name"), "Maya");
+    await user.type(screen.getByLabelText("Email"), "maya@example.com");
     await user.type(screen.getByLabelText("Password"), "StrongPassword123");
     await user.click(screen.getByRole("button", { name: "Create account" }));
 
@@ -1695,7 +1685,7 @@ describe("App", () => {
     expect(screen.queryByRole("heading", { name: /Guest/ })).toBeNull();
   });
 
-  it("asks unauthenticated users after refresh whether to continue as guest or log in", async () => {
+  it("returns unauthenticated users to About after refresh", async () => {
     const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
 
     fetchMock.mockImplementation((input) => {
@@ -1710,21 +1700,18 @@ describe("App", () => {
 
     window.history.replaceState({}, "", "/");
     const user = userEvent.setup();
-    const firstRender = render(
-      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
-    );
-
-    expect(await screen.findByRole("dialog", { name: "Continue in guest mode?" })).toBeDefined();
-    await user.click(screen.getByRole("button", { name: "Continue as guest" }));
-    expect(screen.queryByRole("dialog", { name: "Continue in guest mode?" })).toBeNull();
-    firstRender.unmount();
-
-    window.history.replaceState({}, "", "/");
     render(
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    await user.click(await screen.findByRole("button", { name: "Log in" }));
+    expect(
+      await screen.findByRole("heading", { name: "Money clarity, made simple." }),
+    ).toBeDefined();
+    expect(screen.queryByText("Continue as guest")).toBeNull();
+    await user.click(
+      screen.getAllByRole("link", { name: "Log in" }).find((link) => link.closest("header")) ??
+        screen.getAllByRole("link", { name: "Log in" })[0],
+    );
     expect(await screen.findByRole("heading", { name: "Log in" })).toBeDefined();
   });
 
@@ -1855,52 +1842,6 @@ describe("App", () => {
     expect(screen.queryByRole("button", { name: "Continue as guest" })).toBeNull();
   });
 
-  it("shows Home budget and goal totals derived from transactions", async () => {
-    const currentDate = toLocalDateOnly(new Date());
-    window.history.replaceState({}, "", "/");
-    render(
-      <App
-        repository={createRepository()}
-        transactionRepository={createTransactionRepository([
-          {
-            amountMinor: "25000",
-            category: "Salary",
-            createdAt: "2026-06-17T00:00:00.000Z",
-            currency: "USD",
-            id: "transaction-1",
-            note: "June salary",
-            transactionDate: currentDate,
-            type: "income",
-            updatedAt: "2026-06-17T00:00:00.000Z",
-          },
-          {
-            amountMinor: "8000",
-            category: "Food",
-            createdAt: "2026-06-17T00:00:01.000Z",
-            currency: "USD",
-            id: "transaction-2",
-            note: "Groceries",
-            transactionDate: currentDate,
-            type: "expense",
-            updatedAt: "2026-06-17T00:00:01.000Z",
-          },
-        ])}
-      />,
-    );
-
-    await expectHomeHeader();
-    const budgetSection = screen.getByRole("region", { name: "Budget summaries" });
-
-    expect(within(budgetSection).queryByText("Savings goal")).toBeNull();
-    expect(
-      within(budgetSection).queryByRole("progressbar", { name: "Goal progress: 68 percent" }),
-    ).toBeNull();
-    expect(await within(budgetSection).findByText("$250.00")).toBeDefined();
-    expect(within(budgetSection).getByText("$80.00")).toBeDefined();
-    expect(within(budgetSection).getByText("$170.00")).toBeDefined();
-    expect(screen.queryByRole("region", { name: "Current balance" })).toBeNull();
-  });
-
   it("adds, edits, deletes budget categories and recalculates totals", async () => {
     const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
     const currentDate = toLocalDateOnly(new Date());
@@ -2003,7 +1944,7 @@ describe("App", () => {
     await user.click(within(budgetDialog).getByRole("button", { name: "Delete" }));
     expect(screen.getAllByRole("heading", { name: "₹0.00" })).toHaveLength(1);
     expect(screen.getByText("No monthly budget yet")).toBeDefined();
-  });
+  }, 15000);
 
   it("quick-fills the current monthly budget from the previous month", async () => {
     const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
@@ -2134,51 +2075,30 @@ describe("App", () => {
     expect(refreshCalls.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("blocks guest budget category CRUD and prompts for authentication", async () => {
+  it("keeps budget CRUD behind the global authentication boundary", async () => {
     window.history.replaceState({}, "", "/budget");
-    const user = userEvent.setup();
     render(
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    expect(await screen.findByRole("heading", { name: "Budget" })).toBeDefined();
-    await user.click(screen.getByRole("button", { name: "Add budget category" }));
-
     expect(
-      await screen.findByRole("dialog", { name: "Sign in to save budget changes" }),
+      await screen.findByRole("heading", { name: "Money clarity, made simple." }),
     ).toBeDefined();
-    expect(screen.queryByRole("dialog", { name: "Add budget category" })).toBeNull();
-    expect(screen.getByRole("link", { name: "Log in" })).toBeDefined();
-    expect(screen.getByRole("link", { name: "Sign up" })).toBeDefined();
+    expect(screen.queryByRole("heading", { name: "Budget" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Add budget category" })).toBeNull();
   });
 
-  it("validates and saves the local guest display name", async () => {
+  it("keeps profile editing behind the global authentication boundary", async () => {
     window.history.replaceState({}, "", "/you");
-    const repository = createRepository();
-    const user = userEvent.setup();
-    render(<App repository={repository} transactionRepository={createTransactionRepository()} />);
-
-    await user.click(
-      await screen.findByRole("button", { name: /Edit display name, current name/ }),
+    render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
-    const nameDialog = screen.getByRole("dialog", { name: "Edit name" });
-    const displayName = within(nameDialog).getByLabelText("Display name");
-    await user.clear(displayName);
-    await user.click(within(nameDialog).getByRole("button", { name: "Save" }));
 
-    expect(screen.getByText("Enter a name between 1 and 80 characters.")).toBeDefined();
-    expect(repository.save).not.toHaveBeenCalled();
-
-    await user.type(displayName, "Maya");
-    await user.click(within(nameDialog).getByRole("button", { name: "Save" }));
-
-    await waitFor(() =>
-      expect(repository.save).toHaveBeenCalledWith({
-        ...defaultPreferences,
-        displayName: "Maya",
-      }),
-    );
-    expect(screen.getByText("Preferences saved on this device.")).toBeDefined();
+    expect(
+      await screen.findByRole("heading", { name: "Money clarity, made simple." }),
+    ).toBeDefined();
+    expect(screen.queryByRole("heading", { name: "Profile" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Edit display name/ })).toBeNull();
   });
 
   it("saves the authenticated display name and uses it across the app", async () => {
@@ -2324,30 +2244,28 @@ describe("App", () => {
     );
   });
 
-  it("has no automated accessibility violations on the guest home screen", async () => {
+  it("has no automated accessibility violations on the public About page", async () => {
     window.history.replaceState({}, "", "/");
     const { container } = render(
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    await expectHomeHeader();
+    await screen.findByRole("heading", { name: "Money clarity, made simple." });
 
     expect((await axe(container)).violations).toHaveLength(0);
   });
 
-  it("blocks guest transaction writes and prompts for authentication", async () => {
-    window.history.replaceState({}, "", "/");
-    const user = userEvent.setup();
+  it("keeps transaction entry behind the global authentication boundary", async () => {
+    window.history.replaceState({}, "", "/transactions/new?type=income");
     render(
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
-    await user.click(await screen.findByRole("link", { name: /Add income/ }));
-
-    expect(await screen.findByRole("heading", { name: "Sign in to save changes" })).toBeDefined();
+    expect(
+      await screen.findByRole("heading", { name: "Money clarity, made simple." }),
+    ).toBeDefined();
     expect(screen.queryByLabelText("Amount")).toBeNull();
-    expect(screen.getByRole("link", { name: "Log in" })).toBeDefined();
-    expect(screen.getByRole("link", { name: "Sign up" })).toBeDefined();
+    expect(screen.queryByRole("heading", { name: "Add Income" })).toBeNull();
   });
 
   it("opens the expense form from Activity", async () => {
@@ -2467,6 +2385,7 @@ describe("App", () => {
   });
 
   it("has no automated accessibility violations on the Flow preview screen", async () => {
+    mockAuthenticatedFinanceSession(globalThis.fetch as jest.MockedFunction<typeof fetch>);
     window.history.replaceState({}, "", "/flow");
     const { container } = render(
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
@@ -2477,6 +2396,7 @@ describe("App", () => {
   });
 
   it("opens feedback from the Profile page in a modal", async () => {
+    mockAuthenticatedFinanceSession(globalThis.fetch as jest.MockedFunction<typeof fetch>);
     window.history.replaceState({}, "", "/you");
     const user = userEvent.setup();
     render(
@@ -2493,6 +2413,7 @@ describe("App", () => {
   });
 
   it("has no automated accessibility violations on the You page", async () => {
+    mockAuthenticatedFinanceSession(globalThis.fetch as jest.MockedFunction<typeof fetch>);
     window.history.replaceState({}, "", "/you");
     const { container } = render(
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,

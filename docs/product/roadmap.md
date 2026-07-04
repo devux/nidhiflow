@@ -10,11 +10,9 @@ must not delay or weaken the core finance foundation.
 
 ### Foundation
 
-- Read-only guest mode with no guest CRUD writes
-- Optional signup, login, logout, email verification, and password recovery
-- Optional five-minute guest data-protection reminder with local preferences
-- Legacy guest-to-account migration with preview, duplicate handling,
-  confirmation, and rollback on failure
+- Public About experience for signed-out visitors
+- Account-required signup, login, logout, email verification, and password recovery
+- Legacy guest mode and guest-to-account migration parked and inaccessible
 - Profiles, locale, timezone, currency, theme, and notification preferences
 
 ### Finance Workflows
@@ -50,7 +48,7 @@ must not delay or weaken the core finance foundation.
 
 ## Phase 1 Delivery Order
 
-1. Read-only guest access, account security, and authenticated transaction management
+1. Public product discovery, account security, and authenticated transaction management
 2. Accounts, budgets, goals, dashboard, and basic reports
 3. Family workspace, recurring transactions, and notifications
 4. Import/export, attachments, education, achievements, and feedback
