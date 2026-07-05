@@ -44,6 +44,11 @@ Use these Vercel project settings:
 - Build command: `npm run build --workspace @nidhiflow/frontend`
 - Output directory: `apps/frontend/dist`
 
+`codebase/vercel.json` rewrites application paths to `/index.html` so React
+Router can resolve direct visits and browser refreshes for protected routes
+such as `/you`, `/budget`, and `/transactions/new`. Keep this SPA fallback in
+the configured Vercel root whenever routes are added.
+
 Required Vercel environment variables:
 
 ```text
