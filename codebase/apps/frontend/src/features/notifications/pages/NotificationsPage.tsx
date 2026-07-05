@@ -43,7 +43,7 @@ export function NotificationsPage() {
     if (!accessToken) return;
     setStatus("loading");
     try {
-      setNotifications(await listNotifications({ accessToken }));
+      setNotifications(await listNotifications({ accessToken, trackLoading: false }));
       setStatus("ready");
     } catch {
       setStatus("error");

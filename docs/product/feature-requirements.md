@@ -9,6 +9,11 @@
 - Legacy guest mode and guest-to-account migration are parked
 - Profile, currency, locale, timezone, date format, theme, avatar, and
   notification preferences
+- Profile displays name and email with a safe default cartoon avatar. Settings
+  is a separate authenticated destination for workspace category management.
+- Theme and locale preferences apply across the application. Preferred
+  currency affects defaults and compatible summaries; explicit stored
+  currencies remain authoritative unless a defined conversion is performed.
 - Account data export and deletion
 - Active-session and security-activity view
 

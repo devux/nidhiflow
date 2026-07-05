@@ -56,6 +56,9 @@ const AboutPage = lazy(async () => ({
 const NotificationsPage = lazy(async () => ({
   default: (await import("../features/notifications/pages/NotificationsPage")).NotificationsPage,
 }));
+const SettingsPage = lazy(async () => ({
+  default: (await import("../features/settings/pages/SettingsPage")).SettingsPage,
+}));
 
 interface AppProps {
   repository?: GuestPreferencesRepository;
@@ -97,6 +100,7 @@ function AppRoutes() {
         <Route element={<LiabilitiesPage />} path="liabilities" />
         <Route element={<GoalsPage />} path="goals" />
         <Route element={<NotificationsPage />} path="notifications" />
+        <Route element={<SettingsPage />} path="settings" />
         <Route element={<Navigate replace to="/budget" />} path="plan" />
         <Route element={<YouPage />} path="you" />
         <Route element={<Navigate replace to="/" />} path="signup" />

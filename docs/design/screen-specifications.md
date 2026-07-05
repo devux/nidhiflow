@@ -116,18 +116,21 @@
 ## You
 
 - Keep `You` as the navigation destination and use `Profile` as the page heading
-- Authenticated profile header shows avatar, display name, and a right-aligned
-  icon-only Edit action without repeating email or sign-in status
+- Authenticated profile header shows a friendly default cartoon avatar,
+  icon-labeled display name and email, and a right-aligned icon-only Edit
+  action without repeating sign-in status
 - Logout precedes Settings in the page header; compact widths show its icon
   while larger widths may include its label
 - Selecting Edit opens display-name editing in a modal
-- Feedback opens from a single page action into a modal form
+- Do not show a visible `Preferences` section label
+- Appearance, Language, Currency, Settings, and Share feedback use one compact
+  options card; feedback opens into its modal form
 - Do not show a Quick access section
 - Feedback form
 - Appearance, Language, and Currency initialize from the authenticated profile
-  and persist changes to the backend
-- Category preferences list read-only system categories and allow workspace
-  members to create, rename, and archive workspace-owned categories
+  and persist changes to the backend. Theme and locale changes apply globally;
+  currency changes update global defaults and formatting without relabeling
+  existing records stored in another explicit currency
 - Optional avatar with safe default
 - Android app section uses one compact horizontal card with version,
   compatibility, trust indicator, and APK download on the same row
@@ -135,6 +138,14 @@
   notification-access scope, default-SMS transaction detection, and shared
   visibility; requires an INR destination account plus explicit consent; opens
   Android notification-access settings; and provides a disable action.
+
+## Settings
+
+- Settings is a protected secondary page opened from You
+- Category settings list read-only system categories and allow workspace
+  members to create, rename, and archive workspace-owned categories
+- Category loading, empty, validation, save, archive, and retryable failure
+  states remain local to the page
 
 ## Flow Preview
 
@@ -176,6 +187,10 @@ Skeletons are used only when content loading is noticeable.
 
 ## Responsive Behavior
 
-Mobile is authoritative. Desktop uses additional width for complementary
-panels, denser tables, and persistent secondary navigation without changing
-business behavior. Tablet adaptation follows the same component system.
+Phone behavior is authoritative for product acceptance. Validate the supported
+phone widths in both Android browsers/WebViews and iOS Safari/WebViews,
+including safe areas and software keyboards. Desktop uses additional width for
+complementary panels, denser tables, and persistent secondary navigation
+without changing business behavior. Tablet adaptation follows the same
+component system and every platform-neutral workflow remains available at all
+supported web breakpoints.

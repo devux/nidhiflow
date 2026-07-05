@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -35,6 +36,7 @@ import type {
 interface GuestTransactionsContextValue {
   canWrite: boolean;
   createTransaction: (input: GuestTransactionInput) => Promise<GuestTransaction>;
+  refreshTransactions: () => Promise<void>;
   removeTransaction: (id: string) => Promise<void>;
   requiresAuthentication: boolean;
   transactions: GuestTransaction[];
@@ -84,39 +86,55 @@ async function findOrCreateWritableAccount(input: {
 export function GuestTransactionsProvider({ children }: GuestTransactionsProviderProps) {
   const { accessToken, activeWorkspace, isAuthenticated, isCheckingSession, user } = useAuth();
   const [transactions, setTransactions] = useState<GuestTransaction[]>([]);
+  const refreshInFlight = useRef<{ key: string; promise: Promise<void> } | null>(null);
+  const refreshSequence = useRef(0);
   const workspaceId = activeWorkspace?.id ?? null;
 
-  useEffect(() => {
-    let isActive = true;
-
-    if (isCheckingSession) {
-      return () => {
-        isActive = false;
-      };
-    }
-
+  const refreshTransactions = useCallback(async () => {
+    if (isCheckingSession) return;
     if (!isAuthenticated || !accessToken || !workspaceId) {
       setTransactions([]);
-      return () => {
-        isActive = false;
-      };
+      return;
     }
 
-    const load = listTransactions({ accessToken, trackLoading: false, workspaceId });
+    const key = `${accessToken}:${workspaceId}`;
+    if (refreshInFlight.current?.key === key) {
+      return refreshInFlight.current.promise;
+    }
 
-    load
+    const sequence = ++refreshSequence.current;
+    const promise = listTransactions({ accessToken, trackLoading: false, workspaceId })
       .then((records) => {
-        if (isActive) setTransactions(records);
+        if (refreshSequence.current === sequence) setTransactions(records);
       })
       .catch(() => {
-        if (!isActive) return;
-        setTransactions((current) => current ?? []);
+        // Preserve the last confirmed server snapshot and retry on the next entry/focus.
+      })
+      .finally(() => {
+        if (refreshInFlight.current?.key === key) refreshInFlight.current = null;
       });
-
-    return () => {
-      isActive = false;
-    };
+    refreshInFlight.current = { key, promise };
+    return promise;
   }, [accessToken, isAuthenticated, isCheckingSession, workspaceId]);
+
+  useEffect(() => {
+    void refreshTransactions();
+    return () => {
+      refreshSequence.current += 1;
+    };
+  }, [refreshTransactions]);
+
+  useEffect(() => {
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") void refreshTransactions();
+    };
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, [refreshTransactions]);
 
   useEffect(() => {
     if (!supportsNotificationTransactions() || isCheckingSession) return;
@@ -331,13 +349,21 @@ export function GuestTransactionsProvider({ children }: GuestTransactionsProvide
         ? {
             canWrite: isAuthenticated,
             createTransaction,
+            refreshTransactions,
             removeTransaction,
             requiresAuthentication: !isAuthenticated,
             transactions,
             updateTransaction,
           }
         : null,
-    [createTransaction, isAuthenticated, removeTransaction, transactions, updateTransaction],
+    [
+      createTransaction,
+      isAuthenticated,
+      refreshTransactions,
+      removeTransaction,
+      transactions,
+      updateTransaction,
+    ],
   );
 
   return (

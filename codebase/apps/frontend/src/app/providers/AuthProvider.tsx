@@ -330,12 +330,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       let updatedUser;
 
       try {
-        updatedUser = await updateCurrentUser(currentAccessToken, input);
+        updatedUser = await updateCurrentUser(currentAccessToken, input, { trackLoading: false });
       } catch (error) {
         if (!isAuthFailure(error)) throw error;
-        currentAccessToken = await refreshAccessToken();
+        currentAccessToken = await refreshAccessToken({ trackLoading: false });
         setAccessToken(currentAccessToken);
-        updatedUser = await updateCurrentUser(currentAccessToken, input);
+        updatedUser = await updateCurrentUser(currentAccessToken, input, { trackLoading: false });
       }
       setUser(updatedUser);
 
@@ -356,7 +356,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new ApiRequestError("Authentication is required.", 401);
       }
 
-      const currentWorkspaces = await getWorkspaces(accessToken);
+      const currentWorkspaces = await getWorkspaces(accessToken, { trackLoading: false });
       setWorkspaces(currentWorkspaces);
       setActiveWorkspaceId((current) => {
         const selectedWorkspace = selectActiveWorkspace(

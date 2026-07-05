@@ -20,4 +20,10 @@ describe("LoadingScreen", () => {
     expect(container.querySelector(".page-loading--transaction")).not.toBeNull();
     expect(container.querySelectorAll(".page-loading__category")).toHaveLength(8);
   });
+
+  it("uses the profile skeleton while Settings loads", () => {
+    const { container } = render(<LoadingScreen routePath="/settings" />);
+
+    expect(container.querySelector(".page-loading--profile")).not.toBeNull();
+  });
 });

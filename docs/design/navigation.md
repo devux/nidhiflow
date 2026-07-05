@@ -2,7 +2,10 @@
 
 ## Platform Priority
 
-Design and verify mobile first, desktop second, tablet third.
+Design and verify for phone users first. Desktop and tablet adapt the same web
+information architecture after mobile behavior is correct; they are supported
+breakpoints rather than separate product targets. Validate both Android and
+iOS browser safe areas, touch behavior, keyboards, and accessibility.
 
 ## Mobile Primary Navigation
 
@@ -29,7 +32,8 @@ content, forms, primary actions, or the software keyboard.
 - **You:** profile state, tools, preferences, privacy, and account conversion
 
 Home exposes Budget, Reports, Goals, and Loans as secondary destinations.
-Activity and Flow remain secondary destinations opened from relevant links.
+Activity, Flow, and Settings remain secondary destinations opened from relevant
+links. Settings is reached from You and owns workspace category management.
 
 ## Focused Flows
 
@@ -41,8 +45,8 @@ preserve unsaved values when navigation is accidental.
 
 Desktop may translate bottom navigation into a left rail or top-level shell,
 while preserving names, order, destinations, and the prominence of Add expense.
-Tablet adapts after mobile and desktop are stable. Do not create separate
-information architectures by breakpoint.
+Desktop and tablet layouts must remain complete and usable, but must not
+introduce separate feature scope or information architecture.
 
 ## Authentication Navigation
 

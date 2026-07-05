@@ -6,6 +6,23 @@ Phase 1 must be stable, secure, tested, and operationally observable before
 Phase 2 AI actions are released. AI work may be prototyped behind flags, but it
 must not delay or weaken the core finance foundation.
 
+## Platform Delivery Plan
+
+1. Complete all platform-neutral Phase 1 workflows as a production-ready,
+   responsive web application.
+2. Treat mobile-phone behavior and performance as the acceptance baseline.
+   Desktop and tablet web layouts must remain functional and accessible, but do
+   not drive separate feature scope.
+3. Build, test, sign, and launch the first public native release on Android.
+4. Continuously validate mobile Safari and maintain an internal iOS build/test
+   path from the shared React/Capacitor application.
+5. Defer public iOS App Store distribution until after the Android launch
+   stabilizes; do not defer iOS compatibility testing.
+
+Web completeness excludes only capabilities that require Android OS APIs.
+Those features must be feature-detected and must not degrade core finance
+behavior on web or iOS.
+
 ## Phase 1: Core Finance
 
 ### Foundation
@@ -53,6 +70,7 @@ must not delay or weaken the core finance foundation.
 3. Family workspace, recurring transactions, and notifications
 4. Import/export, attachments, education, achievements, and feedback
 5. Accessibility, localization, operational hardening, and complete testing
+6. Android release qualification plus iOS browser/build compatibility testing
 
 ## Phase 2: Flow AI
 

@@ -18,7 +18,7 @@ function getSkeletonPage(routePath = "/"): SkeletonPage {
   if (routePath.startsWith("/reports")) return "reports";
   if (routePath.startsWith("/flow")) return "flow";
   if (routePath.startsWith("/budget") || routePath.startsWith("/plan")) return "budget";
-  if (routePath.startsWith("/you")) return "profile";
+  if (routePath.startsWith("/you") || routePath.startsWith("/settings")) return "profile";
   if (routePath.startsWith("/login") || routePath.startsWith("/signup")) return "auth";
   if (routePath.startsWith("/transactions/")) return "transaction";
   return "home";

@@ -34,6 +34,8 @@ Every finance and app-shell route uses a global authentication guard.
 Unauthorized workspace resources render a safe not-found state.
 The authenticated notification control routes to `/notifications`; notification
 destinations are selected from a fixed client allowlist before navigation.
+Profile settings route to `/settings`, keeping category management separate
+from the compact `/you` page.
 
 ## Public and Account Modes
 
@@ -59,11 +61,17 @@ invalid field, and map server field errors to controls.
 
 ## Responsive Strategy
 
-Implement and test in this order:
+The shared React application must be production-complete on the web. Implement
+and test responsive behavior in this order:
 
-1. Mobile
-2. Desktop
-3. Tablet
+1. Mobile phones on Android and iOS browser/WebView engines
+2. Desktop web compatibility
+3. Tablet web compatibility
+
+Mobile phones are the product focus and acceptance baseline. Desktop and tablet
+support the same platform-neutral workflows but do not define separate product
+scope. Android-only native integrations remain behind capability checks and
+must not break web or iOS builds.
 
 Use the following project breakpoints for all new responsive layout work:
 
@@ -116,6 +124,11 @@ system default until explicitly chosen. Use `Intl` APIs for money, dates,
 numbers, and relative time. Currency comes from the workspace/user context.
 Authenticated theme, locale, and currency controls initialize from the user
 profile and persist through the profile API rather than device-only storage.
+Theme tokens and chart colors must react across every authenticated route.
+Locale updates set the document language and all `Intl` formatting. Currency is
+an explicit property of stored finance records: changing the preferred
+currency updates global defaults and compatible summaries but must never
+silently relabel existing amounts without a defined conversion.
 
 ## Quality
 
@@ -123,3 +136,7 @@ Use unit tests for domain helpers and repositories, component tests for
 interactions/accessibility, and end-to-end tests for public entry,
 authentication, transaction creation, budgets, goals, reports, and family
 collaboration.
+
+Run browser coverage against Chromium and WebKit-compatible mobile behavior.
+Before the Android launch, maintain an internal Capacitor iOS build check on
+macOS infrastructure even though public iOS distribution is deferred.

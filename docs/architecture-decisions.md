@@ -249,6 +249,21 @@ are derived; only asynchronous generated export artifacts need a
   decision.
 - Add reconciliation jobs/invariants for balances and report totals.
 
+## Platform Delivery Decisions
+
+- Keep one production-complete responsive React web application as the shared
+  product implementation.
+- Optimize product decisions and acceptance testing for phone users. Desktop
+  and tablet are compatibility layouts for the same platform-neutral
+  workflows, not separate products.
+- Use Capacitor for native packaging so Android launch work and internal iOS
+  validation share the same application code and domain behavior.
+- Launch publicly on Android first while continuously testing iOS browser
+  compatibility and internal iOS builds. Public iOS distribution is deferred,
+  not iOS quality work.
+- Isolate Android-only OS capabilities behind runtime/build capability checks;
+  they cannot become dependencies of core web or iOS finance workflows.
+
 ## Future Product Decisions
 
 - Whether guests receive browser notifications without accounts

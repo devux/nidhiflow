@@ -373,6 +373,8 @@ export function ReportsPage() {
       return undefined;
     }
 
+    const rootStyles = getComputedStyle(document.documentElement);
+    const chartTextColor = rootStyles.getPropertyValue("--color-text-secondary").trim();
     const fill = context.createLinearGradient(0, 0, 0, 220);
     fill.addColorStop(0, "rgb(34 197 94 / 32%)");
     fill.addColorStop(1, "rgb(34 197 94 / 2%)");
@@ -417,6 +419,7 @@ export function ReportsPage() {
             },
             ticks: {
               autoSkip: true,
+              color: chartTextColor,
               maxTicksLimit: 6,
             },
           },
@@ -427,6 +430,7 @@ export function ReportsPage() {
             },
             ticks: {
               callback: (value) => money(BigInt(Math.round(Number(value)))),
+              color: chartTextColor,
               maxTicksLimit: 5,
             },
           },
@@ -439,7 +443,7 @@ export function ReportsPage() {
       spendingTrendChartRef.current?.destroy();
       spendingTrendChartRef.current = null;
     };
-  }, [money, spendingTrendRows]);
+  }, [money, preferences.theme, spendingTrendRows]);
 
   function applyPeriod(nextPeriod: ReportPeriod, from = "", to = "") {
     const next = new URLSearchParams(searchParams);

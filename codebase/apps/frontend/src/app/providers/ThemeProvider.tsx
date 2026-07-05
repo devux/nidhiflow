@@ -6,6 +6,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const { preferences } = useGuestPreferences();
 
   useEffect(() => {
+    document.documentElement.lang = preferences.locale;
+  }, [preferences.locale]);
+
+  useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
     const applyTheme = () => {

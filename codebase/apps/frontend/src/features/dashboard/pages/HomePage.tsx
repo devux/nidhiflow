@@ -147,7 +147,7 @@ function TransactionHistoryRow({ locale, transaction }: TransactionHistoryRowPro
 export function HomePage() {
   const { accessToken, activeWorkspace, isAuthenticated, refreshWorkspaces, user } = useAuth();
   const { preferences } = useGuestPreferences();
-  const { transactions } = useGuestTransactions();
+  const { refreshTransactions, transactions } = useGuestTransactions();
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [tipSlide, setTipSlide] = useState(0);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -209,13 +209,17 @@ export function HomePage() {
   ] as const;
   const activeTip = tipSlides[tipSlide] ?? tipSlides[0];
   useEffect(() => {
+    void refreshTransactions();
+  }, [refreshTransactions]);
+
+  useEffect(() => {
     if (!accessToken) {
       setUnreadNotificationCount(0);
       return;
     }
 
     let active = true;
-    void listNotifications({ accessToken })
+    void listNotifications({ accessToken, trackLoading: false })
       .then((notifications) => {
         if (active) {
           setUnreadNotificationCount(
@@ -285,7 +289,9 @@ export function HomePage() {
     setShareMessage("");
 
     try {
-      const createdShareCode = await createWorkspaceShareCode(accessToken, workspaceId);
+      const createdShareCode = await createWorkspaceShareCode(accessToken, workspaceId, {
+        trackLoading: false,
+      });
       setShareCode(createdShareCode);
       setShareStatus("idle");
     } catch {
@@ -320,7 +326,10 @@ export function HomePage() {
     setShareMessage("");
 
     try {
-      await joinWorkspaceByShareCode(accessToken, code, { transferOwnership });
+      await joinWorkspaceByShareCode(accessToken, code, {
+        trackLoading: false,
+        transferOwnership,
+      });
       await refreshWorkspaces();
       setJoinCode("");
       setPendingJoinCode(null);
@@ -345,7 +354,7 @@ export function HomePage() {
     setShareMessage("");
 
     try {
-      await leaveCurrentWorkspace(accessToken, activeWorkspace.id);
+      await leaveCurrentWorkspace(accessToken, activeWorkspace.id, { trackLoading: false });
       await refreshWorkspaces();
       setShareStatus("joined");
       setShareMessage("You left the workspace. A new workspace is ready for you.");

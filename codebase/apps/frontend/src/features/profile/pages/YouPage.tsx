@@ -1,5 +1,7 @@
+import AccountCircleRoundedIcon from "@mui/icons-material/AccountCircleRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
+import EmailRoundedIcon from "@mui/icons-material/EmailRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
 import { Capacitor } from "@capacitor/core";
@@ -8,20 +10,14 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import IconButton from "@mui/material/IconButton";
 import { useEffect, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { trackApiRequest } from "../../../app/providers/apiLoadingState";
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
+import defaultProfileAvatar from "../../../assets/default-profile-avatar.png";
 import { environment } from "../../../config/environment";
-import {
-  archiveCategory,
-  createCategory,
-  listAccounts,
-  listCategories,
-  updateCategory,
-  type AccountResource,
-  type CategoryResource,
-} from "../../../data/api/financeClient";
+import { listAccounts, type AccountResource } from "../../../data/api/financeClient";
 import {
   supportedCurrencies,
   supportedLocales,
@@ -75,14 +71,6 @@ export function YouPage() {
   const [notificationStatus, setNotificationStatus] =
     useState<NotificationTransactionStatus | null>(null);
   const [notificationAccountId, setNotificationAccountId] = useState("");
-  const [categories, setCategories] = useState<CategoryResource[]>([]);
-  const [categoryName, setCategoryName] = useState("");
-  const [categoryType, setCategoryType] = useState<"expense" | "income">("expense");
-  const [categoryState, setCategoryState] = useState<"error" | "idle" | "loading" | "saving">(
-    "idle",
-  );
-  const [editingCategory, setEditingCategory] = useState<CategoryResource | null>(null);
-  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const showNotificationTransactions =
     environment.ANDROID_NOTIFICATION_TRANSACTIONS_ENABLED &&
     supportsNotificationTransactions() &&
@@ -121,30 +109,6 @@ export function YouPage() {
       timezone: user.timezone,
     });
   }, [preferences, savePreferences, user]);
-
-  useEffect(() => {
-    if (!accessToken || !activeWorkspace) return;
-    let active = true;
-    setCategoryState("loading");
-
-    void listCategories({
-      accessToken,
-      trackLoading: false,
-      workspaceId: activeWorkspace.id,
-    })
-      .then((records) => {
-        if (!active) return;
-        setCategories(records);
-        setCategoryState("idle");
-      })
-      .catch(() => {
-        if (active) setCategoryState("error");
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [accessToken, activeWorkspace]);
 
   useEffect(() => {
     if (!showNotificationTransactions || !accessToken || !activeWorkspace) return;
@@ -266,61 +230,6 @@ export function YouPage() {
     }
   }
 
-  function openCategoryDialog(category?: CategoryResource) {
-    setEditingCategory(category ?? null);
-    setCategoryName(category?.name ?? "");
-    setCategoryType(category?.transactionType === "income" ? "income" : "expense");
-    setCategoryState("idle");
-    setIsCategoryDialogOpen(true);
-  }
-
-  async function handleCategorySubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const normalizedName = categoryName.trim();
-    if (!accessToken || !activeWorkspace || !normalizedName) return;
-    setCategoryState("saving");
-
-    try {
-      const category = editingCategory
-        ? await updateCategory({
-            accessToken,
-            categoryId: editingCategory.id,
-            name: normalizedName,
-            transactionType: categoryType,
-            workspaceId: activeWorkspace.id,
-          })
-        : await createCategory({
-            accessToken,
-            name: normalizedName,
-            transactionType: categoryType,
-            workspaceId: activeWorkspace.id,
-          });
-      setCategories((current) => [...current.filter((item) => item.id !== category.id), category]);
-      setCategoryState("idle");
-      setIsCategoryDialogOpen(false);
-    } catch {
-      setCategoryState("error");
-    }
-  }
-
-  async function handleCategoryDelete() {
-    if (!accessToken || !activeWorkspace || !editingCategory) return;
-    setCategoryState("saving");
-
-    try {
-      await archiveCategory({
-        accessToken,
-        categoryId: editingCategory.id,
-        workspaceId: activeWorkspace.id,
-      });
-      setCategories((current) => current.filter((item) => item.id !== editingCategory.id));
-      setCategoryState("idle");
-      setIsCategoryDialogOpen(false);
-    } catch {
-      setCategoryState("error");
-    }
-  }
-
   async function enableNotificationTransactions() {
     if (!notificationConsent || !notificationAccountId) return;
     setNotificationState("loading");
@@ -366,7 +275,6 @@ export function YouPage() {
     }
   }
 
-  const profileInitial = profileName.slice(0, 1).toUpperCase();
   const showAndroidDownload = !Capacitor.isNativePlatform();
 
   return (
@@ -388,10 +296,10 @@ export function YouPage() {
             <span>{logoutState === "saving" ? "Logging out" : "Log out"}</span>
           </button>
           <IconButton
-            aria-label="Open preferences"
+            aria-label="Open settings"
             className="profile-page-header__settings"
-            component="a"
-            href="#preferences"
+            component={Link}
+            to="/settings"
           >
             <SettingsRoundedIcon aria-hidden="true" />
           </IconButton>
@@ -406,12 +314,19 @@ export function YouPage() {
             onClick={() => setIsNameModalOpen(true)}
             type="button"
           >
-            <span className="profile-avatar" aria-hidden="true">
-              {profileInitial}
-            </span>
+            <img
+              alt={`Default avatar for ${profileName}`}
+              className="profile-avatar profile-avatar--image"
+              src={defaultProfileAvatar}
+            />
             <span className="profile-card__identity-copy">
               <span className="profile-card__name-row">
+                <AccountCircleRoundedIcon aria-hidden="true" fontSize="small" />
                 <h2>{profileName}</h2>
+              </span>
+              <span className="profile-card__email-row">
+                <EmailRoundedIcon aria-hidden="true" fontSize="small" />
+                <span>{user?.email}</span>
               </span>
             </span>
             <span className="profile-card__edit" aria-hidden="true">
@@ -448,24 +363,6 @@ export function YouPage() {
           Logout could not complete. Please try again.
         </div>
       ) : null}
-
-      <section aria-labelledby="feedback-title" className="profile-feedback-entry">
-        <div className="section-heading">
-          <h2 id="feedback-title">Feedback</h2>
-        </div>
-        <Card className="settings-list">
-          <button aria-haspopup="dialog" onClick={() => setIsFeedbackModalOpen(true)} type="button">
-            <span className="icon-tile">
-              <Icon name="feedback" size={20} />
-            </span>
-            <span>
-              <strong>Share feedback</strong>
-              <small>Help improve NidhiFlow</small>
-            </span>
-            <Icon name="chevron" size={18} />
-          </button>
-        </Card>
-      </section>
 
       {showAndroidDownload ? (
         <section aria-labelledby="android-app-title" className="profile-android-download">
@@ -573,10 +470,7 @@ export function YouPage() {
         </section>
       ) : null}
 
-      <section aria-labelledby="preferences-title" id="preferences">
-        <div className="section-heading">
-          <h2 id="preferences-title">Preferences</h2>
-        </div>
+      <section aria-label="Profile options" id="preferences">
         <Card className="profile-preferences-list">
           <label className="profile-preference-row" htmlFor="appearance">
             <span className="icon-tile">
@@ -655,67 +549,33 @@ export function YouPage() {
               ))}
             </select>
           </label>
-        </Card>
-        <Card className="profile-category-preferences">
-          <div className="profile-category-preferences__heading">
-            <span>
-              <strong>Categories</strong>
-              <small>
-                Default categories stay read-only. Your categories belong to this workspace.
-              </small>
+
+          <Link className="profile-preference-action" to="/settings">
+            <span className="icon-tile">
+              <SettingsRoundedIcon aria-hidden="true" fontSize="small" />
             </span>
-            <Button onClick={() => openCategoryDialog()} variant="secondary">
-              <Icon name="plus" size={18} />
-              Add
-            </Button>
-          </div>
+            <span>
+              <strong>Settings</strong>
+              <small>Manage workspace categories</small>
+            </span>
+            <Icon name="chevron" size={18} />
+          </Link>
 
-          {categoryState === "loading" ? <p>Loading categories…</p> : null}
-          {categoryState === "error" ? (
-            <p className="form-error" role="alert">
-              Categories could not be loaded or saved.
-            </p>
-          ) : null}
-
-          <div className="profile-category-preferences__group">
-            <strong>Default</strong>
-            <div className="profile-category-chips">
-              {categories
-                .filter((category) => category.isSystem)
-                .map((category) => (
-                  <span key={category.id}>
-                    {category.name}
-                    <small>{category.transactionType}</small>
-                  </span>
-                ))}
-            </div>
-          </div>
-
-          <div className="profile-category-preferences__group">
-            <strong>Your categories</strong>
-            {categories.some((category) => !category.isSystem) ? (
-              <div className="profile-custom-categories">
-                {categories
-                  .filter((category) => !category.isSystem)
-                  .map((category) => (
-                    <button
-                      aria-label={`Edit ${category.name} category`}
-                      key={category.id}
-                      onClick={() => openCategoryDialog(category)}
-                      type="button"
-                    >
-                      <span>
-                        <strong>{category.name}</strong>
-                        <small>{category.transactionType}</small>
-                      </span>
-                      <span>Edit</span>
-                    </button>
-                  ))}
-              </div>
-            ) : (
-              <p>No custom categories yet.</p>
-            )}
-          </div>
+          <button
+            aria-haspopup="dialog"
+            className="profile-preference-action"
+            onClick={() => setIsFeedbackModalOpen(true)}
+            type="button"
+          >
+            <span className="icon-tile">
+              <Icon name="feedback" size={20} />
+            </span>
+            <span>
+              <strong>Share feedback</strong>
+              <small>Help improve NidhiFlow</small>
+            </span>
+            <Icon name="chevron" size={18} />
+          </button>
         </Card>
       </section>
 
@@ -763,71 +623,6 @@ export function YouPage() {
             <Button fullWidth type="submit">
               Save
             </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        aria-labelledby="category-dialog-title"
-        fullWidth
-        maxWidth="xs"
-        onClose={() => setIsCategoryDialogOpen(false)}
-        open={isCategoryDialogOpen}
-        slotProps={{ paper: { className: "profile-dialog" } }}
-      >
-        <DialogTitle id="category-dialog-title">
-          {editingCategory ? "Edit category" : "Add category"}
-        </DialogTitle>
-        <IconButton
-          aria-label="Close category editor"
-          className="profile-dialog__close"
-          onClick={() => setIsCategoryDialogOpen(false)}
-          size="small"
-        >
-          <CloseRoundedIcon aria-hidden="true" />
-        </IconButton>
-        <DialogContent>
-          <form
-            className="settings-form profile-category-form"
-            onSubmit={(event) => void handleCategorySubmit(event)}
-          >
-            <label htmlFor="category-name">Name</label>
-            <input
-              autoFocus
-              id="category-name"
-              maxLength={80}
-              onChange={(event) => setCategoryName(event.target.value)}
-              required
-              value={categoryName}
-            />
-            <label htmlFor="category-type">Transaction type</label>
-            <select
-              id="category-type"
-              onChange={(event) => setCategoryType(event.target.value as typeof categoryType)}
-              value={categoryType}
-            >
-              <option value="expense">Expense</option>
-              <option value="income">Income</option>
-            </select>
-            {categoryState === "error" ? (
-              <p className="form-error" role="alert">
-                This category could not be saved. Check the name and try again.
-              </p>
-            ) : null}
-            <div className="profile-category-form__actions">
-              {editingCategory ? (
-                <Button
-                  disabled={categoryState === "saving"}
-                  onClick={() => void handleCategoryDelete()}
-                  variant="quiet"
-                >
-                  Delete
-                </Button>
-              ) : null}
-              <Button disabled={categoryState === "saving"} type="submit">
-                {categoryState === "saving" ? "Saving" : "Save category"}
-              </Button>
-            </div>
           </form>
         </DialogContent>
       </Dialog>

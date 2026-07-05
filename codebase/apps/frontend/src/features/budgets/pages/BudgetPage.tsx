@@ -75,6 +75,7 @@ function BudgetProgressChart({
   progress,
   trackColor = "#eaf8ee",
 }: BudgetProgressChartProps) {
+  const { preferences } = useGuestPreferences();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const chartRef = useRef<Chart | null>(null);
   const progressValue = Math.max(0, Math.min(100, progress));
@@ -102,6 +103,11 @@ function BudgetProgressChart({
       return undefined;
     }
 
+    const rootStyles = getComputedStyle(document.documentElement);
+    const resolvedTrackColor =
+      document.documentElement.dataset.theme === "dark"
+        ? rootStyles.getPropertyValue("--color-brand-soft").trim()
+        : trackColor;
     const prefersReducedMotion =
       typeof globalThis.matchMedia === "function" &&
       globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -117,7 +123,7 @@ function BudgetProgressChart({
             label: "Used",
           },
           {
-            backgroundColor: trackColor,
+            backgroundColor: resolvedTrackColor,
             borderRadius: 999,
             borderSkipped: false,
             data: [remainingValue],
@@ -167,7 +173,7 @@ function BudgetProgressChart({
       chartRef.current?.destroy();
       chartRef.current = null;
     };
-  }, [color, progressValue, remainingValue, trackColor]);
+  }, [color, preferences.theme, progressValue, remainingValue, trackColor]);
 
   return (
     <div

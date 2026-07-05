@@ -183,14 +183,19 @@ export async function updateCurrentUser(
   input: Partial<
     Pick<AuthUser, "displayName" | "locale" | "preferredCurrency" | "theme" | "timezone">
   >,
+  options: { trackLoading?: boolean } = {},
 ): Promise<AuthUser> {
-  const result = await apiRequest<AuthUser>("/users/me", {
-    body: JSON.stringify(input),
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
+  const result = await apiRequest<AuthUser>(
+    "/users/me",
+    {
+      body: JSON.stringify(input),
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      method: "PATCH",
     },
-    method: "PATCH",
-  });
+    options,
+  );
 
   return result.data;
 }

@@ -186,7 +186,9 @@ async function apiRequest<Data>(
       throw error;
     }
 
-    const refreshedAccessToken = await refreshAccessToken();
+    const refreshedAccessToken = await refreshAccessToken({
+      trackLoading: config.trackLoading,
+    });
     storeRefreshedAccessToken(refreshedAccessToken);
 
     return sendApiRequest<Data>(path, refreshedAccessToken, options, config);
@@ -540,10 +542,16 @@ export async function archiveCategory(input: {
 
 export async function listNotifications(input: {
   accessToken: string;
+  trackLoading?: boolean;
 }): Promise<NotificationResource[]> {
-  const result = await apiRequest<NotificationResource[]>("/notifications", input.accessToken, {
-    method: "GET",
-  });
+  const result = await apiRequest<NotificationResource[]>(
+    "/notifications",
+    input.accessToken,
+    {
+      method: "GET",
+    },
+    { trackLoading: input.trackLoading },
+  );
   return result.data;
 }
 

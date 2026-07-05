@@ -902,6 +902,7 @@ describe("App", () => {
   it("renders the authenticated app shell while startup finance reads continue in parallel", async () => {
     const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
     let resolveCategories: ((response: Response) => void) | undefined;
+    let resolveNotifications: ((response: Response) => void) | undefined;
     let resolveTransactions: ((response: Response) => void) | undefined;
 
     fetchMock.mockImplementation((input, init) => {
@@ -953,6 +954,11 @@ describe("App", () => {
           resolveTransactions = resolve;
         });
       }
+      if (url.endsWith("/api/v1/notifications")) {
+        return new Promise<Response>((resolve) => {
+          resolveNotifications = resolve;
+        });
+      }
       return Promise.reject(new Error(`Unexpected request: ${url}`));
     });
 
@@ -963,7 +969,9 @@ describe("App", () => {
 
     await expectHomeHeader();
     expect(resolveCategories).toBeDefined();
+    expect(resolveNotifications).toBeDefined();
     expect(resolveTransactions).toBeDefined();
+    expect(screen.queryByRole("status", { name: "Loading page content" })).toBeNull();
 
     act(() => {
       resolveCategories?.(
@@ -977,6 +985,13 @@ describe("App", () => {
         createJsonResponse({
           data: [],
           message: "Transactions retrieved successfully.",
+          success: true,
+        }),
+      );
+      resolveNotifications?.(
+        createJsonResponse({
+          data: [],
+          message: "Notifications retrieved successfully.",
           success: true,
         }),
       );
@@ -1014,17 +1029,50 @@ describe("App", () => {
     );
   });
 
-  it("manages workspace categories and persists profile preferences through the API", async () => {
+  it("persists global profile preferences and manages categories on Settings", async () => {
     const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
     mockAuthenticatedFinanceSession(fetchMock);
     window.history.replaceState({}, "", "/you");
     const user = userEvent.setup();
-    render(
+    const view = render(
       <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
     );
 
     await screen.findByRole("heading", { name: "Profile" });
+    expect(screen.getByText("nila@example.com")).toBeDefined();
+    expect(screen.queryByRole("heading", { name: "Preferences" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Edit Food category" })).toBeNull();
+    const appearanceSelect = screen.getByLabelText("Appearance");
+    const languageSelect = screen.getByLabelText("Language");
+    const currencySelect = screen.getByRole("combobox", { name: "Currency" });
+    if (
+      !(appearanceSelect instanceof HTMLSelectElement) ||
+      !(languageSelect instanceof HTMLSelectElement)
+    ) {
+      throw new Error("Profile preference controls must be select elements.");
+    }
+    await user.selectOptions(appearanceSelect, "dark");
+    await waitFor(() => expect(appearanceSelect.value).toBe("dark"));
+    await user.selectOptions(languageSelect, "en-IN");
+    await waitFor(() => expect(languageSelect.value).toBe("en-IN"));
+    await user.selectOptions(currencySelect, "INR");
+    await waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBe("dark");
+      expect(document.documentElement.lang).toBe("en-IN");
+    });
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining("/api/v1/users/me"),
+        expect.objectContaining({
+          body: expect.stringContaining('"preferredCurrency":"INR"'),
+          method: "PATCH",
+        }),
+      ),
+    );
+
+    await user.click(screen.getByRole("link", { name: /^Settings/ }));
+    expect(await screen.findByRole("heading", { name: "Settings" })).toBeDefined();
+    expect((await axe(view.container)).violations).toHaveLength(0);
     await user.click(screen.getByRole("button", { name: "Add" }));
     let dialog = screen.getByRole("dialog", { name: "Add category" });
     await user.type(within(dialog).getByLabelText("Name"), "Pet care");
@@ -1045,17 +1093,17 @@ describe("App", () => {
     await waitFor(() =>
       expect(screen.queryByRole("button", { name: "Edit Pets category" })).toBeNull(),
     );
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Edit category" })).toBeNull());
 
-    await user.selectOptions(screen.getByLabelText("Appearance"), "dark");
-    await waitFor(() =>
-      expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining("/api/v1/users/me"),
-        expect.objectContaining({
-          body: expect.stringContaining('"theme":"dark"'),
-          method: "PATCH",
-        }),
-      ),
+    expect(screen.queryByLabelText("Appearance")).toBeNull();
+
+    await user.click(
+      within(screen.getByRole("navigation", { name: "Primary navigation" })).getByRole("button", {
+        name: "Home",
+      }),
     );
+    await expectHomeHeader();
+    expect(screen.getAllByText(/₹/).length).toBeGreaterThan(0);
   });
 
   it("opens workspace notifications, marks them read, and routes to the changed resource", async () => {
@@ -1201,6 +1249,7 @@ describe("App", () => {
     window.sessionStorage.setItem("nidhiflow.accessToken", "access-token-joined-family");
     const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
     const user = userEvent.setup();
+    let transactionListRequests = 0;
 
     fetchMock.mockImplementation((input, init) => {
       const url = getRequestUrl(input);
@@ -1254,6 +1303,7 @@ describe("App", () => {
       }
 
       if (url.endsWith("/api/v1/workspaces/wsp_current/transactions") && method === "GET") {
+        transactionListRequests += 1;
         return Promise.resolve(
           createJsonResponse({
             data: [
@@ -1289,6 +1339,7 @@ describe("App", () => {
     const navigation = screen.getByRole("navigation", { name: "Primary navigation" });
     await user.click(within(navigation).getByRole("button", { name: "Home" }));
     await expectHomeHeader();
+    await waitFor(() => expect(transactionListRequests).toBe(2));
     await user.click(screen.getByRole("button", { name: "Shared workspace" }));
 
     expect(screen.queryByRole("tab")).toBeNull();
@@ -1401,6 +1452,7 @@ describe("App", () => {
     });
     let hasJoined = false;
     let joinAttempts = 0;
+    let resolveShareCode: ((response: Response) => void) | undefined;
     let shareCodeAttempts = 0;
 
     fetchMock.mockImplementation((input, init) => {
@@ -1487,22 +1539,9 @@ describe("App", () => {
           "Bearer access-token-refreshed",
         );
 
-        return Promise.resolve(
-          createJsonResponse(
-            {
-              data: {
-                code: "ABCD-2345",
-                expiresAt: "2026-07-03T00:00:00.000Z",
-                id: "wsi_share",
-                workspaceId: "wsp_family",
-              },
-              message: "Workspace share code created successfully.",
-              success: true,
-            },
-            true,
-            201,
-          ),
-        );
+        return new Promise<Response>((resolve) => {
+          resolveShareCode = resolve;
+        });
       }
 
       if (
@@ -1557,6 +1596,26 @@ describe("App", () => {
 
     expect(screen.queryByRole("tab")).toBeNull();
     expect(screen.getByRole("region", { name: "Current workspace details" })).toBeDefined();
+    expect(await screen.findByText("Getting code")).toBeDefined();
+    expect(screen.queryByRole("status", { name: "Loading page content" })).toBeNull();
+    act(() => {
+      resolveShareCode?.(
+        createJsonResponse(
+          {
+            data: {
+              code: "ABCD-2345",
+              expiresAt: "2026-07-03T00:00:00.000Z",
+              id: "wsi_share",
+              workspaceId: "wsp_family",
+            },
+            message: "Workspace share code created successfully.",
+            success: true,
+          },
+          true,
+          201,
+        ),
+      );
+    });
     expect(await screen.findByText("ABCD-2345")).toBeDefined();
     expect(shareCodeAttempts).toBe(2);
     await user.click(screen.getByRole("button", { name: "Share" }));
@@ -1817,7 +1876,7 @@ describe("App", () => {
 
     expect(await screen.findByRole("heading", { name: "Nila" })).toBeDefined();
     expect(screen.queryByText("Signed in")).toBeNull();
-    expect(screen.queryByText(/nila@example.com/)).toBeNull();
+    expect(screen.getByText("nila@example.com")).toBeDefined();
     expect(screen.queryByRole("dialog", { name: "Continue in guest mode?" })).toBeNull();
   });
 
@@ -1876,7 +1935,7 @@ describe("App", () => {
 
     expect(await screen.findByRole("heading", { name: "Nila" })).toBeDefined();
     expect(screen.queryByText("Signed in")).toBeNull();
-    expect(screen.queryByText(/nila@example.com/)).toBeNull();
+    expect(screen.getByText("nila@example.com")).toBeDefined();
   });
 
   it("keeps the signed-in profile when the access token is restored from session storage", async () => {
@@ -1929,7 +1988,7 @@ describe("App", () => {
 
     expect(await screen.findByRole("heading", { name: "Nila" })).toBeDefined();
     expect(screen.queryByText("Signed in")).toBeNull();
-    expect(screen.queryByText(/nila@example.com/)).toBeNull();
+    expect(screen.getByText("nila@example.com")).toBeDefined();
     expect(fetchMock).not.toHaveBeenCalledWith(
       expect.stringContaining("/api/v1/auth/refresh"),
       expect.anything(),
@@ -2743,7 +2802,9 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Log out" })).toBeDefined();
     expect(screen.getByRole("button", { name: /Edit display name/ })).toBeDefined();
     expect(screen.getByRole("button", { name: /Share feedback/ })).toBeDefined();
-    expect(screen.getByText("Categories")).toBeDefined();
+    expect(screen.getByRole("link", { name: /^Settings/ })).toBeDefined();
+    expect(screen.queryByText("Categories")).toBeNull();
+    expect(screen.getByRole("img", { name: "Default avatar for Nila" })).toBeDefined();
     expect(screen.getByRole("link", { name: "Download APK" }).getAttribute("href")).toBe(
       "/downloads/nidhiflow-android-debug-v1.0.6.apk",
     );

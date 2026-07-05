@@ -10,6 +10,10 @@ NidhiFlow is deployed as three separately managed production parts:
 - Database: Neon hosts the production PostgreSQL database used by the Render
   backend.
 
+The responsive web application is a complete production target. The first
+public native distribution is Android only. iOS remains an internal build and
+compatibility-test target until a later App Store release decision.
+
 Current production URLs:
 
 - Frontend: `https://nidhiflow.vercel.app`
@@ -379,6 +383,25 @@ Neon hosts the PostgreSQL `payments` table, indexes, constraints, and migration
 history; it does not host the Express API or Android/web application. Apply
 `1750000000014_direct_upi_payments.cjs` through the normal controlled migration
 job before deploying the API that exposes payment routes.
+
+### Internal iOS Build and Compatibility Gate
+
+The iOS target is built and tested from the same React/Capacitor application,
+but it is not part of the initial public launch. Before Android launch approval:
+
+1. Validate all platform-neutral workflows in current mobile Safari.
+2. Add and maintain the Capacitor iOS project on approved macOS/Xcode
+   infrastructure.
+3. Run an unsigned simulator build in CI and a signed internal-device build
+   when Apple signing credentials are available.
+4. Test authentication cookies, deep links, safe areas, software keyboards,
+   camera-independent flows, preferences, workspace collaboration, and
+   accessibility on representative iPhone and iPad sizes.
+5. Confirm Android-only notification and UPI integrations are hidden or
+   replaced with accurate unsupported-platform guidance.
+
+Do not publish an iOS artifact or claim App Store availability during the
+Android-only initial launch.
 
 ## Backend
 

@@ -34,6 +34,8 @@ Implement semantic tokens rather than raw values:
 - Motion: fast feedback, standard transition, celebratory transition
 
 Token values must support light and dark themes and accessible contrast.
+Avoid fixed light-only page, card, chart-track, form, or navigation colors.
+Canvas charts must re-read semantic theme colors when appearance changes.
 
 ## Components
 

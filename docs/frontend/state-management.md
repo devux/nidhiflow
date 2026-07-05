@@ -22,6 +22,14 @@ search query, selected tab, page, and sort where appropriate.
 Use TanStack Query or equivalent for authenticated API data. Define stable
 query keys by workspace and resource. Mutations invalidate or update only
 affected caches.
+Background reads and operations with an existing local pending state must not
+activate the app-shell blocking loader. Home notification refreshes and Shared
+Space code generation, join, leave, and workspace refresh actions remain
+visible and report progress inside their owning component.
+Authenticated transaction state revalidates in the background when Home is
+entered and when the app returns to the foreground. Concurrent revalidation for
+the same session/workspace is deduplicated, and failed refreshes retain only the
+last server-confirmed snapshot until the next retry.
 
 ### Legacy Guest Domain State
 

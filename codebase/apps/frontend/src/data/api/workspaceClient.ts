@@ -52,8 +52,9 @@ async function sendWorkspaceRequest<Data>(
   accessToken: string,
   path: string,
   options: RequestInit = {},
+  config: { trackLoading?: boolean } = {},
 ): Promise<ApiEnvelope<Data>> {
-  return trackApiRequest(async () => {
+  const request = async () => {
     const response = await fetch(`${environment.NIDHIFLOW_API_BASE_URL}/api/v1${path}`, {
       ...options,
       credentials: "include",
@@ -65,16 +66,19 @@ async function sendWorkspaceRequest<Data>(
     });
 
     return parseResponse<Data>(response);
-  });
+  };
+
+  return config.trackLoading === false ? request() : trackApiRequest(request);
 }
 
 async function workspaceRequest<Data>(
   accessToken: string,
   path: string,
   options: RequestInit = {},
+  config: { trackLoading?: boolean } = {},
 ): Promise<Data> {
   try {
-    const envelope = await sendWorkspaceRequest<Data>(accessToken, path, options);
+    const envelope = await sendWorkspaceRequest<Data>(accessToken, path, options, config);
 
     return envelope.data;
   } catch (error) {
@@ -82,9 +86,11 @@ async function workspaceRequest<Data>(
       throw error;
     }
 
-    const refreshedAccessToken = await refreshAccessToken();
+    const refreshedAccessToken = await refreshAccessToken({
+      trackLoading: config.trackLoading,
+    });
     storeRefreshedAccessToken(refreshedAccessToken);
-    const envelope = await sendWorkspaceRequest<Data>(refreshedAccessToken, path, options);
+    const envelope = await sendWorkspaceRequest<Data>(refreshedAccessToken, path, options, config);
 
     return envelope.data;
   }
@@ -93,6 +99,7 @@ async function workspaceRequest<Data>(
 export async function createWorkspaceShareCode(
   accessToken: string,
   workspaceId: string,
+  options: { trackLoading?: boolean } = {},
 ): Promise<WorkspaceShareCode> {
   return workspaceRequest<WorkspaceShareCode>(
     accessToken,
@@ -100,13 +107,14 @@ export async function createWorkspaceShareCode(
     {
       method: "POST",
     },
+    { trackLoading: options.trackLoading },
   );
 }
 
 export async function joinWorkspaceByShareCode(
   accessToken: string,
   code: string,
-  options: { transferOwnership?: boolean } = {},
+  options: { trackLoading?: boolean; transferOwnership?: boolean } = {},
 ): Promise<WorkspaceSummary> {
   return workspaceRequest<WorkspaceSummary>(
     accessToken,
@@ -117,18 +125,24 @@ export async function joinWorkspaceByShareCode(
       }),
       method: "POST",
     },
+    { trackLoading: options.trackLoading },
   );
 }
 
 export async function leaveCurrentWorkspace(
   accessToken: string,
   workspaceId: string,
-  options: { transferOwnership?: boolean } = {},
+  options: { trackLoading?: boolean; transferOwnership?: boolean } = {},
 ): Promise<WorkspaceSummary> {
-  return workspaceRequest<WorkspaceSummary>(accessToken, `/workspaces/${workspaceId}/leave`, {
-    body: JSON.stringify({
-      transferOwnership: options.transferOwnership ?? false,
-    }),
-    method: "POST",
-  });
+  return workspaceRequest<WorkspaceSummary>(
+    accessToken,
+    `/workspaces/${workspaceId}/leave`,
+    {
+      body: JSON.stringify({
+        transferOwnership: options.transferOwnership ?? false,
+      }),
+      method: "POST",
+    },
+    { trackLoading: options.trackLoading },
+  );
 }
