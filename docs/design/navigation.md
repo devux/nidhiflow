@@ -41,6 +41,11 @@ On forms and detail screens, keep bottom navigation only when it does not
 compete with task completion. Always provide a clear back/cancel route and
 preserve unsaved values when navigation is accidental.
 
+Every authenticated secondary page and detail view provides a consistent
+icon-based Back action. It returns through in-app history when available and
+uses Home as the safe fallback for refreshed or directly opened deep links.
+Home itself does not show a Back action.
+
 ## Desktop and Tablet
 
 Desktop may translate bottom navigation into a left rail or top-level shell,

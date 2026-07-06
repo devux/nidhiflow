@@ -11,13 +11,15 @@
   clearly identified Flow AI preview slide
 - Quick destinations are Budget, Reports, Goals, and Loans
 - Recent transactions: source/merchant, category, signed amount, date
+- Transaction-history links keep their label and disclosure arrow on one line
 - Shared Space opens as a mobile bottom sheet. Its initial peek shows the
-  current workspace, role, currency, invite code, Copy, and Share
+  current workspace, role, currency, invite code, Copy, Share, and Join with
+  code, including the join text field and Join action
 - Role and currency use compact icon/value chips; member email is omitted
 - Members can leave and create a personal workspace directly from the current
   workspace card
-- Expanding by the drag handle reveals code-based joining, members,
-  permissions, invite history, and workspace settings
+- Expanding by the drag handle reveals members, permissions, invite history,
+  and workspace settings
 - Do not show Personal/Shared tabs or workspace switching controls
 - Joining replaces the current workspace membership
 - If joining would move a manager away from remaining members, show a
@@ -28,7 +30,8 @@
 ## Activity
 
 - Income and Expense segmented tabs
-- Search and filters
+- Search and a compact header filter icon; selecting the icon opens all filter
+  choices directly in one bottom sheet
 - Groups: Today, Yesterday, or localized date
 - Rows show context, signed amount, and time
 - Selecting a row opens details and permitted edit actions
@@ -54,6 +57,8 @@
   with planning
 - Users can create, view, update, and delete monthly budget categories
 - Quick-fill copies the previous month's budget into the selected month
+- The page header uses the shared filter action and does not duplicate Goals;
+  populated months do not show a redundant completion message
 - Monthly budget total, percentage used, spent, and remaining recalculate from
   budget categories and matching transactions
 - Yearly tab is read-only and derives all totals from the last 12 monthly
@@ -78,10 +83,13 @@
 - Authenticated balances derive from credit-card, loan, and other-liability
   accounts and the existing transaction ledger
 - Active total is grouped by currency; unlike currencies are never combined
-- Account cards identify the account type, balance, due date, and minimum
-  payment; unsupported due-date or payment data is labeled `Not provided`
-- Payment-planning guidance remains visually separate from ledger balances and
-  does not infer interest, minimum payments, or payoff dates
+- Account rows mirror the simple Goals list treatment: name, type, balance, and
+  disclosure icon. Selecting a row opens the loan editor directly.
+- The loan editor exposes the account amount without a separate `Edit loan`
+  label. Payment-plan and debt-goal promotional sections are not shown.
+- Existing loans provide `Record payment`. Users can record positive payments
+  repeatedly with an explicit date, review payment history, and cannot record
+  more than the current outstanding balance.
 - Archived loans appear in a clearly identified history section and do
   not contribute to the active total
 - Signed-out visitors cannot access the Loans route because account
@@ -90,7 +98,8 @@
 
 ## Reports
 
-- Date and Custom filters open in bottom sheets with Clear and Apply actions
+- A compact header filter icon opens one bottom sheet containing Date and
+  Custom controls with Clear and Apply actions
 - Date options: This month, Last month, Last year
 - Custom requires a start date and end date
 - Total income, total expense, net savings
@@ -166,11 +175,13 @@ Skeletons are used only when content loading is noticeable.
 
 - Selecting the header notification control opens a dedicated notification page
 - Show unread state, event title, actor-aware summary, timestamp, per-item read
-  behavior, and a Mark all read action
+  behavior, and a `Mark all as read` action aligned in the page-header row
 - Shared workspace alerts cover another member's transaction, budget, goal, and
   loan creates, updates, deletes, archives, restores, and contributions where
   applicable
-- Selecting an alert opens its allowlisted destination
+- The page is a direct notification list without an extra workspace-activity
+  heading. Selecting an alert opens a dedicated detail route with a Back action,
+  marks it read, and offers its allowlisted destination.
 - Alert text and payloads never include amounts, notes, account identifiers, or
   other financial details
 

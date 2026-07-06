@@ -27,6 +27,15 @@ interface AccountResponseBody {
   };
 }
 
+interface LoanPaymentResponseBody {
+  data: {
+    accountId: string;
+    amount: string;
+    id: string;
+    paymentDate: string;
+  };
+}
+
 interface ErrorResponseBody {
   error: {
     code: string;
@@ -251,11 +260,10 @@ describe("finance workflow integration", () => {
         openingBalance: { amount: "100.0000", currency: "INR" },
         type: "other_liability",
       });
+    const liabilityBody = liabilityResponse.body as AccountResponseBody;
 
     expect(liabilityResponse.status).toBe(201);
-    expect(minorUnits((liabilityResponse.body as AccountResponseBody).data.currentBalance)).toBe(
-      1_000_000n,
-    );
+    expect(minorUnits(liabilityBody.data.currentBalance)).toBe(1_000_000n);
 
     const transferResponse = await request(app)
       .post(`/api/v1/workspaces/${workspaceId}/transactions`)
@@ -358,6 +366,53 @@ describe("finance workflow integration", () => {
       liabilityTotalMinor: "1000000",
       netWorthMinor: "8000000",
     });
+
+    const firstLoanPaymentResponse = await request(app)
+      .post(`/api/v1/workspaces/${workspaceId}/accounts/${liabilityBody.data.id}/payments`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        amount: { amount: "20.0000", currency: "INR" },
+        paymentDate: "2026-06-17",
+      });
+    const firstLoanPaymentBody = firstLoanPaymentResponse.body as LoanPaymentResponseBody;
+    expect(firstLoanPaymentResponse.status).toBe(201);
+    expect(firstLoanPaymentBody.data.accountId).toBe(liabilityBody.data.id);
+    expect(firstLoanPaymentBody.data.paymentDate).toBe("2026-06-17");
+
+    const secondLoanPaymentResponse = await request(app)
+      .post(`/api/v1/workspaces/${workspaceId}/accounts/${liabilityBody.data.id}/payments`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        amount: { amount: "30.0000", currency: "INR" },
+        paymentDate: "2026-06-18",
+      });
+    expect(secondLoanPaymentResponse.status).toBe(201);
+
+    const loanPaymentsResponse = await request(app)
+      .get(`/api/v1/workspaces/${workspaceId}/accounts/${liabilityBody.data.id}/payments`)
+      .set("Authorization", `Bearer ${accessToken}`);
+    expect(loanPaymentsResponse.status).toBe(200);
+    expect(
+      (loanPaymentsResponse.body as { data: Array<{ amount: string }> }).data.map(
+        (payment) => payment.amount,
+      ),
+    ).toEqual(["30.0000", "20.0000"]);
+
+    const paidSummaryResponse = await request(app)
+      .get(`/api/v1/workspaces/${workspaceId}/accounts/summary`)
+      .set("Authorization", `Bearer ${accessToken}`);
+    expect((paidSummaryResponse.body as SummaryResponseBody).data.liabilityTotalMinor).toBe(
+      "500000",
+    );
+
+    const overpaymentResponse = await request(app)
+      .post(`/api/v1/workspaces/${workspaceId}/accounts/${liabilityBody.data.id}/payments`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        amount: { amount: "51.0000", currency: "INR" },
+        paymentDate: "2026-06-19",
+      });
+    expect(overpaymentResponse.status).toBe(409);
 
     const transactionsResponse = await request(app)
       .get(`/api/v1/workspaces/${workspaceId}/transactions`)

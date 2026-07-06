@@ -17,6 +17,7 @@ export type WorkspaceActivityAction =
   | "liability.created"
   | "liability.updated"
   | "liability.archived"
+  | "liability.payment.created"
   | "liability.restored";
 
 const activityCopy: Record<
@@ -92,6 +93,11 @@ const activityCopy: Record<
     phrase: "archived a loan",
     resourceType: "liability",
     title: "Loan archived",
+  },
+  "liability.payment.created": {
+    phrase: "recorded a loan payment",
+    resourceType: "liability",
+    title: "Loan payment recorded",
   },
   "liability.restored": {
     phrase: "restored a loan",

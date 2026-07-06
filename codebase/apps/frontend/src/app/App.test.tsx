@@ -120,6 +120,7 @@ function mockAuthenticatedFinanceSession(
     failAccountCreateAsConflict?: boolean;
     failFirstBudgetCreateAsUnauthenticated?: boolean;
     goals?: Array<Record<string, unknown>>;
+    loanPayments?: Array<Record<string, unknown>>;
     notifications?: Array<Record<string, unknown>>;
     reportingCurrency?: string;
     transactions?: unknown[];
@@ -255,6 +256,7 @@ function mockAuthenticatedFinanceSession(
     ]),
   ];
   let notifications = [...(options.notifications ?? [])];
+  let loanPayments = [...(options.loanPayments ?? [])];
   let hasRejectedBudgetCreate = false;
   const reportingCurrency = options.reportingCurrency ?? "USD";
   let profile = {
@@ -452,6 +454,57 @@ function mockAuthenticatedFinanceSession(
           message: "Account summary retrieved successfully.",
           success: true,
         }),
+      );
+    }
+
+    const loanPaymentsMatch =
+      /\/api\/v1\/workspaces\/wsp_finance\/accounts\/([^/]+)\/payments$/.exec(url);
+    if (loanPaymentsMatch && method === "GET") {
+      return Promise.resolve(
+        createJsonResponse({
+          data: loanPayments.filter((payment) => payment.accountId === loanPaymentsMatch[1]),
+          message: "Loan payments retrieved successfully.",
+          success: true,
+        }),
+      );
+    }
+    if (loanPaymentsMatch && method === "POST") {
+      const body = JSON.parse(getRequestBody(init)) as {
+        amount: { amount: string; currency: string };
+        paymentDate: string;
+      };
+      const payment = {
+        accountId: loanPaymentsMatch[1],
+        amount: body.amount.amount,
+        createdAt: "2026-07-06T10:00:00.000Z",
+        createdByUserId: "usr_finance",
+        currency: body.amount.currency,
+        id: `lpy_${loanPayments.length + 1}`,
+        paymentDate: body.paymentDate,
+        updatedAt: "2026-07-06T10:00:00.000Z",
+      };
+      loanPayments = [payment, ...loanPayments];
+      accounts = accounts.map((account) =>
+        account.id === loanPaymentsMatch[1]
+          ? {
+              ...account,
+              currentBalance: (
+                Number(account.currentBalance ?? account.openingBalance ?? 0) -
+                Number(body.amount.amount)
+              ).toFixed(2),
+            }
+          : account,
+      );
+      return Promise.resolve(
+        createJsonResponse(
+          {
+            data: payment,
+            message: "Loan payment recorded successfully.",
+            success: true,
+          },
+          true,
+          201,
+        ),
       );
     }
 
@@ -1106,7 +1159,7 @@ describe("App", () => {
     expect(screen.getAllByText(/₹/).length).toBeGreaterThan(0);
   });
 
-  it("opens workspace notifications, marks them read, and routes to the changed resource", async () => {
+  it("opens notification details, marks them read, and offers the changed resource", async () => {
     mockAuthenticatedFinanceSession(globalThis.fetch as jest.MockedFunction<typeof fetch>, {
       notifications: [
         {
@@ -1135,6 +1188,12 @@ describe("App", () => {
     expect(await screen.findByText("Maya edited a budget in Home team.")).toBeDefined();
     expect((await axe(view.container)).violations).toHaveLength(0);
     await user.click(screen.getByRole("button", { name: /Budget updated/ }));
+    expect(await screen.findByRole("heading", { name: "Notification" })).toBeDefined();
+    expect(window.location.pathname).toBe("/notifications/ntf_budget");
+    await user.click(screen.getByRole("button", { name: "Go back" }));
+    expect(await screen.findByRole("heading", { name: "Notifications" })).toBeDefined();
+    await user.click(screen.getByRole("button", { name: /Budget updated/ }));
+    await user.click(screen.getByRole("button", { name: "Open related item" }));
     expect(await screen.findByRole("heading", { name: "Budget" })).toBeDefined();
     expect(window.location.pathname).toBe("/budget");
   });
@@ -1180,7 +1239,8 @@ describe("App", () => {
     expect(screen.getAllByText("₹50,000.00")).toHaveLength(2);
     expect(screen.getByRole("heading", { name: "Archived history" })).toBeDefined();
     expect(screen.getByText("Old loan")).toBeDefined();
-    expect(screen.getAllByText("Not provided")).toHaveLength(4);
+    expect(screen.getByRole("button", { name: "Open Everyday card" })).toBeDefined();
+    expect(screen.queryByText("Payment plans and debt goals")).toBeNull();
     expect((await axe(view.container)).violations).toHaveLength(0);
   });
 
@@ -1200,11 +1260,53 @@ describe("App", () => {
     const dialog = screen.getByRole("dialog", { name: "Add loan" });
     await user.type(within(dialog).getByLabelText("Account name"), "Home loan");
     await user.selectOptions(within(dialog).getByLabelText("Loan type"), "loan");
-    await user.type(within(dialog).getByLabelText(/Opening balance/), "500000");
+    await user.type(within(dialog).getByLabelText(/Loan amount/), "500000");
     await user.click(within(dialog).getByRole("button", { name: "Save loan" }));
 
     expect(await screen.findByText("Home loan")).toBeDefined();
     expect(screen.getAllByText("₹500,000.00").length).toBeGreaterThan(0);
+  });
+
+  it("records multiple payments against the same loan", async () => {
+    mockAuthenticatedFinanceSession(globalThis.fetch as jest.MockedFunction<typeof fetch>, {
+      accounts: [
+        {
+          currency: "INR",
+          currentBalance: "50000.00",
+          id: "acc_vehicle",
+          isArchived: false,
+          name: "Vehicle loan",
+          openingBalance: "50000.00",
+          type: "loan",
+        },
+      ],
+      reportingCurrency: "INR",
+    });
+    window.history.replaceState({}, "", "/liabilities");
+    const user = userEvent.setup();
+    render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    await user.click(await screen.findByRole("button", { name: "Open Vehicle loan" }));
+    expect(await screen.findByRole("heading", { name: "Payment history" })).toBeDefined();
+
+    await user.click(screen.getByRole("button", { name: "Record payment" }));
+    let paymentDialog = screen.getByRole("dialog", { name: "Record payment" });
+    await user.type(within(paymentDialog).getByLabelText("Amount paid"), "1000");
+    await user.click(within(paymentDialog).getByRole("button", { name: "Record payment" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Record payment" })).toBeNull(),
+    );
+
+    await user.click(screen.getByRole("button", { name: "Record payment" }));
+    paymentDialog = screen.getByRole("dialog", { name: "Record payment" });
+    await user.type(within(paymentDialog).getByLabelText("Amount paid"), "500");
+    await user.click(within(paymentDialog).getByRole("button", { name: "Record payment" }));
+
+    await waitFor(() => expect(screen.getAllByText("₹1,000.00").length).toBeGreaterThan(0));
+    expect(screen.getAllByText("₹500.00").length).toBeGreaterThan(0);
+    expect(await screen.findAllByText("₹48,500.00")).toHaveLength(2);
   });
 
   it("creates a goal and adds a contribution", async () => {
@@ -1400,30 +1502,44 @@ describe("App", () => {
     expect(screen.getByRole("heading", { name: "Spending Trend" })).toBeDefined();
     expect(screen.getByRole("heading", { name: "Top Categories" })).toBeDefined();
 
-    await user.click(screen.getByRole("button", { name: /Date filter/ }));
-    let filterDialog = screen.getByRole("dialog", { name: "Date" });
+    await user.click(screen.getByRole("button", { name: /^Filters/ }));
+    let filterDialog = screen.getByRole("dialog", { name: "Filters" });
     expect(within(filterDialog).getByText("This month")).toBeDefined();
     expect(within(filterDialog).getByText("Last month")).toBeDefined();
     expect(within(filterDialog).getByText("Last year")).toBeDefined();
 
     await user.click(within(filterDialog).getByText("Last year"));
     await user.click(within(filterDialog).getByRole("button", { name: "Apply" }));
-    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Date" })).toBeNull());
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Filters" })).toBeNull());
     expect(screen.getAllByText("Last year").length).toBeGreaterThan(0);
 
-    await user.click(screen.getByRole("button", { name: "Custom date range" }));
-    filterDialog = screen.getByRole("dialog", { name: "Custom dates" });
+    await user.click(screen.getByRole("button", { name: /^Filters/ }));
+    filterDialog = screen.getByRole("dialog", { name: "Filters" });
     await user.type(within(filterDialog).getByLabelText("From"), "2025-01-01");
     await user.type(within(filterDialog).getByLabelText("To"), "2025-01-31");
     await user.click(within(filterDialog).getByRole("button", { name: "Apply" }));
-    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Custom dates" })).toBeNull());
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Filters" })).toBeNull());
     expect(screen.getAllByText("Custom range").length).toBeGreaterThan(0);
 
-    await user.click(screen.getByRole("button", { name: "Custom date range" }));
-    filterDialog = screen.getByRole("dialog", { name: "Custom dates" });
+    await user.click(screen.getByRole("button", { name: /^Filters/ }));
+    filterDialog = screen.getByRole("dialog", { name: "Filters" });
     await user.click(within(filterDialog).getByRole("button", { name: "Clear" }));
-    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Custom dates" })).toBeNull());
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Filters" })).toBeNull());
     expect(screen.getAllByText("This month").length).toBeGreaterThan(0);
+  });
+
+  it("returns a refreshed secondary page to Home with the shared back action", async () => {
+    mockAuthenticatedFinanceSession(globalThis.fetch as jest.MockedFunction<typeof fetch>);
+    window.history.replaceState({}, "", "/reports");
+    const user = userEvent.setup();
+    render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Reports" })).toBeDefined();
+    await user.click(screen.getByRole("button", { name: "Go back" }));
+    await expectHomeHeader();
+    expect(window.location.pathname).toBe("/");
   });
 
   it("does not render workspace finance UI for signed-out visitors", async () => {
@@ -1618,6 +1734,7 @@ describe("App", () => {
     });
     expect(await screen.findByText("ABCD-2345")).toBeDefined();
     expect(shareCodeAttempts).toBe(2);
+    expect(screen.getByLabelText("Join with code")).toBeDefined();
     await user.click(screen.getByRole("button", { name: "Share" }));
     expect(nativeShare).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -2277,7 +2394,7 @@ describe("App", () => {
     expect(screen.getAllByText("32%")).toHaveLength(1);
     expect(screen.queryByRole("heading", { name: "Active goals" })).toBeNull();
 
-    await user.click(screen.getByRole("button", { name: /Filter by date/ }));
+    await user.click(screen.getByRole("button", { name: /^Filters/ }));
     await user.click(screen.getByRole("button", { name: "This year" }));
     await user.click(screen.getByRole("button", { name: "Apply" }));
     await waitFor(() => expect(document.body.style.overflow).toBe(""));
@@ -2291,7 +2408,7 @@ describe("App", () => {
     expect(screen.queryByRole("heading", { name: "Healthy progress only" })).toBeNull();
     expect(screen.getByText("Projected yearly savings")).toBeDefined();
     expect(screen.getByText("1 of 12 monthly plans entered")).toBeDefined();
-    await user.click(screen.getByRole("button", { name: /Filter by date/ }));
+    await user.click(screen.getByRole("button", { name: /^Filters/ }));
     await user.click(screen.getByRole("button", { name: "This month" }));
     await user.click(screen.getByRole("button", { name: "Apply" }));
     await waitFor(() => expect(document.body.style.overflow).toBe(""));

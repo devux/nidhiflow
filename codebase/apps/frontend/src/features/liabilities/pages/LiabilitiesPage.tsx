@@ -10,11 +10,14 @@ import { useAuth } from "../../../app/providers/AuthProvider";
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
 import {
   archiveAccount,
+  createLoanPayment,
   createLiabilityAccount,
   getAccountSummary,
+  listLoanPayments,
   restoreAccount,
   updateLiabilityAccount,
   type AccountSummaryResource,
+  type LoanPaymentResource,
 } from "../../../data/api/financeClient";
 import { formatMoney } from "../../../domain/money/money";
 import type { SupportedCurrency } from "../../../domain/preferences/guestPreferences";
@@ -23,12 +26,35 @@ import { Card } from "../../../shared/components/Card";
 import { EmptyState } from "../../../shared/components/EmptyState";
 import { Icon } from "../../../shared/components/Icon";
 import { PageHeader } from "../../../shared/components/PageHeader";
-import { summarizeLiabilities, type LiabilityAccount } from "../domain/liabilitySummary";
+import {
+  decimalToMinor,
+  summarizeLiabilities,
+  type LiabilityAccount,
+} from "../domain/liabilitySummary";
 
 function accountTypeLabel(type: string) {
   if (type === "credit_card") return "Credit card";
   if (type === "loan") return "Loan";
   return "Other loan";
+}
+
+function todayValue() {
+  const today = new Date();
+  return [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, "0"),
+    String(today.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+function formatPaymentDate(value: string, locale: string) {
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T00:00:00`) : new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Date unavailable";
+  }
+
+  return new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(date);
 }
 
 export function LiabilitiesPage() {
@@ -47,6 +73,12 @@ export function LiabilitiesPage() {
   const [accountCurrency, setAccountCurrency] = useState<SupportedCurrency>(preferences.currency);
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [payments, setPayments] = useState<LoanPaymentResource[]>([]);
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentDate, setPaymentDate] = useState(todayValue);
+  const [paymentError, setPaymentError] = useState("");
+  const [paymentState, setPaymentState] = useState<"idle" | "loading" | "saving">("idle");
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated || !accessToken || !activeWorkspace) {
@@ -110,7 +142,55 @@ export function LiabilitiesPage() {
     setOpeningBalance(account.openingBalance ?? account.currentBalance);
     setAccountCurrency(account.currency);
     setFormError("");
+    setPayments([]);
     setIsEditorOpen(true);
+    if (accessToken && activeWorkspace) {
+      setPaymentState("loading");
+      void listLoanPayments({
+        accessToken,
+        accountId: account.id,
+        workspaceId: activeWorkspace.id,
+      })
+        .then(setPayments)
+        .catch(() => setPaymentError("Payment history could not be loaded."))
+        .finally(() => setPaymentState("idle"));
+    }
+  }
+
+  function openPaymentDialog() {
+    setPaymentAmount("");
+    setPaymentDate(todayValue());
+    setPaymentError("");
+    setIsPaymentDialogOpen(true);
+  }
+
+  async function recordPayment(event: React.FormEvent) {
+    event.preventDefault();
+    if (!accessToken || !activeWorkspace || !editingAccount) return;
+    if (!/^\d+(?:\.\d{1,4})?$/.test(paymentAmount.trim()) || /^0+(?:\.0+)?$/.test(paymentAmount)) {
+      setPaymentError("Enter a payment amount greater than zero.");
+      return;
+    }
+
+    setPaymentState("saving");
+    setPaymentError("");
+    try {
+      const payment = await createLoanPayment({
+        accessToken,
+        accountId: editingAccount.id,
+        amount: paymentAmount.trim(),
+        currency: editingAccount.currency,
+        paymentDate,
+        workspaceId: activeWorkspace.id,
+      });
+      setPayments((current) => [payment, ...current]);
+      setIsPaymentDialogOpen(false);
+      setReloadKey((key) => key + 1);
+    } catch {
+      setPaymentError("The payment could not be recorded. Check the outstanding balance.");
+    } finally {
+      setPaymentState("idle");
+    }
   }
 
   async function saveAccount(event: React.FormEvent) {
@@ -280,50 +360,30 @@ export function LiabilitiesPage() {
               <div className="liability-account-list">
                 {summary.activeAccounts.map((account) => (
                   <Card className="liability-account" key={account.id}>
-                    <div className="liability-account__heading">
-                      <span className="icon-tile">
-                        <Icon name="liability" size={20} />
-                      </span>
-                      <div>
-                        <h3>{account.name}</h3>
-                        <p>{accountTypeLabel(account.type)}</p>
+                    <button
+                      aria-label={`Open ${account.name}`}
+                      className="liability-account__open"
+                      onClick={() => openEdit(account)}
+                      type="button"
+                    >
+                      <div className="liability-account__heading">
+                        <span className="icon-tile">
+                          <Icon name="liability" size={20} />
+                        </span>
+                        <div>
+                          <h3>{account.name}</h3>
+                          <p>{accountTypeLabel(account.type)}</p>
+                        </div>
+                        <span className="liability-account__trailing">
+                          <strong>{money(account)}</strong>
+                          <Icon name="chevron" size={18} />
+                        </span>
                       </div>
-                      <strong>{money(account)}</strong>
-                    </div>
-                    <dl className="liability-account__details">
-                      <div>
-                        <dt>Due date</dt>
-                        <dd>Not provided</dd>
-                      </div>
-                      <div>
-                        <dt>Minimum payment</dt>
-                        <dd>Not provided</dd>
-                      </div>
-                    </dl>
-                    <Button onClick={() => openEdit(account)} variant="quiet">
-                      Edit loan
-                    </Button>
+                    </button>
                   </Card>
                 ))}
               </div>
             </section>
-
-            <Card className="liabilities-planning">
-              <span className="icon-tile">
-                <Icon name="goal" />
-              </span>
-              <div>
-                <h2>Payment plans and debt goals</h2>
-                <p>
-                  Plans are kept separate from account balances. NidhiFlow will not estimate minimum
-                  payments, interest, or payoff dates without your inputs.
-                </p>
-              </div>
-              <Link to="/goals?type=debt">
-                Review debt goals
-                <Icon name="chevron" size={18} />
-              </Link>
-            </Card>
 
             {summary.archivedAccounts.length > 0 ? (
               <section aria-labelledby="archived-liabilities-title">
@@ -357,7 +417,7 @@ export function LiabilitiesPage() {
         open={isEditorOpen}
         slotProps={{ paper: { className: "profile-dialog finance-editor-dialog" } }}
       >
-        <DialogTitle>{editingAccount ? "Edit loan" : "Add loan"}</DialogTitle>
+        <DialogTitle>{editingAccount?.name ?? "Add loan"}</DialogTitle>
         <IconButton
           aria-label="Close"
           className="profile-dialog__close"
@@ -390,7 +450,7 @@ export function LiabilitiesPage() {
               </select>
             </label>
             <label>
-              Opening balance
+              Loan amount
               <input
                 inputMode="decimal"
                 onChange={(event) => setOpeningBalance(event.target.value)}
@@ -421,15 +481,98 @@ export function LiabilitiesPage() {
               {saving ? "Saving…" : "Save loan"}
             </Button>
             {editingAccount ? (
-              <Button
-                disabled={saving}
-                fullWidth
-                onClick={() => void archiveCurrentAccount()}
-                variant="quiet"
-              >
-                Archive loan
-              </Button>
+              <>
+                <Button disabled={saving} fullWidth onClick={openPaymentDialog} variant="secondary">
+                  Record payment
+                </Button>
+                <section
+                  aria-labelledby="loan-payment-history-title"
+                  className="loan-payment-history"
+                >
+                  <h3 id="loan-payment-history-title">Payment history</h3>
+                  {paymentState === "loading" ? <p role="status">Loading payments…</p> : null}
+                  {payments.length > 0 ? (
+                    <ul>
+                      {payments.map((payment) => (
+                        <li key={payment.id}>
+                          <span>
+                            <strong>
+                              {formatMoney(
+                                {
+                                  amountMinor: decimalToMinor(payment.amount),
+                                  currency: payment.currency,
+                                },
+                                preferences.locale,
+                              )}
+                            </strong>
+                            <time dateTime={payment.paymentDate}>
+                              {formatPaymentDate(payment.paymentDate, preferences.locale)}
+                            </time>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : paymentState !== "loading" ? (
+                    <p>No payments recorded yet.</p>
+                  ) : null}
+                </section>
+                <Button
+                  disabled={saving}
+                  fullWidth
+                  onClick={() => void archiveCurrentAccount()}
+                  variant="quiet"
+                >
+                  Archive loan
+                </Button>
+              </>
             ) : null}
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        fullWidth
+        maxWidth="xs"
+        onClose={() => setIsPaymentDialogOpen(false)}
+        open={isPaymentDialogOpen}
+        slotProps={{ paper: { className: "profile-dialog finance-editor-dialog" } }}
+      >
+        <DialogTitle>Record payment</DialogTitle>
+        <IconButton
+          aria-label="Close payment"
+          className="profile-dialog__close"
+          onClick={() => setIsPaymentDialogOpen(false)}
+        >
+          <CloseRoundedIcon />
+        </IconButton>
+        <DialogContent>
+          <form className="finance-editor-form" onSubmit={(event) => void recordPayment(event)}>
+            <label>
+              Amount paid
+              <input
+                autoFocus
+                inputMode="decimal"
+                onChange={(event) => setPaymentAmount(event.target.value)}
+                placeholder="0.00"
+                value={paymentAmount}
+              />
+            </label>
+            <label>
+              Payment date
+              <input
+                onChange={(event) => setPaymentDate(event.target.value)}
+                type="date"
+                value={paymentDate}
+              />
+            </label>
+            {paymentError ? (
+              <p className="form-error" role="alert">
+                {paymentError}
+              </p>
+            ) : null}
+            <Button disabled={paymentState === "saving"} fullWidth type="submit">
+              {paymentState === "saving" ? "Recording…" : "Record payment"}
+            </Button>
           </form>
         </DialogContent>
       </Dialog>

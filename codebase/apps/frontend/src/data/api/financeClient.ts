@@ -40,6 +40,17 @@ export interface AccountSummaryResource {
   netWorthMinor: string;
 }
 
+export interface LoanPaymentResource {
+  accountId: string;
+  amount: string;
+  createdAt: string;
+  createdByUserId: string;
+  currency: SupportedCurrency;
+  id: string;
+  paymentDate: string;
+  updatedAt: string;
+}
+
 export interface CategoryResource {
   id: string;
   isArchived: boolean;
@@ -351,6 +362,43 @@ export async function restoreAccount(input: {
     `/workspaces/${input.workspaceId}/accounts/${input.accountId}/restore`,
     input.accessToken,
     { method: "POST" },
+  );
+
+  return result.data;
+}
+
+export async function listLoanPayments(input: {
+  accessToken: string;
+  accountId: string;
+  workspaceId: string;
+}): Promise<LoanPaymentResource[]> {
+  const result = await apiRequest<LoanPaymentResource[]>(
+    `/workspaces/${input.workspaceId}/accounts/${input.accountId}/payments`,
+    input.accessToken,
+    { method: "GET" },
+  );
+
+  return result.data;
+}
+
+export async function createLoanPayment(input: {
+  accessToken: string;
+  accountId: string;
+  amount: string;
+  currency: SupportedCurrency;
+  paymentDate: string;
+  workspaceId: string;
+}): Promise<LoanPaymentResource> {
+  const result = await apiRequest<LoanPaymentResource>(
+    `/workspaces/${input.workspaceId}/accounts/${input.accountId}/payments`,
+    input.accessToken,
+    {
+      body: JSON.stringify({
+        amount: { amount: input.amount, currency: input.currency },
+        paymentDate: input.paymentDate,
+      }),
+      method: "POST",
+    },
   );
 
   return result.data;

@@ -1,4 +1,4 @@
-import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
+import FilterListRoundedIcon from "@mui/icons-material/FilterListRounded";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Checkbox from "@mui/material/Checkbox";
@@ -19,7 +19,6 @@ import { EmptyState } from "../../../shared/components/EmptyState";
 import { PageHeader } from "../../../shared/components/PageHeader";
 import { TransactionRow } from "../../transactions/components/TransactionRow";
 
-type FilterSheet = "category" | "date";
 type DatePreset = "this-month" | "last-month" | "this-year";
 
 const datePresetOptions: Array<{ label: string; value: DatePreset }> = [
@@ -70,7 +69,7 @@ export function ActivityPage() {
   const dateFrom = searchParams.get("from") ?? "";
   const dateTo = searchParams.get("to") ?? "";
   const selectedDatePreset = getDatePresetFromRange(dateFrom, dateTo);
-  const [openFilterSheet, setOpenFilterSheet] = useState<FilterSheet | null>(null);
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const [draftCategory, setDraftCategory] = useState(category);
   const [draftDatePreset, setDraftDatePreset] = useState<DatePreset | "">(selectedDatePreset);
 
@@ -87,136 +86,114 @@ export function ActivityPage() {
 
   const categories = Array.from(new Set([...incomeCategories, ...expenseCategories]));
 
-  const dateFilterLabel =
-    datePresetOptions.find((option) => option.value === selectedDatePreset)?.label ?? "Date";
-  const categoryFilterLabel = category || "Category";
-
-  function openSheet(sheet: FilterSheet) {
+  function openFilters() {
     setDraftCategory(category);
     setDraftDatePreset(selectedDatePreset);
-    setOpenFilterSheet(sheet);
+    setIsFilterSheetOpen(true);
   }
 
   function applyFilterSheet() {
     const next = new URLSearchParams(searchParams);
 
-    if (openFilterSheet === "category") {
-      if (draftCategory) next.set("category", draftCategory);
-      else next.delete("category");
-    }
+    if (draftCategory) next.set("category", draftCategory);
+    else next.delete("category");
 
-    if (openFilterSheet === "date") {
-      if (draftDatePreset) {
-        const range = getDatePresetRange(draftDatePreset);
-        next.set("from", range.from);
-        next.set("to", range.to);
-      } else {
-        next.delete("from");
-        next.delete("to");
-      }
+    if (draftDatePreset) {
+      const range = getDatePresetRange(draftDatePreset);
+      next.set("from", range.from);
+      next.set("to", range.to);
+    } else {
+      next.delete("from");
+      next.delete("to");
     }
 
     setSearchParams(next, { replace: true });
-    setOpenFilterSheet(null);
+    setIsFilterSheetOpen(false);
   }
 
   function clearFilterSheet() {
-    const next = new URLSearchParams(searchParams);
-
-    if (openFilterSheet === "category") {
-      next.delete("category");
-      setDraftCategory("");
-    }
-
-    if (openFilterSheet === "date") {
-      next.delete("from");
-      next.delete("to");
-      setDraftDatePreset("");
-    }
-
-    setSearchParams(next, { replace: true });
-    setOpenFilterSheet(null);
+    setDraftCategory("");
+    setDraftDatePreset("");
+    setSearchParams({}, { replace: true });
+    setIsFilterSheetOpen(false);
   }
 
   const filtersActive = Boolean(category || dateFrom || dateTo);
 
   return (
     <main className="page page--activity" id="main-content">
-      <PageHeader title="Activity" />
-
-      <Stack className="filter-dropdown-grid activity-filter-bar" direction="row" spacing={1.5}>
-        <Button
-          aria-haspopup="dialog"
-          aria-label={`Filter by category, current value ${categoryFilterLabel}`}
-          className={category ? "filter-dropdown is-active" : "filter-dropdown"}
-          endIcon={<KeyboardArrowDownRoundedIcon />}
-          fullWidth
-          onClick={() => openSheet("category")}
-          variant={category ? "contained" : "outlined"}
-        >
-          {categoryFilterLabel}
-        </Button>
-        <Button
-          aria-haspopup="dialog"
-          aria-label={`Filter by date, current value ${dateFilterLabel}`}
-          className={selectedDatePreset ? "filter-dropdown is-active" : "filter-dropdown"}
-          endIcon={<KeyboardArrowDownRoundedIcon />}
-          fullWidth
-          onClick={() => openSheet("date")}
-          variant={selectedDatePreset ? "contained" : "outlined"}
-        >
-          {dateFilterLabel}
-        </Button>
-      </Stack>
+      <PageHeader
+        action={
+          <button
+            aria-haspopup="dialog"
+            aria-label={`Filters${filtersActive ? " (active)" : ""}`}
+            className={`icon-button icon-button--flat filter-toggle${filtersActive ? " is-active" : ""}`}
+            onClick={openFilters}
+            type="button"
+          >
+            <FilterListRoundedIcon />
+          </button>
+        }
+        title="Activity"
+      />
 
       <Drawer
         anchor="bottom"
         aria-labelledby="activity-filter-sheet-title"
-        onClose={() => setOpenFilterSheet(null)}
-        open={Boolean(openFilterSheet)}
+        onClose={() => setIsFilterSheetOpen(false)}
+        open={isFilterSheetOpen}
         slotProps={{ paper: { className: "activity-filter-sheet" } }}
       >
         <Box className="activity-filter-sheet__content" role="dialog">
           <Typography component="h2" id="activity-filter-sheet-title">
-            {openFilterSheet === "category" ? "Category" : "Date"}
+            Filters
           </Typography>
-          {openFilterSheet === "category" ? (
-            <List disablePadding className="activity-filter-options">
-              <ListItemButton
-                className="activity-filter-option"
-                onClick={() => setDraftCategory("")}
-                selected={!draftCategory}
-              >
-                <ListItemText primary="All categories" />
-                <Checkbox checked={!draftCategory} edge="end" tabIndex={-1} />
-              </ListItemButton>
-              {categories.map((option) => (
+          <div className="activity-filter-sheet__groups">
+            <section aria-labelledby="activity-category-filter-title">
+              <Typography component="h3" id="activity-category-filter-title">
+                Category
+              </Typography>
+              <List disablePadding className="activity-filter-options">
                 <ListItemButton
                   className="activity-filter-option"
-                  key={option}
-                  onClick={() => setDraftCategory(option)}
-                  selected={draftCategory === option}
+                  onClick={() => setDraftCategory("")}
+                  selected={!draftCategory}
                 >
-                  <ListItemText primary={option} />
-                  <Checkbox checked={draftCategory === option} edge="end" tabIndex={-1} />
+                  <ListItemText primary="All categories" />
+                  <Checkbox checked={!draftCategory} edge="end" tabIndex={-1} />
                 </ListItemButton>
-              ))}
-            </List>
-          ) : (
-            <List disablePadding className="activity-filter-options">
-              {datePresetOptions.map((option) => (
-                <ListItemButton
-                  className="activity-filter-option"
-                  key={option.value}
-                  onClick={() => setDraftDatePreset(option.value)}
-                  selected={draftDatePreset === option.value}
-                >
-                  <ListItemText primary={option.label} />
-                  <Checkbox checked={draftDatePreset === option.value} edge="end" tabIndex={-1} />
-                </ListItemButton>
-              ))}
-            </List>
-          )}
+                {categories.map((option) => (
+                  <ListItemButton
+                    className="activity-filter-option"
+                    key={option}
+                    onClick={() => setDraftCategory(option)}
+                    selected={draftCategory === option}
+                  >
+                    <ListItemText primary={option} />
+                    <Checkbox checked={draftCategory === option} edge="end" tabIndex={-1} />
+                  </ListItemButton>
+                ))}
+              </List>
+            </section>
+            <section aria-labelledby="activity-date-filter-title">
+              <Typography component="h3" id="activity-date-filter-title">
+                Date
+              </Typography>
+              <List disablePadding className="activity-filter-options">
+                {datePresetOptions.map((option) => (
+                  <ListItemButton
+                    className="activity-filter-option"
+                    key={option.value}
+                    onClick={() => setDraftDatePreset(option.value)}
+                    selected={draftDatePreset === option.value}
+                  >
+                    <ListItemText primary={option.label} />
+                    <Checkbox checked={draftDatePreset === option.value} edge="end" tabIndex={-1} />
+                  </ListItemButton>
+                ))}
+              </List>
+            </section>
+          </div>
           <Stack className="activity-filter-sheet__actions" direction="row" spacing={1.5}>
             <Button fullWidth onClick={clearFilterSheet} variant="outlined">
               Clear all

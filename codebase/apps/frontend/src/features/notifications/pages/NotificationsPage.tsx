@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { useAuth } from "../../../app/providers/AuthProvider";
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
@@ -33,6 +33,7 @@ function notificationIcon(notification: NotificationResource): IconName {
 
 export function NotificationsPage() {
   const navigate = useNavigate();
+  const { notificationId } = useParams();
   const { accessToken } = useAuth();
   const { preferences } = useGuestPreferences();
   const [notifications, setNotifications] = useState<NotificationResource[]>([]);
@@ -54,25 +55,27 @@ export function NotificationsPage() {
     void load();
   }, [load]);
 
-  async function openNotification(notification: NotificationResource) {
-    if (!accessToken) return;
-    if (!notification.readAt) {
-      try {
-        const updated = await markNotificationRead({
-          accessToken,
-          notificationId: notification.id,
-        });
+  const selectedNotification = notificationId
+    ? notifications.find((notification) => notification.id === notificationId)
+    : undefined;
+
+  useEffect(() => {
+    if (!accessToken || !selectedNotification || selectedNotification.readAt) return;
+
+    void markNotificationRead({
+      accessToken,
+      notificationId: selectedNotification.id,
+    })
+      .then((updated) => {
         setNotifications((current) =>
           current.map((item) => (item.id === updated.id ? updated : item)),
         );
-      } catch {
-        setStatus("error");
-        return;
-      }
-    }
+      })
+      .catch(() => setStatus("error"));
+  }, [accessToken, selectedNotification]);
 
-    const path = notification.payload.path;
-    void navigate(path && allowedNotificationPaths.has(path) ? path : "/");
+  function openNotification(notification: NotificationResource) {
+    void navigate(`/notifications/${encodeURIComponent(notification.id)}`);
   }
 
   async function markAllRead() {
@@ -93,17 +96,17 @@ export function NotificationsPage() {
 
   return (
     <main className="page page--notifications" id="main-content">
-      <PageHeader title="Notifications" />
-
-      <div className="notifications-heading">
-        <span>
-          <h1>Workspace activity</h1>
-          <p>Updates from people sharing your current workspace.</p>
-        </span>
-        <Button disabled={unreadCount === 0} onClick={() => void markAllRead()} variant="quiet">
-          Mark all read
-        </Button>
-      </div>
+      <PageHeader
+        action={
+          notificationId ? undefined : (
+            <Button disabled={unreadCount === 0} onClick={() => void markAllRead()} variant="quiet">
+              Mark all as read
+            </Button>
+          )
+        }
+        backTo={notificationId ? "/notifications" : undefined}
+        title={notificationId ? "Notification" : "Notifications"}
+      />
 
       {status === "loading" ? (
         <Card className="notifications-state" role="status">
@@ -120,7 +123,20 @@ export function NotificationsPage() {
         />
       ) : null}
 
-      {status === "ready" && notifications.length === 0 ? (
+      {status === "ready" && notificationId && !selectedNotification ? (
+        <EmptyState
+          action={
+            <Button onClick={() => void navigate("/notifications")} variant="secondary">
+              Back to notifications
+            </Button>
+          }
+          description="This notification may have expired or is no longer available."
+          icon="bell"
+          title="Notification not found"
+        />
+      ) : null}
+
+      {status === "ready" && !notificationId && notifications.length === 0 ? (
         <EmptyState
           description="Changes made by other workspace members will appear here."
           icon="bell"
@@ -128,7 +144,7 @@ export function NotificationsPage() {
         />
       ) : null}
 
-      {status === "ready" && notifications.length > 0 ? (
+      {status === "ready" && !notificationId && notifications.length > 0 ? (
         <section aria-label="Notification history" className="notifications-list">
           {notifications.map((notification) => (
             <button
@@ -159,6 +175,33 @@ export function NotificationsPage() {
             </button>
           ))}
         </section>
+      ) : null}
+
+      {status === "ready" && selectedNotification ? (
+        <Card className="notification-detail">
+          <span className="notification-card__icon" aria-hidden="true">
+            <Icon name={notificationIcon(selectedNotification)} size={24} />
+          </span>
+          <div>
+            <h2>{selectedNotification.title}</h2>
+            <p>{selectedNotification.body}</p>
+            <time dateTime={selectedNotification.createdAt}>
+              {new Intl.DateTimeFormat(preferences.locale, {
+                dateStyle: "medium",
+                timeStyle: "short",
+              }).format(new Date(selectedNotification.createdAt))}
+            </time>
+          </div>
+          {selectedNotification.payload.path &&
+          allowedNotificationPaths.has(selectedNotification.payload.path) ? (
+            <Button
+              onClick={() => void navigate(selectedNotification.payload.path ?? "/")}
+              variant="secondary"
+            >
+              Open related item
+            </Button>
+          ) : null}
+        </Card>
       ) : null}
     </main>
   );

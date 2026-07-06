@@ -6,6 +6,7 @@
 users 1---* auth_sessions
 users 1---* workspace_members *---1 workspaces
 workspaces 1---* accounts
+accounts 1---* loan_payments
 workspaces 1---* categories
 workspaces 1---* transactions
 workspaces 1---* budgets
@@ -63,6 +64,13 @@ Goals own contributions. A contribution may reference a transaction when
 funding is represented in account history. Deleting a transaction must not
 silently remove historical goal meaning; define reversal/reconciliation
 behavior.
+
+## Loan Payments
+
+Loan and other-liability accounts own repeatable payment records. Payments use
+the account currency, are attributed to the creating workspace member, and
+reduce the derived outstanding balance. A payment cannot exceed the remaining
+positive balance.
 
 ## Bills
 

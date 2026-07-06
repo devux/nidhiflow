@@ -192,6 +192,16 @@ const updateAccountRequest = {
   properties: createAccountRequest.properties,
 };
 
+const createLoanPaymentRequest = {
+  additionalProperties: false,
+  properties: {
+    amount: moneySchema,
+    paymentDate: dateOnly,
+  },
+  required: ["amount", "paymentDate"],
+  type: "object",
+};
+
 const createCategoryRequest = {
   type: "object",
   required: ["name", "transactionType"],
@@ -1054,6 +1064,39 @@ const paths = {
       parameters: [parameterRef("workspaceId"), parameterRef("accountId")],
       responses: responseSet(
         { "200": successResponse("Account archived.", ref("Account")) },
+        { auth: true, conflict: true, notFound: true, validation: true },
+      ),
+    }),
+  },
+  "/api/v1/workspaces/{workspaceId}/accounts/{accountId}/payments": {
+    get: operation({
+      tags: ["Accounts"],
+      summary: "List loan payments",
+      description: "Lists repeatable, auditable payments recorded against a liability account.",
+      operationId: "listLoanPayments",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), parameterRef("accountId")],
+      responses: responseSet(
+        {
+          "200": successResponse("Loan payments retrieved.", {
+            items: ref("LoanPayment"),
+            type: "array",
+          }),
+        },
+        { auth: true, notFound: true, validation: true },
+      ),
+    }),
+    post: operation({
+      tags: ["Accounts"],
+      summary: "Record loan payment",
+      description:
+        "Records one payment against an active liability account and reduces its derived outstanding balance.",
+      operationId: "createLoanPayment",
+      security: bearerSecurity,
+      parameters: [parameterRef("workspaceId"), parameterRef("accountId")],
+      requestBody: requestBody(ref("CreateLoanPaymentRequest")),
+      responses: responseSet(
+        { "201": successResponse("Loan payment recorded.", ref("LoanPayment")) },
         { auth: true, conflict: true, notFound: true, validation: true },
       ),
     }),
@@ -2291,6 +2334,31 @@ export const openApiDocument = {
           assetTotalMinor: { type: "string" },
           liabilityTotalMinor: { type: "string" },
           netWorthMinor: { type: "string" },
+        },
+      },
+      CreateLoanPaymentRequest: createLoanPaymentRequest,
+      LoanPayment: {
+        type: "object",
+        required: [
+          "id",
+          "accountId",
+          "amount",
+          "currency",
+          "paymentDate",
+          "createdByUserId",
+          "createdAt",
+          "updatedAt",
+        ],
+        properties: {
+          id,
+          accountId: { type: "string" },
+          amount: { type: "string" },
+          currency: { pattern: "^[A-Z]{3}$", type: "string" },
+          paymentDate: dateOnly,
+          createdByUserId: { type: "string" },
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          deletedAt: { nullable: true, ...timestamp },
         },
       },
       Category: {

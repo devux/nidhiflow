@@ -119,8 +119,9 @@
   member creates, updates, or deletes transactions, budgets, goals, or loans.
 - Collaboration alerts identify the actor and action without copying financial
   values, notes, account identifiers, or descriptions into notification data.
-- Notifications support unread state, per-item read, read all, and navigation
-  to an allowlisted relevant destination.
+- Notifications support unread state, per-item read, read all, a dedicated
+  detail view with Back navigation, and an explicit action to an allowlisted
+  relevant destination.
 - Flow launch notification
 - Useful, non-spammy delivery with clear disable controls
 - On supported Android devices, explicit notification-access opt-in can create
@@ -139,8 +140,8 @@
   without changing privacy, authentication, or single-workspace rules.
 - Goals and Loans are implemented secondary destinations without adding
   primary navigation tabs. Goals uses the workspace goal and contribution
-  records; Loans derives balances from the existing account and
-  transaction ledger.
+  records; Loans derives balances from the existing account, transaction
+  ledger, and repeatable auditable loan-payment records.
 - Detailed scope and release gates are defined in
   [Product Backlog](backlog.md).
 

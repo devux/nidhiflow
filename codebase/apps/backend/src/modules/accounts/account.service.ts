@@ -5,7 +5,11 @@ import { AuthRepository } from "../auth/auth.repository.js";
 import { notifyWorkspaceMembers } from "../notifications/workspaceNotification.service.js";
 import { WorkspaceRepository } from "../workspaces/workspace.repository.js";
 import { AccountRepository } from "./account.repository.js";
-import type { CreateAccountBody, UpdateAccountBody } from "./account.schemas.js";
+import type {
+  CreateAccountBody,
+  CreateLoanPaymentBody,
+  UpdateAccountBody,
+} from "./account.schemas.js";
 
 function duplicateAccountName() {
   return new AppError({
@@ -78,6 +82,107 @@ export class AccountService {
   async getSummary(userId: string, workspaceId: string) {
     await this.ensureWorkspaceAccess(userId, workspaceId);
     return this.repository.summary(workspaceId);
+  }
+
+  async listLoanPayments(userId: string, workspaceId: string, accountId: string) {
+    await this.ensureWorkspaceAccess(userId, workspaceId);
+    const account = await this.repository.findById(workspaceId, accountId);
+
+    if (!account || !isLiabilityAccountType(account.type)) {
+      throw new AppError({
+        code: "NOT_FOUND",
+        message: "The requested resource was not found.",
+        status: 404,
+      });
+    }
+
+    return this.repository.listPayments(workspaceId, accountId);
+  }
+
+  async createLoanPayment(
+    userId: string,
+    workspaceId: string,
+    accountId: string,
+    input: CreateLoanPaymentBody,
+    requestId: string | null,
+  ) {
+    await this.ensureWorkspaceAccess(userId, workspaceId);
+
+    return this.database.transaction(async (transaction) => {
+      const repository = new AccountRepository(transaction);
+      const account = await repository.findById(workspaceId, accountId, transaction);
+
+      if (!account || !isLiabilityAccountType(account.type)) {
+        throw new AppError({
+          code: "NOT_FOUND",
+          message: "The requested resource was not found.",
+          status: 404,
+        });
+      }
+      if (account.isArchived) {
+        throw new AppError({
+          code: "CONFLICT",
+          message: "Archived loans cannot receive payments.",
+          status: 409,
+        });
+      }
+      if (account.currency !== input.amount.currency) {
+        throw new AppError({
+          code: "VALIDATION_ERROR",
+          message: "Payment currency must match the loan currency.",
+          status: 422,
+        });
+      }
+
+      const outstanding = normalizeDecimal(account.currentBalance);
+      const paymentAmount = normalizeDecimal(input.amount.amount);
+      if (outstanding <= 0n || paymentAmount > outstanding) {
+        throw new AppError({
+          code: "CONFLICT",
+          message: "Payment cannot exceed the outstanding loan balance.",
+          status: 409,
+        });
+      }
+
+      const payment = await repository.createPayment(
+        {
+          accountId,
+          amount: input.amount.amount,
+          createdByUserId: userId,
+          currency: input.amount.currency,
+          id: createId("lpy"),
+          paymentDate: input.paymentDate,
+        },
+        transaction,
+      );
+
+      await this.authRepository.insertAuditLog(
+        {
+          action: "liability.payment.created",
+          actorUserId: userId,
+          changeMetadata: { paymentDate: input.paymentDate },
+          id: createId("aud"),
+          requestId,
+          resourceId: payment?.id ?? "",
+          resourceType: "loan_payment",
+          workspaceId,
+        },
+        transaction,
+      );
+      if (payment) {
+        await notifyWorkspaceMembers(
+          {
+            action: "liability.payment.created",
+            actorUserId: userId,
+            resourceId: accountId,
+            workspaceId,
+          },
+          transaction,
+        );
+      }
+
+      return payment;
+    });
   }
 
   async createAccount(

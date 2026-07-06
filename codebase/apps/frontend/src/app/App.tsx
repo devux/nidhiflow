@@ -100,6 +100,7 @@ function AppRoutes() {
         <Route element={<LiabilitiesPage />} path="liabilities" />
         <Route element={<GoalsPage />} path="goals" />
         <Route element={<NotificationsPage />} path="notifications" />
+        <Route element={<NotificationsPage />} path="notifications/:notificationId" />
         <Route element={<SettingsPage />} path="settings" />
         <Route element={<Navigate replace to="/budget" />} path="plan" />
         <Route element={<YouPage />} path="you" />

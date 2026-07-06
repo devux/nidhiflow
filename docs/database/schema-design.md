@@ -144,6 +144,17 @@ Unique active budget per workspace/category/period.
 - `created_by_user_id`
 - timestamps, `deleted_at`
 
+### loan_payments
+
+- `id`, `account_id`
+- positive `amount`, currency, `payment_date`
+- `created_by_user_id`
+- timestamps, `deleted_at`
+
+Each row is one auditable repayment. Active rows reduce the derived outstanding
+balance of the associated liability account; they do not overwrite its opening
+amount.
+
 ### bills
 
 - `id`, `workspace_id`

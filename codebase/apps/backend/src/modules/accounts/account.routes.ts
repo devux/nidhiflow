@@ -9,6 +9,7 @@ import { AccountService } from "./account.service.js";
 import {
   accountIdSchema,
   createAccountBodySchema,
+  createLoanPaymentBodySchema,
   updateAccountBodySchema,
   workspaceIdSchema,
 } from "./account.schemas.js";
@@ -34,6 +35,16 @@ export function createAccountsRouter({
     controller.createAccount,
   );
   router.get("/:accountId", validate({ params: accountParamsSchema }), controller.getAccount);
+  router.get(
+    "/:accountId/payments",
+    validate({ params: accountParamsSchema }),
+    controller.listLoanPayments,
+  );
+  router.post(
+    "/:accountId/payments",
+    validate({ params: accountParamsSchema, body: createLoanPaymentBodySchema }),
+    controller.createLoanPayment,
+  );
   router.patch(
     "/:accountId",
     validate({ params: accountParamsSchema, body: updateAccountBodySchema }),

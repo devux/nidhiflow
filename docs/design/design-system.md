@@ -43,6 +43,11 @@ Standardize buttons, icon buttons, inputs, amount fields, segmented controls,
 chips, cards, list rows, progress bars/rings, charts, bottom sheets, dialogs,
 toasts, skeletons, empty states, navigation, and Flow orb.
 
+Data-heavy pages keep filter controls behind a labeled 48px header icon. Active
+filters show a non-color-only accessible state. Selecting the icon opens the
+complete filter bottom sheet directly; do not insert an intermediate row of
+filter buttons into the page.
+
 Each component must define:
 
 - Variants and sizes

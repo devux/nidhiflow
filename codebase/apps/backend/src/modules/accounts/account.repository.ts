@@ -17,6 +17,18 @@ export interface AccountSummaryRecord extends AccountRecord {
   classification: "asset" | "liability";
 }
 
+export interface LoanPaymentRecord {
+  accountId: string;
+  amount: string;
+  createdAt: string;
+  createdByUserId: string;
+  currency: string;
+  deletedAt: string | null;
+  id: string;
+  paymentDate: string;
+  updatedAt: string;
+}
+
 export class AccountRepository {
   constructor(private readonly database: Queryable) {}
 
@@ -51,6 +63,11 @@ export class AccountRepository {
            AND deleted_at IS NULL
            AND type = 'transfer'
            AND destination_account_id IS NOT NULL
+        UNION ALL
+        SELECT account_id,
+               -amount AS effect
+          FROM loan_payments
+         WHERE deleted_at IS NULL
       )
       SELECT a.id,
              a.name,
@@ -217,6 +234,73 @@ export class AccountRepository {
       [workspaceId, accountId],
     );
     return this.findById(workspaceId, accountId, queryable);
+  }
+
+  async listPayments(workspaceId: string, accountId: string, queryable: Queryable = this.database) {
+    const result = await queryable.query<LoanPaymentRecord>(
+      `SELECT lp.id,
+              lp.account_id AS "accountId",
+              lp.amount::text AS amount,
+              lp.currency,
+              lp.payment_date::text AS "paymentDate",
+              lp.created_by_user_id AS "createdByUserId",
+              lp.created_at AS "createdAt",
+              lp.updated_at AS "updatedAt",
+              lp.deleted_at AS "deletedAt"
+         FROM loan_payments lp
+         JOIN accounts a
+           ON a.id = lp.account_id
+        WHERE a.workspace_id = $1
+          AND a.id = $2
+          AND a.deleted_at IS NULL
+          AND lp.deleted_at IS NULL
+        ORDER BY lp.payment_date DESC, lp.created_at DESC`,
+      [workspaceId, accountId],
+    );
+
+    return result.rows;
+  }
+
+  async createPayment(
+    input: {
+      accountId: string;
+      amount: string;
+      createdByUserId: string;
+      currency: string;
+      id: string;
+      paymentDate: string;
+    },
+    queryable: Queryable = this.database,
+  ) {
+    const result = await queryable.query<LoanPaymentRecord>(
+      `INSERT INTO loan_payments (
+         id,
+         account_id,
+         amount,
+         currency,
+         payment_date,
+         created_by_user_id
+       ) VALUES ($1, $2, $3::numeric(19,4), $4, $5, $6)
+       RETURNING id,
+                 account_id AS "accountId",
+                 amount::text AS amount,
+                 currency,
+                 payment_date::text AS "paymentDate",
+                 created_by_user_id AS "createdByUserId",
+                 created_at AS "createdAt",
+                 updated_at AS "updatedAt",
+                 deleted_at AS "deletedAt"`,
+      [
+        input.id,
+        input.accountId,
+        input.amount,
+        input.currency,
+        input.paymentDate,
+        input.createdByUserId,
+      ],
+    );
+
+    return result.rows[0] ?? null;
   }
 
   async summary(workspaceId: string, queryable: Queryable = this.database) {

@@ -1,5 +1,5 @@
 import Chart from "chart.js/auto";
-import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
+import FilterListRoundedIcon from "@mui/icons-material/FilterListRounded";
 import Box from "@mui/material/Box";
 import MuiButton from "@mui/material/Button";
 import Drawer from "@mui/material/Drawer";
@@ -135,7 +135,7 @@ export function ReportsPage() {
           : "this-month";
   const period: ReportPeriod =
     requestedPeriod === "custom" && (!customFrom || !customTo) ? "this-month" : requestedPeriod;
-  const [openFilterSheet, setOpenFilterSheet] = useState<ReportFilterSheet | null>(null);
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const [activeFilterSheet, setActiveFilterSheet] = useState<ReportFilterSheet>("date");
   const [draftDatePreset, setDraftDatePreset] = useState<ReportDatePreset>(
     period === "custom" ? "this-month" : period,
@@ -458,29 +458,25 @@ export function ReportsPage() {
     setSearchParams(next, { replace: true });
   }
 
-  function openSheet(sheet: ReportFilterSheet) {
-    if (sheet === "date" && period !== "custom") {
+  function openFilters() {
+    if (period !== "custom") {
       setDraftDatePreset(period);
     }
-
-    if (sheet === "custom") {
-      setDraftCustomFrom(customFrom);
-      setDraftCustomTo(customTo);
-      setCustomRangeError("");
-    }
-
-    setActiveFilterSheet(sheet);
-    setOpenFilterSheet(sheet);
+    setDraftCustomFrom(customFrom);
+    setDraftCustomTo(customTo);
+    setCustomRangeError("");
+    setActiveFilterSheet(period === "custom" ? "custom" : "date");
+    setIsFilterSheetOpen(true);
   }
 
   function applyFilterSheet() {
-    if (openFilterSheet === "date") {
+    if (activeFilterSheet === "date") {
       applyPeriod(draftDatePreset);
-      setOpenFilterSheet(null);
+      setIsFilterSheetOpen(false);
       return;
     }
 
-    if (openFilterSheet === "custom") {
+    if (activeFilterSheet === "custom") {
       if (!draftCustomFrom || !draftCustomTo) {
         setCustomRangeError("Select both start and end dates.");
         return;
@@ -493,7 +489,7 @@ export function ReportsPage() {
 
       applyPeriod("custom", draftCustomFrom, draftCustomTo);
       setCustomRangeError("");
-      setOpenFilterSheet(null);
+      setIsFilterSheetOpen(false);
     }
   }
 
@@ -503,45 +499,29 @@ export function ReportsPage() {
     setDraftCustomTo("");
     setCustomRangeError("");
     applyPeriod("this-month");
-    setOpenFilterSheet(null);
+    setIsFilterSheetOpen(false);
   }
 
   return (
     <main className="page" id="main-content">
-      <PageHeader title="Reports" />
-      <Stack
-        className="filter-dropdown-grid activity-filter-bar report-filter-bar"
-        direction="row"
-        spacing={1.5}
-      >
-        <MuiButton
-          aria-haspopup="dialog"
-          aria-label={`Date filter, current value ${period === "custom" ? "Custom range" : range.label}`}
-          className={period !== "custom" ? "filter-dropdown is-active" : "filter-dropdown"}
-          endIcon={<KeyboardArrowDownRoundedIcon />}
-          fullWidth
-          onClick={() => openSheet("date")}
-          variant={period !== "custom" ? "contained" : "outlined"}
-        >
-          Date
-        </MuiButton>
-        <MuiButton
-          aria-haspopup="dialog"
-          aria-label="Custom date range"
-          className={period === "custom" ? "filter-dropdown is-active" : "filter-dropdown"}
-          endIcon={<KeyboardArrowDownRoundedIcon />}
-          fullWidth
-          onClick={() => openSheet("custom")}
-          variant={period === "custom" ? "contained" : "outlined"}
-        >
-          Custom
-        </MuiButton>
-      </Stack>
-
+      <PageHeader
+        action={
+          <button
+            aria-haspopup="dialog"
+            aria-label={`Filters${period !== "this-month" ? " (active)" : ""}`}
+            className={`icon-button icon-button--flat filter-toggle${period !== "this-month" ? " is-active" : ""}`}
+            onClick={openFilters}
+            type="button"
+          >
+            <FilterListRoundedIcon />
+          </button>
+        }
+        title="Reports"
+      />
       <Drawer
         anchor="bottom"
-        onClose={() => setOpenFilterSheet(null)}
-        open={Boolean(openFilterSheet)}
+        onClose={() => setIsFilterSheetOpen(false)}
+        open={isFilterSheetOpen}
         slotProps={{
           paper: {
             "aria-labelledby": "report-filter-sheet-title",
@@ -551,53 +531,71 @@ export function ReportsPage() {
       >
         <Box className="activity-filter-sheet__content">
           <Typography component="h2" id="report-filter-sheet-title">
-            {activeFilterSheet === "custom" ? "Custom dates" : "Date"}
+            Filters
           </Typography>
-          {activeFilterSheet === "date" ? (
-            <List disablePadding className="activity-filter-options">
-              {reportDateOptions.map((option) => (
-                <ListItemButton
-                  className="activity-filter-option"
-                  key={option.value}
-                  onClick={() => setDraftDatePreset(option.value)}
-                  selected={draftDatePreset === option.value}
-                >
-                  <ListItemText primary={option.label} />
-                  <Radio checked={draftDatePreset === option.value} edge="end" tabIndex={-1} />
-                </ListItemButton>
-              ))}
-            </List>
-          ) : (
-            <Box className="report-custom-sheet">
-              <TextField
-                fullWidth
-                label="From"
-                onChange={(event) => {
-                  setDraftCustomFrom(event.target.value);
-                  setCustomRangeError("");
-                }}
-                slotProps={{ inputLabel: { shrink: true } }}
-                type="date"
-                value={draftCustomFrom}
-              />
-              <TextField
-                fullWidth
-                label="To"
-                onChange={(event) => {
-                  setDraftCustomTo(event.target.value);
-                  setCustomRangeError("");
-                }}
-                slotProps={{ inputLabel: { shrink: true } }}
-                type="date"
-                value={draftCustomTo}
-              />
-              {customRangeError ? (
-                <Typography className="report-custom-sheet__error" role="alert">
-                  {customRangeError}
-                </Typography>
-              ) : null}
-            </Box>
-          )}
+          <div className="activity-filter-sheet__groups">
+            <section aria-labelledby="report-date-filter-title">
+              <Typography component="h3" id="report-date-filter-title">
+                Date
+              </Typography>
+              <List disablePadding className="activity-filter-options">
+                {reportDateOptions.map((option) => (
+                  <ListItemButton
+                    className="activity-filter-option"
+                    key={option.value}
+                    onClick={() => {
+                      setActiveFilterSheet("date");
+                      setDraftDatePreset(option.value);
+                    }}
+                    selected={activeFilterSheet === "date" && draftDatePreset === option.value}
+                  >
+                    <ListItemText primary={option.label} />
+                    <Radio
+                      checked={activeFilterSheet === "date" && draftDatePreset === option.value}
+                      edge="end"
+                      tabIndex={-1}
+                    />
+                  </ListItemButton>
+                ))}
+              </List>
+            </section>
+            <section aria-labelledby="report-custom-filter-title">
+              <Typography component="h3" id="report-custom-filter-title">
+                Custom dates
+              </Typography>
+              <Box className="report-custom-sheet">
+                <TextField
+                  fullWidth
+                  label="From"
+                  onChange={(event) => {
+                    setActiveFilterSheet("custom");
+                    setDraftCustomFrom(event.target.value);
+                    setCustomRangeError("");
+                  }}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                  type="date"
+                  value={draftCustomFrom}
+                />
+                <TextField
+                  fullWidth
+                  label="To"
+                  onChange={(event) => {
+                    setActiveFilterSheet("custom");
+                    setDraftCustomTo(event.target.value);
+                    setCustomRangeError("");
+                  }}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                  type="date"
+                  value={draftCustomTo}
+                />
+                {customRangeError ? (
+                  <Typography className="report-custom-sheet__error" role="alert">
+                    {customRangeError}
+                  </Typography>
+                ) : null}
+              </Box>
+            </section>
+          </div>
           <Stack className="activity-filter-sheet__actions" direction="row" spacing={1.5}>
             <MuiButton fullWidth onClick={clearFilterSheet} variant="outlined">
               Clear

@@ -19,7 +19,7 @@ export interface LiabilitySummary {
 
 const liabilityTypes = new Set(["credit_card", "loan", "other_liability"]);
 
-function decimalToMinor(amount: string): string {
+export function decimalToMinor(amount: string): string {
   const match = /^(-?)(\d+)(?:\.(\d{0,4}))?$/.exec(amount.trim());
 
   if (!match) {

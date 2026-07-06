@@ -1,11 +1,8 @@
 import Chart from "chart.js/auto";
 import CalendarMonthRoundedIcon from "@mui/icons-material/CalendarMonthRounded";
-import CelebrationRoundedIcon from "@mui/icons-material/CelebrationRounded";
-import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
-import FavoriteRoundedIcon from "@mui/icons-material/FavoriteRounded";
-import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
+import FilterListRoundedIcon from "@mui/icons-material/FilterListRounded";
 import TrendingUpRoundedIcon from "@mui/icons-material/TrendingUpRounded";
 import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
 import Box from "@mui/material/Box";
@@ -59,7 +56,6 @@ interface BudgetProgressChartProps {
   trackColor?: string;
 }
 
-type BudgetFilterSheet = "category" | "date";
 type BudgetDatePreset = "this-month" | "last-month" | "this-year";
 
 const budgetDatePresetOptions: Array<{ label: string; value: BudgetDatePreset }> = [
@@ -392,7 +388,7 @@ export function BudgetPage() {
   const [isBudgetDialogOpen, setIsBudgetDialogOpen] = useState(false);
   const [isBudgetSaving, setIsBudgetSaving] = useState(false);
   const [isQuickFillSaving, setIsQuickFillSaving] = useState(false);
-  const [openFilterSheet, setOpenFilterSheet] = useState<BudgetFilterSheet | null>(null);
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const [selectedCategoryFilters, setSelectedCategoryFilters] = useState<string[]>([]);
   const [draftCategoryFilters, setDraftCategoryFilters] = useState<string[]>([]);
   const [selectedDatePreset, setSelectedDatePreset] = useState<BudgetDatePreset>("this-month");
@@ -728,15 +724,6 @@ export function BudgetPage() {
             totalMinor,
           };
         });
-  const categoryFilterLabel =
-    selectedCategoryFilters.length === 0
-      ? "Category"
-      : selectedCategoryFilters.length === 1
-        ? selectedCategoryFilters[0]
-        : `${selectedCategoryFilters.length} categories`;
-  const dateFilterLabel =
-    budgetDatePresetOptions.find((option) => option.value === selectedDatePreset)?.label ?? "Date";
-
   function resetForm() {
     setEditingId(undefined);
     setCategory(expenseCategories[0]);
@@ -754,47 +741,36 @@ export function BudgetPage() {
     setIsBudgetDialogOpen(true);
   }
 
-  function openSheet(sheet: BudgetFilterSheet) {
+  function openFilters() {
     setDraftCategoryFilters(selectedCategoryFilters);
     setDraftDatePreset(selectedDatePreset);
-    setOpenFilterSheet(sheet);
+    setIsFilterSheetOpen(true);
   }
 
   function applyFilterSheet() {
-    if (openFilterSheet === "category") {
-      setSelectedCategoryFilters(draftCategoryFilters);
+    setSelectedCategoryFilters(draftCategoryFilters);
+    setSelectedDatePreset(draftDatePreset);
+
+    if (draftDatePreset === "this-year") {
+      setSection("yearly");
+      setSelectedMonth(new Date());
+    } else {
+      const monthOffset = draftDatePreset === "last-month" ? -1 : 0;
+      setSection("monthly");
+      setSelectedMonth(addMonths(new Date(), monthOffset));
     }
 
-    if (openFilterSheet === "date") {
-      setSelectedDatePreset(draftDatePreset);
-
-      if (draftDatePreset === "this-year") {
-        setSection("yearly");
-        setSelectedMonth(new Date());
-      } else {
-        const monthOffset = draftDatePreset === "last-month" ? -1 : 0;
-        setSection("monthly");
-        setSelectedMonth(addMonths(new Date(), monthOffset));
-      }
-    }
-
-    setOpenFilterSheet(null);
+    setIsFilterSheetOpen(false);
   }
 
   function clearFilterSheet() {
-    if (openFilterSheet === "category") {
-      setDraftCategoryFilters([]);
-      setSelectedCategoryFilters([]);
-    }
-
-    if (openFilterSheet === "date") {
-      setDraftDatePreset("this-month");
-      setSelectedDatePreset("this-month");
-      setSection("monthly");
-      setSelectedMonth(new Date());
-    }
-
-    setOpenFilterSheet(null);
+    setDraftCategoryFilters([]);
+    setSelectedCategoryFilters([]);
+    setDraftDatePreset("this-month");
+    setSelectedDatePreset("this-month");
+    setSection("monthly");
+    setSelectedMonth(new Date());
+    setIsFilterSheetOpen(false);
   }
 
   function toggleDraftCategoryFilter(option: string) {
@@ -971,99 +947,88 @@ export function BudgetPage() {
     <main className="page page--budget" id="main-content">
       <PageHeader
         action={
-          <Link className="button button--quiet" to="/goals">
-            Goals
-            <Icon name="chevron" size={18} />
-          </Link>
+          <button
+            aria-haspopup="dialog"
+            aria-label={`Filters${
+              selectedCategoryFilters.length > 0 || selectedDatePreset !== "this-month"
+                ? " (active)"
+                : ""
+            }`}
+            className={`icon-button icon-button--flat filter-toggle${
+              selectedCategoryFilters.length > 0 || selectedDatePreset !== "this-month"
+                ? " is-active"
+                : ""
+            }`}
+            onClick={openFilters}
+            type="button"
+          >
+            <FilterListRoundedIcon />
+          </button>
         }
         title="Budget"
       />
 
-      <Stack
-        className="filter-dropdown-grid activity-filter-bar budget-filter-bar"
-        direction="row"
-        spacing={1.5}
-      >
-        <MuiButton
-          aria-haspopup="dialog"
-          aria-label={`Filter by category, current value ${categoryFilterLabel}`}
-          className={
-            selectedCategoryFilters.length > 0 ? "filter-dropdown is-active" : "filter-dropdown"
-          }
-          endIcon={<KeyboardArrowDownRoundedIcon />}
-          fullWidth
-          onClick={() => openSheet("category")}
-          variant={selectedCategoryFilters.length > 0 ? "contained" : "outlined"}
-        >
-          {categoryFilterLabel}
-        </MuiButton>
-        <MuiButton
-          aria-haspopup="dialog"
-          aria-label={`Filter by date, current value ${dateFilterLabel}`}
-          className={
-            selectedDatePreset !== "this-month" ? "filter-dropdown is-active" : "filter-dropdown"
-          }
-          endIcon={<KeyboardArrowDownRoundedIcon />}
-          fullWidth
-          onClick={() => openSheet("date")}
-          variant={selectedDatePreset !== "this-month" ? "contained" : "outlined"}
-        >
-          {dateFilterLabel}
-        </MuiButton>
-      </Stack>
-
       <Drawer
         anchor="bottom"
         aria-labelledby="budget-filter-sheet-title"
-        onClose={() => setOpenFilterSheet(null)}
-        open={Boolean(openFilterSheet)}
+        onClose={() => setIsFilterSheetOpen(false)}
+        open={isFilterSheetOpen}
         slotProps={{ paper: { className: "activity-filter-sheet" } }}
       >
         <Box className="activity-filter-sheet__content" role="dialog">
           <Typography component="h2" id="budget-filter-sheet-title">
-            {openFilterSheet === "category" ? "Category" : "Date"}
+            Filters
           </Typography>
-          {openFilterSheet === "category" ? (
-            <List disablePadding className="activity-filter-options">
-              <ListItemButton
-                className="activity-filter-option"
-                onClick={() => setDraftCategoryFilters([])}
-                selected={draftCategoryFilters.length === 0}
-              >
-                <ListItemText primary="All categories" />
-                <Checkbox checked={draftCategoryFilters.length === 0} edge="end" tabIndex={-1} />
-              </ListItemButton>
-              {budgetCategoryOptions.map((option) => (
+          <div className="activity-filter-sheet__groups">
+            <section aria-labelledby="budget-category-filter-title">
+              <Typography component="h3" id="budget-category-filter-title">
+                Category
+              </Typography>
+              <List disablePadding className="activity-filter-options">
                 <ListItemButton
                   className="activity-filter-option"
-                  key={option}
-                  onClick={() => toggleDraftCategoryFilter(option)}
-                  selected={draftCategoryFilters.includes(option)}
+                  onClick={() => setDraftCategoryFilters([])}
+                  selected={draftCategoryFilters.length === 0}
                 >
-                  <ListItemText primary={option} />
-                  <Checkbox
-                    checked={draftCategoryFilters.includes(option)}
-                    edge="end"
-                    tabIndex={-1}
-                  />
+                  <ListItemText primary="All categories" />
+                  <Checkbox checked={draftCategoryFilters.length === 0} edge="end" tabIndex={-1} />
                 </ListItemButton>
-              ))}
-            </List>
-          ) : (
-            <List disablePadding className="activity-filter-options">
-              {budgetDatePresetOptions.map((option) => (
-                <ListItemButton
-                  className="activity-filter-option"
-                  key={option.value}
-                  onClick={() => setDraftDatePreset(option.value)}
-                  selected={draftDatePreset === option.value}
-                >
-                  <ListItemText primary={option.label} />
-                  <Checkbox checked={draftDatePreset === option.value} edge="end" tabIndex={-1} />
-                </ListItemButton>
-              ))}
-            </List>
-          )}
+                {budgetCategoryOptions.map((option) => (
+                  <ListItemButton
+                    className="activity-filter-option"
+                    key={option}
+                    onClick={() => toggleDraftCategoryFilter(option)}
+                    selected={draftCategoryFilters.includes(option)}
+                  >
+                    <ListItemText primary={option} />
+                    <Checkbox
+                      checked={draftCategoryFilters.includes(option)}
+                      edge="end"
+                      tabIndex={-1}
+                    />
+                  </ListItemButton>
+                ))}
+              </List>
+            </section>
+            <section aria-labelledby="budget-date-filter-title">
+              <Typography component="h3" id="budget-date-filter-title">
+                Date
+              </Typography>
+              <List disablePadding className="activity-filter-options">
+                {budgetDatePresetOptions.map((option) => (
+                  <ListItemButton
+                    className="activity-filter-option"
+                    key={option.value}
+                    onClick={() => setDraftDatePreset(option.value)}
+                    selected={draftDatePreset === option.value}
+                  >
+                    <ListItemText primary={option.label} />
+                    <Checkbox checked={draftDatePreset === option.value} edge="end" tabIndex={-1} />
+                  </ListItemButton>
+                ))}
+              </List>
+            </section>
+          </div>
           <Stack className="activity-filter-sheet__actions" direction="row" spacing={1.5}>
             <MuiButton fullWidth onClick={clearFilterSheet} variant="outlined">
               Clear
@@ -1297,24 +1262,7 @@ export function BudgetPage() {
                   {isQuickFillSaving ? "Copying" : "Copy previous month"}
                 </MuiButton>
               </div>
-            ) : (
-              <Link className="budget-summary-card__encouragement" to="/">
-                <span className="budget-summary-card__encouragement-icon" aria-hidden="true">
-                  <CelebrationRoundedIcon fontSize="small" />
-                </span>
-                <span className="budget-summary-card__encouragement-copy">
-                  <strong>
-                    You're all set!
-                    <FavoriteRoundedIcon aria-hidden="true" fontSize="inherit" />
-                  </strong>
-                  <small>Let's make this a great month.</small>
-                </span>
-                <ChevronRightRoundedIcon
-                  aria-hidden="true"
-                  className="budget-summary-card__encouragement-chevron"
-                />
-              </Link>
-            )}
+            ) : null}
           </Card>
 
           <Card className="budget-categories-card" id="budget-categories">

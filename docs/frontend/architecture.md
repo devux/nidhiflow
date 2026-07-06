@@ -32,8 +32,10 @@ interfaces and authenticated API clients.
 Use route-based code splitting. Public routes are About, Login, and Signup.
 Every finance and app-shell route uses a global authentication guard.
 Unauthorized workspace resources render a safe not-found state.
-The authenticated notification control routes to `/notifications`; notification
-destinations are selected from a fixed client allowlist before navigation.
+The authenticated notification control routes to `/notifications`; individual
+items use refresh-safe `/notifications/:notificationId` detail routes, and
+related destinations are selected from a fixed client allowlist before
+navigation.
 Profile settings route to `/settings`, keeping category management separate
 from the compact `/you` page.
 

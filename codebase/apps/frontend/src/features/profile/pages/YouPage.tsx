@@ -27,6 +27,7 @@ import {
   type SupportedLocale,
 } from "../../../domain/preferences/guestPreferences";
 import { Button } from "../../../shared/components/Button";
+import { BackButton } from "../../../shared/components/BackButton";
 import { Card } from "../../../shared/components/Card";
 import { Icon } from "../../../shared/components/Icon";
 import {
@@ -280,9 +281,12 @@ export function YouPage() {
   return (
     <main className="page page--profile" id="main-content">
       <header className="profile-page-header">
-        <span>
-          <h1>Profile</h1>
-          <p>Manage your account and preferences</p>
+        <span className="profile-page-header__leading">
+          <BackButton />
+          <span>
+            <h1>Profile</h1>
+            <p>Manage your account and preferences</p>
+          </span>
         </span>
         <span className="profile-page-header__actions">
           <button

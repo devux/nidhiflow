@@ -1051,6 +1051,48 @@
   }
 }
 
+:root[data-theme="dark"] .about-page {
+  --about-blue: #17263d;
+  --about-ink: var(--color-text-primary);
+  --about-mint: var(--color-brand-faint);
+  --about-soft: var(--color-surface-subtle);
+  color: var(--color-text-primary);
+  background: var(--color-canvas);
+}
+
+:root[data-theme="dark"] .about-header {
+  border-color: var(--color-border);
+  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+}
+
+:root[data-theme="dark"] .about-page :is(.about-hero__lede, .about-intro > p:last-child) {
+  color: var(--color-text-secondary);
+}
+
+:root[data-theme="dark"] .about-link-button--outlined {
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+}
+
+:root[data-theme="dark"] .about-float-card {
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+}
+
+:root[data-theme="dark"] .about-float-card small {
+  color: var(--color-text-muted);
+}
+
+:root[data-theme="dark"] .about-story__visual--mint {
+  background-color: var(--color-brand-faint);
+}
+
+:root[data-theme="dark"] .about-story__visual--blue {
+  background-color: var(--about-blue);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .about-link-button,
   .about-header__nav a,

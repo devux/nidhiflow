@@ -32,6 +32,17 @@ export const accountIdSchema = z.object({
   accountId: z.string().trim().min(1),
 });
 
+export const createLoanPaymentBodySchema = z.object({
+  amount: z.object({
+    amount: z
+      .string()
+      .regex(/^\d+(\.\d{1,4})?$/, "Amount must be a decimal string with up to 4 places.")
+      .refine((value) => !/^0+(?:\.0+)?$/.test(value), "Amount must be greater than zero."),
+    currency: currencySchema,
+  }),
+  paymentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Payment date must be YYYY-MM-DD."),
+});
+
 export const categoryIdSchema = z.object({
   categoryId: z.string().trim().min(1),
 });
@@ -83,6 +94,7 @@ export const updateCategoryBodySchema = z
   .refine((value) => Object.keys(value).length > 0, "At least one field must be provided.");
 
 export type CreateAccountBody = z.infer<typeof createAccountBodySchema>;
+export type CreateLoanPaymentBody = z.infer<typeof createLoanPaymentBodySchema>;
 export type UpdateAccountBody = z.infer<typeof updateAccountBodySchema>;
 export type CreateTransferBody = z.infer<typeof createTransferBodySchema>;
 export type CreateCategoryBody = z.infer<typeof createCategoryBodySchema>;

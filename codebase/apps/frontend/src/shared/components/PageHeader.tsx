@@ -2,15 +2,24 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import type { ReactNode } from "react";
 
-export function PageHeader({ action, title }: { action?: ReactNode; title: string }) {
+import { BackButton } from "./BackButton";
+
+interface PageHeaderProps {
+  action?: ReactNode;
+  backTo?: string;
+  title: string;
+}
+
+export function PageHeader({ action, backTo, title }: PageHeaderProps) {
   return (
     <Stack className="page-header" component="header" direction="row">
-      <span>
+      <span className="page-header__leading">
+        <BackButton to={backTo} />
         <Typography className="page-header__title" component="h1">
           {title}
         </Typography>
       </span>
-      {action}
+      {action ? <span className="page-header__action">{action}</span> : null}
     </Stack>
   );
 }

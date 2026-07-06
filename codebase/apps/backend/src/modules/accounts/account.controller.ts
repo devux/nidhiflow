@@ -3,7 +3,11 @@ import type { Request, Response } from "express";
 import { sendSuccess } from "../../app/http.js";
 import type { AuthContext } from "../../app/middleware/authenticate.js";
 import type { AccountService } from "./account.service.js";
-import type { CreateAccountBody, UpdateAccountBody } from "./account.schemas.js";
+import type {
+  CreateAccountBody,
+  CreateLoanPaymentBody,
+  UpdateAccountBody,
+} from "./account.schemas.js";
 
 function getAuthContext(response: Response) {
   return response.locals.auth as AuthContext;
@@ -46,6 +50,43 @@ export class AccountController {
     sendSuccess(response, {
       data: account,
       message: "Account retrieved successfully.",
+    });
+  };
+
+  listLoanPayments = async (
+    request: Request<{ accountId: string; workspaceId: string }>,
+    response: Response,
+  ) => {
+    const auth = getAuthContext(response);
+    const payments = await this.service.listLoanPayments(
+      auth.userId,
+      request.params.workspaceId,
+      request.params.accountId,
+    );
+
+    sendSuccess(response, {
+      data: payments,
+      message: "Loan payments retrieved successfully.",
+    });
+  };
+
+  createLoanPayment = async (
+    request: Request<{ accountId: string; workspaceId: string }, never, CreateLoanPaymentBody>,
+    response: Response,
+  ) => {
+    const auth = getAuthContext(response);
+    const payment = await this.service.createLoanPayment(
+      auth.userId,
+      request.params.workspaceId,
+      request.params.accountId,
+      request.body,
+      response.locals.requestId as string,
+    );
+
+    sendSuccess(response, {
+      data: payment,
+      message: "Loan payment recorded successfully.",
+      status: 201,
     });
   };
 

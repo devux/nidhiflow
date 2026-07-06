@@ -64,7 +64,7 @@ latency, database query cost, or hosting cold starts.
 - Regression tests cover session restoration, loading, empty, timeout, offline,
   and error behavior.
 
-## P1: Profile Screen UI Optimization
+## P1: Profile Screen UI Optimization (Completed)
 
 ### Goal
 
@@ -92,7 +92,7 @@ changing account, privacy, or guest behavior.
 - Privacy, session, export, and deletion actions are not hidden or weakened.
 - Automated accessibility checks pass and mobile usability is manually tested.
 
-## P1: Shared-Workspace Screen UI Optimization
+## P1: Shared-Workspace Screen UI Optimization (Completed)
 
 ### Goal
 
@@ -123,7 +123,7 @@ personal/shared workspace switching.
 - The complete flow works at 320 pixels, with keyboard and screen-reader
   navigation.
 
-## Implemented P1: Dedicated Goals Screen
+## Implemented P1: Dedicated Goals Screen (Completed)
 
 ### Status
 
@@ -155,7 +155,7 @@ of limiting them to a small Budget preview.
 - Shared changes identify the actor and are audited.
 - Completed-goal celebration is optional, accessible, and non-manipulative.
 
-## Implemented P1: Dedicated Liabilities Screen
+## Implemented P1: Dedicated Liabilities Screen (Completed)
 
 ### Status
 
@@ -191,7 +191,7 @@ ledger.
 - Currency, accessibility, loading, empty, and error behavior follow shared
   finance rules.
 
-## Incomplete, Feature-Gated: Android Notification-Derived Transactions
+## Incomplete, Feature-Gated: Android Notification-Derived Transactions (In Progress)
 
 ### Status
 
@@ -277,3 +277,7 @@ the user's current workspace.
 Direct UPI remains retained behind `DIRECT_UPI_ENABLED=false`. It must not be
 enabled until NidhiFlow has an approved merchant/PSP integration and completes
 physical-device validation across supported UPI applications and banks.
+
+## To do list
+
+Auth signup , email verification and login ,forgot password, change password is mandetory

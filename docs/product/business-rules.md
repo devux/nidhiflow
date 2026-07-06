@@ -15,6 +15,10 @@
   for each active planning month.
 - Yearly budget totals and reports must be calculated from the last 12 monthly
   budget plans and must not be entered or stored as a separate yearly plan.
+- Loan repayments are append-only payment records in normal use. Each positive
+  payment uses the loan currency, is attributed to a workspace member, and
+  reduces the derived outstanding balance without overwriting the opening loan
+  amount. Reject overpayment.
 
 ## Signed-Out Access
 

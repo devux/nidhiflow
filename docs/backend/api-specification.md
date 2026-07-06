@@ -156,13 +156,14 @@ creator's current profile, separately from the editable workspace `name`.
 
 ### Accounts
 
-| Method             | Endpoint                                               | Access    |
-| ------------------ | ------------------------------------------------------ | --------- |
-| GET, POST          | `/workspaces/:workspaceId/accounts`                    | Protected |
-| GET, PATCH, DELETE | `/workspaces/:workspaceId/accounts/:accountId`         | Protected |
-| POST               | `/workspaces/:workspaceId/accounts/:accountId/archive` | Protected |
-| POST               | `/workspaces/:workspaceId/accounts/:accountId/restore` | Protected |
-| GET                | `/workspaces/:workspaceId/accounts/summary`            | Protected |
+| Method             | Endpoint                                                | Access    |
+| ------------------ | ------------------------------------------------------- | --------- |
+| GET, POST          | `/workspaces/:workspaceId/accounts`                     | Protected |
+| GET, PATCH, DELETE | `/workspaces/:workspaceId/accounts/:accountId`          | Protected |
+| POST               | `/workspaces/:workspaceId/accounts/:accountId/archive`  | Protected |
+| POST               | `/workspaces/:workspaceId/accounts/:accountId/restore`  | Protected |
+| GET                | `/workspaces/:workspaceId/accounts/summary`             | Protected |
+| GET, POST          | `/workspaces/:workspaceId/accounts/:accountId/payments` | Protected |
 
 Create example:
 
@@ -177,6 +178,10 @@ Create example:
 Exact duplicate account create requests return `200` with the existing matching
 account so safe client retries do not fail. Duplicate account names with
 different type, currency, or opening balance return `409 CONFLICT`.
+
+Loan payment creation accepts a positive amount in the account currency and a
+`YYYY-MM-DD` payment date. Each request creates a separate auditable payment;
+payments above the current outstanding balance return `409 CONFLICT`.
 
 ### Categories
 
