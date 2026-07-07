@@ -30,6 +30,9 @@ interface CurrentUserResponseBody {
   data: {
     displayName: string;
     email: string;
+    onboardingFinishedAt: string | null;
+    onboardingStatus: "completed" | "pending" | "skipped";
+    onboardingVersion: number;
     preferredCurrency: string;
     theme: string;
     timezone: string;
@@ -111,6 +114,7 @@ describe("authentication integration", () => {
       ...baseEnvironment,
       APP_ENV: "test",
       DATABASE_URL: buildDatabaseUrl(baseEnvironment.DATABASE_URL, migrationDatabaseName),
+      EMAIL_DELIVERY_PROVIDER: "none",
     };
     database = createDatabase(environment);
   });
@@ -164,10 +168,33 @@ describe("authentication integration", () => {
     expect(currentUserBody.data).toMatchObject({
       displayName: "Asha",
       email: "asha@example.com",
+      onboardingFinishedAt: null,
+      onboardingStatus: "pending",
+      onboardingVersion: 1,
       preferredCurrency: "INR",
       theme: "dark",
       timezone: "Asia/Kolkata",
     });
+
+    const finishOnboardingResponse = await request(app)
+      .patch("/api/v1/users/me/onboarding")
+      .set("Authorization", `Bearer ${initialAccessToken}`)
+      .send({ status: "completed" });
+    const finishedUser = (finishOnboardingResponse.body as CurrentUserResponseBody).data;
+
+    expect(finishOnboardingResponse.status).toBe(200);
+    expect(finishedUser).toMatchObject({
+      onboardingStatus: "completed",
+      onboardingVersion: 1,
+    });
+    expect(finishedUser.onboardingFinishedAt).toEqual(expect.any(String));
+
+    const invalidOnboardingResponse = await request(app)
+      .patch("/api/v1/users/me/onboarding")
+      .set("Authorization", `Bearer ${initialAccessToken}`)
+      .send({ status: "pending" });
+
+    expect(invalidOnboardingResponse.status).toBe(422);
 
     const secondLoginResponse = await request(app).post("/api/v1/auth/login").send({
       deviceName: "Pixel 9",

@@ -57,8 +57,8 @@ const defaultPreferences: GuestPreferences = {
 };
 
 async function expectHomeHeader(): Promise<void> {
-  expect(await screen.findByLabelText("NidhiFlow")).toBeDefined();
-  expect(screen.getByRole("link", { name: "Notifications" })).toBeDefined();
+  expect(await screen.findByRole("link", { name: "Notifications" })).toBeDefined();
+  expect(screen.getByLabelText("NidhiFlow")).toBeDefined();
 }
 
 function createRepository(
@@ -1825,6 +1825,95 @@ describe("App", () => {
     );
   });
 
+  it("shows and persists the product tour for a newly created account", async () => {
+    const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
+    let profile = {
+      displayName: "Maya",
+      email: "maya@example.com",
+      id: "usr_onboarding",
+      locale: "en-US",
+      onboardingFinishedAt: null as string | null,
+      onboardingStatus: "pending" as "completed" | "pending" | "skipped",
+      onboardingVersion: 1,
+      preferredCurrency: "USD",
+      theme: "system",
+      timezone: "UTC",
+    };
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = getRequestUrl(input);
+      const method = init?.method ?? "GET";
+
+      if (url.endsWith("/api/v1/auth/refresh")) {
+        return Promise.reject(new Error("No session."));
+      }
+
+      if (url.endsWith("/api/v1/auth/register") && method === "POST") {
+        return Promise.resolve(
+          createJsonResponse({
+            data: {
+              accessToken: "access-token-onboarding",
+              user: profile,
+              workspaces: [{ id: "wsp_onboarding", name: "Maya", type: "personal" }],
+            },
+            message: "Account created successfully.",
+            success: true,
+          }),
+        );
+      }
+
+      if (url.endsWith("/api/v1/users/me/onboarding") && method === "PATCH") {
+        const body = JSON.parse(getRequestBody(init)) as { status: "completed" | "skipped" };
+        profile = {
+          ...profile,
+          onboardingFinishedAt: "2026-07-06T10:00:00.000Z",
+          onboardingStatus: body.status,
+        };
+        return Promise.resolve(
+          createJsonResponse({
+            data: profile,
+            message: "Product tour status updated.",
+            success: true,
+          }),
+        );
+      }
+
+      return Promise.reject(new Error(`Unexpected request: ${url}`));
+    });
+
+    window.history.replaceState({}, "", "/signup");
+    const user = userEvent.setup();
+    const view = render(
+      <App repository={createRepository()} transactionRepository={createTransactionRepository()} />,
+    );
+
+    await user.clear(await screen.findByLabelText("Display name"));
+    await user.type(screen.getByLabelText("Display name"), "Maya");
+    await user.type(screen.getByLabelText("Email"), "maya@example.com");
+    await user.type(screen.getByLabelText("Password"), "StrongPassword123");
+    await user.click(screen.getByRole("button", { name: "Create account" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Know where your money is going" }),
+    ).toBeDefined();
+    expect((await axe(view.container)).violations).toHaveLength(0);
+
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByRole("heading", { name: "Turn plans into steady progress" })).toBeDefined();
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    await user.click(screen.getByRole("button", { name: "Get started" }));
+
+    await expectHomeHeader();
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/api/v1/users/me/onboarding"),
+      expect.objectContaining({
+        body: JSON.stringify({ status: "completed" }),
+        method: "PATCH",
+      }),
+    );
+  });
+
   it("does not prompt for parked legacy migration after signup", async () => {
     const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
 
@@ -2923,7 +3012,7 @@ describe("App", () => {
     expect(screen.queryByText("Categories")).toBeNull();
     expect(screen.getByRole("img", { name: "Default avatar for Nila" })).toBeDefined();
     expect(screen.getByRole("link", { name: "Download APK" }).getAttribute("href")).toBe(
-      "/downloads/nidhiflow-android-debug-v1.0.6.apk",
+      "/downloads/nidhiflow-android-debug-v1.0.7.apk",
     );
     expect(screen.queryByText("Data-protection reminder")).toBeNull();
     expect(screen.queryByText("Repeat reminder")).toBeNull();

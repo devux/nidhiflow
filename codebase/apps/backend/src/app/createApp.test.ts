@@ -210,6 +210,7 @@ describe("API foundation", () => {
     expect(body.paths["/api/v1/feedback"]).toBeDefined();
     expect(body.paths["/api/v1/users/me/guest-migrations/preview"]).toBeDefined();
     expect(body.paths["/api/v1/users/me/guest-migrations"]).toBeDefined();
+    expect(body.paths["/api/v1/users/me/onboarding"]).toBeDefined();
     expect(body.paths["/api/v1/users/me/notification-preferences"]).toBeDefined();
     expect(body.paths["/api/v1/notifications"]).toBeDefined();
     expect(body.paths["/api/v1/notifications/{notificationId}/read"]).toBeDefined();

@@ -191,6 +191,21 @@ Skeletons are used only when content loading is noticeable.
 - Use a spacious editorial layout inspired by the approved marketing reference:
   compact header, large hero, alternating feature stories, capability grid,
   onboarding steps, security section, final call to action, and footer.
+
+## App Launch and First-User Tour
+
+- While the app restores an existing session, show a lightweight NidhiFlow
+  splash screen using the brand mark, product name, tagline, and an accessible
+  progress status. Do not add an artificial minimum delay.
+- After a new account starts its first authenticated session, show a
+  mobile-first product tour before the app shell. Introduce the money overview,
+  budgets and goals, shared finances and loans, and privacy/control.
+- Provide Back, Next, Skip tour, and Get started controls with visible progress.
+  Completing or skipping waits for successful server persistence; an inline
+  retryable error keeps the user in control if saving fails.
+- Returning and pre-existing users bypass the tour based on the database-backed
+  onboarding status. The tour supports light/dark themes, reduced motion,
+  keyboard navigation, and 320px through desktop breakpoints.
 - Show only currently available NidhiFlow capabilities.
 - Provide persistent Log in and Get started actions and no Continue as Guest
   action.

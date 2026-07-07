@@ -49,6 +49,22 @@ export class UserController {
     });
   };
 
+  updateOnboarding = async (
+    request: Request<never, never, { status: "completed" | "skipped" }>,
+    response: Response,
+  ) => {
+    const auth = getAuthContext(response);
+    const user = await this.service.updateOnboarding(auth.userId, request.body.status);
+
+    sendSuccess(response, {
+      data: user,
+      message:
+        request.body.status === "completed"
+          ? "Product tour completed successfully."
+          : "Product tour skipped successfully.",
+    });
+  };
+
   listSessions = async (_request: Request, response: Response) => {
     const auth = getAuthContext(response);
     const sessions = await this.service.listSessions(auth.userId, auth.sessionId);

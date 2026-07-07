@@ -13,14 +13,14 @@ import org.json.JSONArray;
 public class NotificationTransactionsPlugin extends Plugin {
   @PluginMethod
   public void getStatus(PluginCall call) {
-    if (!BuildConfig.ANDROID_NOTIFICATION_TRANSACTIONS_ENABLED) {
+    boolean featureEnabled = BuildConfig.ANDROID_NOTIFICATION_TRANSACTIONS_ENABLED;
+    if (!featureEnabled) {
       NotificationTransactionStore.disableAndClear(getContext());
     }
+    boolean permissionGranted =
+      featureEnabled && NotificationTransactionStore.reconcilePermission(getContext());
     JSObject result = new JSObject();
-    result.put(
-      "permissionGranted",
-      NotificationTransactionStore.notificationAccessGranted(getContext())
-    );
+    result.put("permissionGranted", permissionGranted);
     result.put("captureEnabled", NotificationTransactionStore.captureEnabled(getContext()));
     result.put("accountId", NotificationTransactionStore.accountId(getContext()));
     result.put("userId", NotificationTransactionStore.userId(getContext()));
@@ -83,6 +83,15 @@ public class NotificationTransactionsPlugin extends Plugin {
   @PluginMethod
   public void getPendingTransactions(PluginCall call) {
     JSObject result = new JSObject();
+    if (
+      !BuildConfig.ANDROID_NOTIFICATION_TRANSACTIONS_ENABLED ||
+      !NotificationTransactionStore.captureEnabled(getContext()) ||
+      !NotificationTransactionStore.reconcilePermission(getContext())
+    ) {
+      result.put("transactions", new JSONArray());
+      call.resolve(result);
+      return;
+    }
     result.put("transactions", NotificationTransactionStore.pending(getContext()));
     call.resolve(result);
   }

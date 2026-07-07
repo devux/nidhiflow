@@ -44,6 +44,12 @@ export const updateProfileBodySchema = z
   })
   .refine((value) => Object.keys(value).length > 0, "At least one field must be provided.");
 
+export const updateOnboardingBodySchema = z
+  .object({
+    status: z.enum(["completed", "skipped"]),
+  })
+  .strict();
+
 export const sessionParamsSchema = z.object({
   sessionId: z.string().trim().min(1),
 });

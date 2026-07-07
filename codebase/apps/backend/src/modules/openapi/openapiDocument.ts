@@ -726,6 +726,21 @@ const paths = {
       ),
     }),
   },
+  "/api/v1/users/me/onboarding": {
+    patch: operation({
+      tags: ["Users"],
+      summary: "Finish the current product tour",
+      description:
+        "Persists whether the authenticated user completed or skipped the current onboarding tour.",
+      operationId: "updateCurrentUserOnboarding",
+      security: bearerSecurity,
+      requestBody: requestBody(ref("UpdateOnboardingRequest")),
+      responses: responseSet(
+        { "200": successResponse("Product tour status updated.", ref("User")) },
+        { auth: true, validation: true },
+      ),
+    }),
+  },
   "/api/v1/users/me/sessions": {
     get: operation({
       tags: ["Users"],
@@ -2214,6 +2229,8 @@ export const openApiDocument = {
           "preferredCurrency",
           "theme",
           "timezone",
+          "onboardingStatus",
+          "onboardingVersion",
           "createdAt",
           "updatedAt",
         ],
@@ -2222,6 +2239,12 @@ export const openApiDocument = {
           email: { format: "email", type: "string" },
           displayName: { type: "string" },
           locale: { example: "en-IN", type: "string" },
+          onboardingFinishedAt: { nullable: true, ...timestamp },
+          onboardingStatus: {
+            enum: ["pending", "completed", "skipped"],
+            type: "string",
+          },
+          onboardingVersion: { minimum: 1, type: "integer" },
           preferredCurrency: { example: "INR", pattern: "^[A-Z]{3}$", type: "string" },
           theme: { enum: ["system", "light", "dark"], type: "string" },
           timezone: { example: "Asia/Kolkata", type: "string" },
@@ -2766,6 +2789,14 @@ export const openApiDocument = {
           },
           theme: { enum: ["system", "light", "dark"], type: "string" },
           timezone: { type: "string" },
+        },
+      },
+      UpdateOnboardingRequest: {
+        type: "object",
+        additionalProperties: false,
+        required: ["status"],
+        properties: {
+          status: { enum: ["completed", "skipped"], type: "string" },
         },
       },
       GuestMigrationPayload: guestMigrationPayload,

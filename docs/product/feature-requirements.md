@@ -16,6 +16,10 @@
   currencies remain authoritative unless a defined conversion is performed.
 - Account data export and deletion
 - Active-session and security-activity view
+- A first-account-session product tour introduces core finance, planning,
+  collaboration, and privacy capabilities. Users may complete or skip it; the
+  status, current tour version, and finish time persist on the account so the
+  tour does not repeat on another device.
 
 ## Transactions
 

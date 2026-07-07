@@ -20,6 +20,7 @@ final class NotificationTransactionStore {
   private static final String ACCOUNT_ID = "account_id";
   private static final String USER_ID = "user_id";
   private static final String WORKSPACE_ID = "workspace_id";
+  private static final String PERMISSION_EVER_GRANTED = "permission_ever_granted";
   private static final int MAX_PENDING = 100;
 
   private NotificationTransactionStore() {}
@@ -96,6 +97,8 @@ final class NotificationTransactionStore {
     if (workspaceId == null || workspaceId.trim().isEmpty()) editor.remove(WORKSPACE_ID);
     else editor.putString(WORKSPACE_ID, workspaceId);
     if (scopeChanged) editor.remove(QUEUE);
+    if (!enabled) editor.remove(PERMISSION_EVER_GRANTED);
+    else if (notificationAccessGranted(context)) editor.putBoolean(PERMISSION_EVER_GRANTED, true);
     editor.commit();
   }
 
@@ -106,6 +109,7 @@ final class NotificationTransactionStore {
       .remove(ACCOUNT_ID)
       .remove(USER_ID)
       .remove(WORKSPACE_ID)
+      .remove(PERMISSION_EVER_GRANTED)
       .remove(QUEUE)
       .commit();
   }
@@ -127,6 +131,23 @@ final class NotificationTransactionStore {
       if (expected.equals(component)) return true;
     }
     return false;
+  }
+
+  static synchronized boolean reconcilePermission(Context context) {
+    boolean granted = notificationAccessGranted(context);
+    SharedPreferences preferences = preferences(context);
+    if (captureEnabled(context) && granted) {
+      preferences.edit().putBoolean(PERMISSION_EVER_GRANTED, true).commit();
+      return true;
+    }
+    if (
+      captureEnabled(context) &&
+      preferences.getBoolean(PERMISSION_EVER_GRANTED, false) &&
+      !granted
+    ) {
+      disableAndClear(context);
+    }
+    return granted;
   }
 
   private static SharedPreferences preferences(Context context) {

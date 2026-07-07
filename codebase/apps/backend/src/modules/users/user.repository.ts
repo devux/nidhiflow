@@ -7,6 +7,9 @@ export interface CurrentUserRecord {
   emailVerifiedAt: string;
   id: string;
   locale: string;
+  onboardingFinishedAt: string | null;
+  onboardingStatus: "completed" | "pending" | "skipped";
+  onboardingVersion: number;
   preferredCurrency: string;
   theme: string;
   timezone: string;
@@ -25,6 +28,9 @@ export class UserRepository {
               timezone,
               preferred_currency AS "preferredCurrency",
               theme,
+              onboarding_status AS "onboardingStatus",
+              onboarding_version AS "onboardingVersion",
+              onboarding_finished_at AS "onboardingFinishedAt",
               email_verified_at AS "emailVerifiedAt",
               created_at AS "createdAt",
               updated_at AS "updatedAt"
@@ -86,6 +92,21 @@ export class UserRepository {
               updated_at = CURRENT_TIMESTAMP
         WHERE id = $${userIdPlaceholder}`,
       values,
+    );
+
+    return this.findCurrentUser(userId);
+  }
+
+  async updateOnboarding(userId: string, status: "completed" | "skipped", version: number) {
+    await this.database.query(
+      `UPDATE users
+          SET onboarding_status = $2,
+              onboarding_version = $3,
+              onboarding_finished_at = CURRENT_TIMESTAMP,
+              updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+          AND deleted_at IS NULL`,
+      [userId, status, version],
     );
 
     return this.findCurrentUser(userId);

@@ -17,6 +17,7 @@ import {
   refreshAccessToken,
   registerAccount,
   updateCurrentUser,
+  updateCurrentUserOnboarding,
   verifyEmail,
   type AuthUser,
   type WorkspaceSummary,
@@ -44,6 +45,7 @@ interface AuthContextValue {
       Pick<AuthUser, "displayName" | "locale" | "preferredCurrency" | "theme" | "timezone">
     >,
   ) => Promise<AuthUser>;
+  finishOnboarding: (status: "completed" | "skipped") => Promise<void>;
   setActiveWorkspace: (workspaceId: string) => void;
   user: AuthUser | null;
   verifyEmail: (token: string) => Promise<void>;
@@ -164,11 +166,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let isActive = true;
-    const publicPageFallback = window.setTimeout(() => {
-      if (isActive) {
-        setIsCheckingSession(false);
-      }
-    }, 500);
 
     async function loadSession(accessTokenToLoad: string) {
       const [currentUser, currentWorkspaces] = await Promise.all([
@@ -260,7 +257,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       })
       .finally(() => {
-        window.clearTimeout(publicPageFallback);
         if (isActive) {
           setIsCheckingSession(false);
         }
@@ -268,7 +264,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       isActive = false;
-      window.clearTimeout(publicPageFallback);
     };
   }, []);
 
@@ -380,6 +375,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [accessToken, user],
   );
 
+  const handleFinishOnboarding = useCallback(
+    async (status: "completed" | "skipped") => {
+      if (!accessToken) {
+        throw new ApiRequestError("Authentication is required.", 401);
+      }
+
+      let currentAccessToken = accessToken;
+      let updatedUser: AuthUser;
+
+      try {
+        updatedUser = await updateCurrentUserOnboarding(currentAccessToken, status, {
+          trackLoading: false,
+        });
+      } catch (error) {
+        if (!isAuthFailure(error)) throw error;
+        currentAccessToken = await refreshAccessToken({ trackLoading: false });
+        setAccessToken(currentAccessToken);
+        updatedUser = await updateCurrentUserOnboarding(currentAccessToken, status, {
+          trackLoading: false,
+        });
+      }
+
+      setUser(updatedUser);
+      storeAuthSession({
+        accessToken: currentAccessToken,
+        user: updatedUser,
+        workspaces,
+      });
+    },
+    [accessToken, workspaces],
+  );
+
   const handleSetActiveWorkspace = useCallback(
     (workspaceId: string) => {
       if (!workspaces.some((workspace) => workspace.id === workspaceId)) {
@@ -409,6 +436,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         selectActiveWorkspace(workspaces),
       isAuthenticated: Boolean(user && accessToken),
       isCheckingSession,
+      finishOnboarding: handleFinishOnboarding,
       login: handleLogin,
       logout: handleLogout,
       register: handleRegister,
@@ -424,6 +452,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       activeWorkspaceId,
       handleLogin,
       handleLogout,
+      handleFinishOnboarding,
       handleRefreshWorkspaces,
       handleRegister,
       handleSetActiveWorkspace,

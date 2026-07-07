@@ -12,16 +12,8 @@ import { createDatabase, type Database } from "../../shared/database/database.js
 
 interface RegisterResponseBody {
   data: {
-    debugToken: string;
-  };
-}
-
-interface VerifyResponseBody {
-  data: {
     accessToken: string;
-    workspace: {
-      id: string;
-    };
+    workspaces: Array<{ id: string }>;
   };
 }
 
@@ -169,13 +161,12 @@ describe("reporting integration", () => {
       timezone: "Asia/Kolkata",
     });
     const registerBody = registerResponse.body as RegisterResponseBody;
-    const verifyResponse = await request(app).post("/api/v1/auth/verify-email").send({
-      token: registerBody.data.debugToken,
-    });
-    const verifyBody = verifyResponse.body as VerifyResponseBody;
-    const accessToken = verifyBody.data.accessToken;
-    const workspaceId = verifyBody.data.workspace.id;
+    const accessToken = registerBody.data.accessToken;
+    const workspaceId = registerBody.data.workspaces[0]?.id;
     const timezone = "Asia/Kolkata";
+
+    expect(registerResponse.status).toBe(201);
+    expect(workspaceId).toEqual(expect.any(String));
     const today = getZonedDateString(timezone);
     const lastMonthDate = addMonths(startOfMonth(today), -1);
 

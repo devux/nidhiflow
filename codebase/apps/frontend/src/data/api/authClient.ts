@@ -7,6 +7,9 @@ export interface AuthUser {
   email: string;
   id: string;
   locale: string;
+  onboardingFinishedAt: string | null;
+  onboardingStatus: "completed" | "pending" | "skipped";
+  onboardingVersion: number;
   preferredCurrency: string;
   theme: string;
   timezone: string;
@@ -189,6 +192,26 @@ export async function updateCurrentUser(
     "/users/me",
     {
       body: JSON.stringify(input),
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      method: "PATCH",
+    },
+    options,
+  );
+
+  return result.data;
+}
+
+export async function updateCurrentUserOnboarding(
+  accessToken: string,
+  status: "completed" | "skipped",
+  options: { trackLoading?: boolean } = {},
+): Promise<AuthUser> {
+  const result = await apiRequest<AuthUser>(
+    "/users/me/onboarding",
+    {
+      body: JSON.stringify({ status }),
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },

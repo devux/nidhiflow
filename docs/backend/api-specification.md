@@ -101,16 +101,17 @@ session receive `401` and must not create, update, delete, or modify data.
 
 ### Users
 
-| Method | Endpoint                             | Access    | Purpose                    |
-| ------ | ------------------------------------ | --------- | -------------------------- |
-| GET    | `/users/me`                          | Protected | Current profile            |
-| PATCH  | `/users/me`                          | Protected | Update profile/preferences |
-| GET    | `/users/me/sessions`                 | Protected | Active sessions            |
-| DELETE | `/users/me/sessions/:sessionId`      | Protected | Revoke session             |
-| POST   | `/users/me/export`                   | Protected | Request complete export    |
-| DELETE | `/users/me`                          | Protected | Request account deletion   |
-| POST   | `/users/me/guest-migrations/preview` | Protected | Preview import             |
-| POST   | `/users/me/guest-migrations`         | Protected | Commit idempotent import   |
+| Method | Endpoint                             | Access    | Purpose                       |
+| ------ | ------------------------------------ | --------- | ----------------------------- |
+| GET    | `/users/me`                          | Protected | Current profile               |
+| PATCH  | `/users/me`                          | Protected | Update profile/preferences    |
+| PATCH  | `/users/me/onboarding`               | Protected | Complete or skip product tour |
+| GET    | `/users/me/sessions`                 | Protected | Active sessions               |
+| DELETE | `/users/me/sessions/:sessionId`      | Protected | Revoke session                |
+| POST   | `/users/me/export`                   | Protected | Request complete export       |
+| DELETE | `/users/me`                          | Protected | Request account deletion      |
+| POST   | `/users/me/guest-migrations/preview` | Protected | Preview import                |
+| POST   | `/users/me/guest-migrations`         | Protected | Commit idempotent import      |
 
 Migration request example:
 

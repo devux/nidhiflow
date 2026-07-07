@@ -114,12 +114,10 @@ describe("guest migrations integration", () => {
       theme: "dark",
       timezone: "Asia/Kolkata",
     });
-    const verifyResponse = await request(app)
-      .post("/api/v1/auth/verify-email")
-      .send({
-        token: (registerResponse.body as { data: { debugToken: string } }).data.debugToken,
-      });
-    const accessToken = (verifyResponse.body as { data: { accessToken: string } }).data.accessToken;
+    const accessToken = (registerResponse.body as { data: { accessToken: string } }).data
+      .accessToken;
+
+    expect(registerResponse.status).toBe(201);
 
     const payload = {
       clientMigrationId: "migration_guest_001",

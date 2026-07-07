@@ -6,7 +6,11 @@ import { validate } from "../../app/middleware/validate.js";
 import type { Database } from "../../shared/database/database.js";
 import { createGuestMigrationsRouter } from "../guestMigrations/guestMigration.routes.js";
 import { UserController } from "./user.controller.js";
-import { sessionParamsSchema, updateProfileBodySchema } from "./user.schemas.js";
+import {
+  sessionParamsSchema,
+  updateOnboardingBodySchema,
+  updateProfileBodySchema,
+} from "./user.schemas.js";
 import { UserService } from "./user.service.js";
 
 export function createUsersRouter({
@@ -22,6 +26,11 @@ export function createUsersRouter({
   router.use(requireAuth({ database, environment }));
   router.get("/me", controller.getCurrentUser);
   router.patch("/me", validate({ body: updateProfileBodySchema }), controller.updateCurrentUser);
+  router.patch(
+    "/me/onboarding",
+    validate({ body: updateOnboardingBodySchema }),
+    controller.updateOnboarding,
+  );
   router.get("/me/sessions", controller.listSessions);
   router.use("/me/guest-migrations", createGuestMigrationsRouter({ database }));
   router.delete(

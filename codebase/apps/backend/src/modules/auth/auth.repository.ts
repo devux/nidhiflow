@@ -7,6 +7,9 @@ export interface UserRecord {
   emailVerifiedAt: string | null;
   id: string;
   locale: string;
+  onboardingFinishedAt: string | null;
+  onboardingStatus: "completed" | "pending" | "skipped";
+  onboardingVersion: number;
   passwordHash: string | null;
   preferredCurrency: string;
   status: string;
@@ -38,6 +41,9 @@ export interface VerificationTokenRecord {
   email: string;
   id: string;
   locale: string;
+  onboardingFinishedAt: string | null;
+  onboardingStatus: "completed" | "pending" | "skipped";
+  onboardingVersion: number;
   preferredCurrency: string;
   status: string;
   theme: string;
@@ -70,6 +76,9 @@ export class AuthRepository {
               timezone,
               preferred_currency AS "preferredCurrency",
               theme,
+              onboarding_status AS "onboardingStatus",
+              onboarding_version AS "onboardingVersion",
+              onboarding_finished_at AS "onboardingFinishedAt",
               status,
               created_at AS "createdAt",
               updated_at AS "updatedAt"
@@ -94,6 +103,9 @@ export class AuthRepository {
               timezone,
               preferred_currency AS "preferredCurrency",
               theme,
+              onboarding_status AS "onboardingStatus",
+              onboarding_version AS "onboardingVersion",
+              onboarding_finished_at AS "onboardingFinishedAt",
               status,
               created_at AS "createdAt",
               updated_at AS "updatedAt"
@@ -167,6 +179,9 @@ export class AuthRepository {
               timezone = $5,
               preferred_currency = $6,
               theme = $7,
+              onboarding_status = 'pending',
+              onboarding_version = 1,
+              onboarding_finished_at = NULL,
               updated_at = CURRENT_TIMESTAMP
         WHERE id = $1`,
       [
@@ -243,6 +258,9 @@ export class AuthRepository {
               u.timezone,
               u.preferred_currency AS "preferredCurrency",
               u.theme,
+              u.onboarding_status AS "onboardingStatus",
+              u.onboarding_version AS "onboardingVersion",
+              u.onboarding_finished_at AS "onboardingFinishedAt",
               u.status,
               u.email_verified_at AS "userEmailVerifiedAt"
          FROM email_verification_tokens evt

@@ -12,12 +12,6 @@ import { createDatabase, type Database } from "../../shared/database/database.js
 
 interface RegisterResponseBody {
   data: {
-    debugToken: string;
-  };
-}
-
-interface VerifyResponseBody {
-  data: {
     accessToken: string;
   };
 }
@@ -121,13 +115,9 @@ describe("notification integration", () => {
         timezone: "Asia/Kolkata",
       });
     const registerBody = registerResponse.body as RegisterResponseBody;
-    const verifyResponse = await request(app).post("/api/v1/auth/verify-email").send({
-      token: registerBody.data.debugToken,
-    });
-    const verifyBody = verifyResponse.body as VerifyResponseBody;
-    const accessToken = verifyBody.data.accessToken;
+    const accessToken = registerBody.data.accessToken;
 
-    expect(verifyResponse.status).toBe(200);
+    expect(registerResponse.status).toBe(201);
 
     const preferencesResponse = await request(app)
       .get("/api/v1/users/me/notification-preferences")

@@ -12,16 +12,8 @@ import { createDatabase, type Database } from "../../shared/database/database.js
 
 interface RegisterResponseBody {
   data: {
-    debugToken: string;
-  };
-}
-
-interface VerifyResponseBody {
-  data: {
     accessToken: string;
-    workspace: {
-      id: string;
-    };
+    workspaces: Array<{ id: string }>;
   };
 }
 
@@ -163,15 +155,11 @@ describe("planning integration", () => {
       timezone: "Asia/Kolkata",
     });
     const registerBody = registerResponse.body as RegisterResponseBody;
-    expect(registerResponse.status).toBe(202);
-    expect(registerBody.data.debugToken).toEqual(expect.any(String));
+    expect(registerResponse.status).toBe(201);
+    const accessToken = registerBody.data.accessToken;
+    const workspaceId = registerBody.data.workspaces[0]?.id;
 
-    const verifyResponse = await request(app).post("/api/v1/auth/verify-email").send({
-      token: registerBody.data.debugToken,
-    });
-    const verifyBody = verifyResponse.body as VerifyResponseBody;
-    const accessToken = verifyBody.data.accessToken;
-    const workspaceId = verifyBody.data.workspace.id;
+    expect(workspaceId).toEqual(expect.any(String));
 
     const accountResponse = await request(app)
       .post(`/api/v1/workspaces/${workspaceId}/accounts`)

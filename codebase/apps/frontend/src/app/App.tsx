@@ -5,6 +5,8 @@ import type { GuestPreferencesRepository } from "../data/guest/guestPreferencesR
 import type { GuestTransactionRepository } from "../data/guest/guestTransactionRepository";
 import { environment } from "../config/environment";
 import { LoadingScreen } from "../shared/components/LoadingScreen";
+import { OnboardingTour } from "../features/onboarding/components/OnboardingTour";
+import { SplashScreen } from "../features/onboarding/components/SplashScreen";
 import { AuthProvider, useAuth } from "./providers/AuthProvider";
 import { GuestPreferencesProvider } from "./providers/GuestPreferencesProvider";
 import { GuestTransactionsProvider } from "./providers/GuestTransactionsProvider";
@@ -71,11 +73,14 @@ function RouteLoadingFallback() {
 }
 
 function AppRoutes() {
-  const { isAuthenticated, isCheckingSession } = useAuth();
-  const location = useLocation();
+  const { isAuthenticated, isCheckingSession, user } = useAuth();
 
   if (isCheckingSession) {
-    return <LoadingScreen routePath={location.pathname} />;
+    return <SplashScreen />;
+  }
+
+  if (user?.onboardingStatus === "pending") {
+    return <OnboardingTour />;
   }
 
   if (!isAuthenticated) {

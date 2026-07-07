@@ -16,6 +16,7 @@ public class TransactionNotificationListenerService extends NotificationListener
       return;
     }
     if (!NotificationTransactionStore.captureEnabled(this)) return;
+    if (!NotificationTransactionStore.reconcilePermission(this)) return;
     Bundle extras = notification.getNotification().extras;
     CharSequence title = extras.getCharSequence(Notification.EXTRA_TITLE);
     String packageName = notification.getPackageName();

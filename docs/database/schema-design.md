@@ -21,10 +21,15 @@
 - `email_verified_at`
 - `display_name`, `avatar_key`
 - `locale`, `timezone`, `preferred_currency`, `theme`
+- `onboarding_status`, `onboarding_version`, `onboarding_finished_at`
 - `status`
 - `created_at`, `updated_at`, `deleted_at`
 
 Never store plain-text passwords or provider tokens.
+New accounts start with pending onboarding. Existing accounts are backfilled as
+completed when the product-tour columns are introduced so established users are
+not interrupted. Completed and skipped states both record the current tour
+version and finish timestamp.
 
 ### auth_sessions
 

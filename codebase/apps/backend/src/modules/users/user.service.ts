@@ -4,6 +4,7 @@ import { AuthRepository } from "../auth/auth.repository.js";
 import { UserRepository } from "./user.repository.js";
 
 export class UserService {
+  private static readonly currentOnboardingVersion = 1;
   private readonly authRepository: AuthRepository;
   private readonly userRepository: UserRepository;
 
@@ -37,6 +38,24 @@ export class UserService {
     }>,
   ) {
     const user = await this.userRepository.updateCurrentUser(userId, updates);
+
+    if (!user) {
+      throw new AppError({
+        code: "NOT_FOUND",
+        message: "The requested resource was not found.",
+        status: 404,
+      });
+    }
+
+    return user;
+  }
+
+  async updateOnboarding(userId: string, status: "completed" | "skipped") {
+    const user = await this.userRepository.updateOnboarding(
+      userId,
+      status,
+      UserService.currentOnboardingVersion,
+    );
 
     if (!user) {
       throw new AppError({
