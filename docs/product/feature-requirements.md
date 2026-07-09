@@ -123,9 +123,9 @@
   member creates, updates, or deletes transactions, budgets, goals, or loans.
 - Collaboration alerts identify the actor and action without copying financial
   values, notes, account identifiers, or descriptions into notification data.
-- Notifications support unread state, per-item read, read all, a dedicated
-  detail view with Back navigation, and an explicit action to an allowlisted
-  relevant destination.
+- Notifications support unread state, per-item read, read all, and direct
+  opening of an allowlisted relevant destination from the list. A detail view
+  may remain available as a refresh-safe fallback for direct notification URLs.
 - Flow launch notification
 - Useful, non-spammy delivery with clear disable controls
 - On supported Android devices, explicit notification-access opt-in can create

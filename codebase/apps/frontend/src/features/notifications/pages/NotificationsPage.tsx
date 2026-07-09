@@ -59,6 +59,10 @@ export function NotificationsPage() {
     ? notifications.find((notification) => notification.id === notificationId)
     : undefined;
 
+  const markReadLocally = useCallback((updated: NotificationResource) => {
+    setNotifications((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+  }, []);
+
   useEffect(() => {
     if (!accessToken || !selectedNotification || selectedNotification.readAt) return;
 
@@ -66,15 +70,27 @@ export function NotificationsPage() {
       accessToken,
       notificationId: selectedNotification.id,
     })
-      .then((updated) => {
-        setNotifications((current) =>
-          current.map((item) => (item.id === updated.id ? updated : item)),
-        );
-      })
+      .then(markReadLocally)
       .catch(() => setStatus("error"));
-  }, [accessToken, selectedNotification]);
+  }, [accessToken, markReadLocally, selectedNotification]);
 
   function openNotification(notification: NotificationResource) {
+    const destination = notification.payload.path;
+
+    if (destination && allowedNotificationPaths.has(destination)) {
+      void navigate(destination);
+
+      if (accessToken && !notification.readAt) {
+        void markNotificationRead({
+          accessToken,
+          notificationId: notification.id,
+        })
+          .then(markReadLocally)
+          .catch(() => undefined);
+      }
+      return;
+    }
+
     void navigate(`/notifications/${encodeURIComponent(notification.id)}`);
   }
 

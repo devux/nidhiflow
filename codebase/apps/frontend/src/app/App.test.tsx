@@ -1159,7 +1159,8 @@ describe("App", () => {
     expect(screen.getAllByText(/₹/).length).toBeGreaterThan(0);
   });
 
-  it("opens notification details, marks them read, and offers the changed resource", async () => {
+  it("opens a notification destination directly and marks it read", async () => {
+    const fetchMock = globalThis.fetch as jest.MockedFunction<typeof fetch>;
     mockAuthenticatedFinanceSession(globalThis.fetch as jest.MockedFunction<typeof fetch>, {
       notifications: [
         {
@@ -1188,14 +1189,15 @@ describe("App", () => {
     expect(await screen.findByText("Maya edited a budget in Home team.")).toBeDefined();
     expect((await axe(view.container)).violations).toHaveLength(0);
     await user.click(screen.getByRole("button", { name: /Budget updated/ }));
-    expect(await screen.findByRole("heading", { name: "Notification" })).toBeDefined();
-    expect(window.location.pathname).toBe("/notifications/ntf_budget");
-    await user.click(screen.getByRole("button", { name: "Go back" }));
-    expect(await screen.findByRole("heading", { name: "Notifications" })).toBeDefined();
-    await user.click(screen.getByRole("button", { name: /Budget updated/ }));
-    await user.click(screen.getByRole("button", { name: "Open related item" }));
     expect(await screen.findByRole("heading", { name: "Budget" })).toBeDefined();
     expect(window.location.pathname).toBe("/budget");
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining("/api/v1/notifications/ntf_budget/read"),
+        expect.objectContaining({ method: "PATCH" }),
+      ),
+    );
+    expect(screen.queryByRole("heading", { name: "Notification" })).toBeNull();
   });
 
   it("shows ledger-derived loans by currency and keeps archived accounts in history", async () => {

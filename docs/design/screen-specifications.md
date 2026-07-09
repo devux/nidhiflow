@@ -180,8 +180,9 @@ Skeletons are used only when content loading is noticeable.
   loan creates, updates, deletes, archives, restores, and contributions where
   applicable
 - The page is a direct notification list without an extra workspace-activity
-  heading. Selecting an alert opens a dedicated detail route with a Back action,
-  marks it read, and offers its allowlisted destination.
+  heading. Selecting an alert marks it read and opens its allowlisted
+  destination directly. The detail route remains only as a refresh-safe fallback
+  for direct notification URLs.
 - Alert text and payloads never include amounts, notes, account identifiers, or
   other financial details
 
