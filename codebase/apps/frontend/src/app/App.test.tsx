@@ -3014,7 +3014,7 @@ describe("App", () => {
     expect(screen.queryByText("Categories")).toBeNull();
     expect(screen.getByRole("img", { name: "Default avatar for Nila" })).toBeDefined();
     expect(screen.getByRole("link", { name: "Download APK" }).getAttribute("href")).toBe(
-      "/downloads/nidhiflow-android-debug-v1.0.8.apk",
+      "/downloads/nidhiflow-android-debug-v1.0.9.apk",
     );
     expect(screen.queryByText("Data-protection reminder")).toBeNull();
     expect(screen.queryByText("Repeat reminder")).toBeNull();
