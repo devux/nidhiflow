@@ -66,8 +66,10 @@ export class PushNotificationSender {
       android: {
         notification: {
           channelId: "workspace_activity",
+          color: "#1565C0",
+          icon: "ic_stat_nidhiflow",
         },
-        priority: "normal",
+        priority: "high",
       },
       data: message.data ?? {},
       notification: {

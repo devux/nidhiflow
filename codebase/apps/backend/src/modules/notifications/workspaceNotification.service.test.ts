@@ -42,7 +42,7 @@ describe("workspace activity notifications", () => {
       expect(values[2]).toBe("wsp_one");
       expect(values[3]).toBe("workspace_activity");
       expect(values[4]).toBe("Transaction updated");
-      expect(values[5]).toBe("Nila edited a transaction in Home team.");
+      expect(values[5]).toBe("Nila edited a transaction.");
       expect(JSON.parse(values[6] as string)).toEqual({
         action: "transaction.updated",
         actorUserId: "usr_one",

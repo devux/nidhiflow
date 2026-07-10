@@ -70,14 +70,14 @@ const activityCopy: Record<
     title: "Goal archived",
   },
   "goal.contribution.created": {
-    phrase: "added a goal contribution",
+    phrase: "added goal progress",
     resourceType: "goal",
-    title: "Goal contribution added",
+    title: "Goal progress added",
   },
   "goal.contribution.deleted": {
-    phrase: "removed a goal contribution",
+    phrase: "removed goal progress",
     resourceType: "goal",
-    title: "Goal contribution removed",
+    title: "Goal progress removed",
   },
   "liability.created": {
     phrase: "added a loan",
@@ -97,7 +97,7 @@ const activityCopy: Record<
   "liability.payment.created": {
     phrase: "recorded a loan payment",
     resourceType: "liability",
-    title: "Loan payment recorded",
+    title: "Loan payment added",
   },
   "liability.restored": {
     phrase: "restored a loan",
@@ -136,7 +136,7 @@ export async function notifyWorkspaceMembers(
       const notificationId = createId("ntf");
       await repository.createNotification(
         {
-          body: `${context.actorDisplayName} ${copy.phrase} in ${context.workspaceName}.`,
+          body: `${context.actorDisplayName} ${copy.phrase}.`,
           id: notificationId,
           payload: {
             action: input.action,

@@ -510,13 +510,13 @@ export function YouPage() {
             </span>
             <span>
               <strong>NidhiFlow for Android</strong>
-              <small>v1.0.10 · Android 7 or newer</small>
+              <small>v1.0.11 · Android 7 or newer</small>
             </span>
             <Icon name="shield" size={22} />
             <a
               className="button button--primary"
-              download="nidhiflow-android-debug-v1.0.10.apk"
-              href="/downloads/nidhiflow-android-debug-v1.0.10.apk"
+              download="nidhiflow-android-debug-v1.0.11.apk"
+              href="/downloads/nidhiflow-android-debug-v1.0.11.apk"
             >
               Download APK
             </a>

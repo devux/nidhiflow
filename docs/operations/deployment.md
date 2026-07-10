@@ -359,7 +359,7 @@ performance before release.
 
 The frontend build copies `apps/frontend/public/downloads` into
 `dist/downloads`. The Profile page links to
-`/downloads/nidhiflow-android-debug-v1.0.10.apk`.
+`/downloads/nidhiflow-android-debug-v1.0.11.apk`.
 
 The committed debug APK is for direct device testing only. It is signed with
 the standard Android development certificate and must not be represented as a

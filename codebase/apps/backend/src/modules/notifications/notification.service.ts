@@ -145,9 +145,9 @@ export class NotificationService {
     }
 
     const result = await this.pushSender.sendToTokens(tokens, {
-      body: "Push notifications are enabled for this account.",
+      body: "Test alert sent.",
       data: { path: "/notifications", type: "test" },
-      title: "NidhiFlow test notification",
+      title: "NidhiFlow",
     });
 
     await Promise.all(
