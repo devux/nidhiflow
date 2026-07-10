@@ -3,6 +3,7 @@ import { Capacitor } from "@capacitor/core";
 import { registerPushToken, unregisterPushToken } from "../../../data/api/financeClient";
 
 const storedPushTokenIdKey = "nidhiflow.pushTokenId";
+const workspaceActivityChannelId = "workspace_activity";
 
 export function isNativeAndroid() {
   return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
@@ -21,6 +22,13 @@ export async function requestPushPermission() {
   return requested.receive === "granted" ? ("granted" as const) : ("denied" as const);
 }
 
+export async function ensureNativeAndroidPushChannels() {
+  if (!isNativeAndroid()) return;
+
+  const { PushNotifications } = await import("@capacitor/push-notifications");
+  await ensurePushNotificationChannels(PushNotifications);
+}
+
 export async function registerNativeAndroidPushToken(accessToken: string) {
   if (!isNativeAndroid()) {
     return { status: "unsupported" as const };
@@ -32,6 +40,7 @@ export async function registerNativeAndroidPushToken(accessToken: string) {
   }
 
   const { PushNotifications } = await import("@capacitor/push-notifications");
+  await ensurePushNotificationChannels(PushNotifications);
 
   return new Promise<{ status: "registered"; tokenId: string } | { status: "error" }>((resolve) => {
     let settled = false;
@@ -75,6 +84,18 @@ export async function registerNativeAndroidPushToken(accessToken: string) {
 
       void PushNotifications.register();
     });
+  });
+}
+
+async function ensurePushNotificationChannels(
+  PushNotifications: typeof import("@capacitor/push-notifications").PushNotifications,
+) {
+  await PushNotifications.createChannel({
+    description: "Privacy-safe NidhiFlow workspace and account alerts.",
+    id: workspaceActivityChannelId,
+    importance: 4,
+    name: "Workspace activity",
+    visibility: 1,
   });
 }
 

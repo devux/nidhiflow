@@ -43,6 +43,7 @@ import {
   type NotificationTransactionStatus,
 } from "../../notifications/native/notificationTransactions";
 import {
+  ensureNativeAndroidPushChannels,
   isNativeAndroid,
   registerNativeAndroidPushToken,
   unregisterStoredNativePushToken,
@@ -179,6 +180,7 @@ export function YouPage() {
     async function loadPushPreferences() {
       setPushState("loading");
       try {
+        await ensureNativeAndroidPushChannels();
         const loaded = await getNotificationPreferences({
           accessToken: pushAccessToken,
           trackLoading: false,
@@ -508,13 +510,13 @@ export function YouPage() {
             </span>
             <span>
               <strong>NidhiFlow for Android</strong>
-              <small>v1.0.9 · Android 7 or newer</small>
+              <small>v1.0.10 · Android 7 or newer</small>
             </span>
             <Icon name="shield" size={22} />
             <a
               className="button button--primary"
-              download="nidhiflow-android-debug-v1.0.9.apk"
-              href="/downloads/nidhiflow-android-debug-v1.0.9.apk"
+              download="nidhiflow-android-debug-v1.0.10.apk"
+              href="/downloads/nidhiflow-android-debug-v1.0.10.apk"
             >
               Download APK
             </a>
