@@ -13,8 +13,8 @@ android {
         applicationId "com.nidhiflow.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 8
-        versionName "1.0.7"
+        versionCode 9
+        versionName "1.0.8"
         buildConfigField "boolean", "ANDROID_NOTIFICATION_TRANSACTIONS_ENABLED", notificationTransactionsEnabled.toString()
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
