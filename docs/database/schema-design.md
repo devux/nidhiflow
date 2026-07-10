@@ -186,9 +186,24 @@ amount.
 ### notification_preferences
 
 - `user_id` PK/FK
-- channel and event preferences
+- in-app, push, and email channel preferences
+- budget, bill, goal/loan, recurring, monthly report, security, Flow launch
+  event preferences
 - quiet hours/timezone
 - timestamps
+
+### push_tokens
+
+- `id`, `user_id` FK
+- Firebase Cloud Messaging token and non-reversible token hash
+- platform (`android` or `web`), optional device/browser/OS labels
+- active flag, last-used timestamp, timestamps
+
+### push_notification_deliveries
+
+- `id`, `notification_id` FK, `user_id` FK
+- pending/sent/skipped/failed status, attempts, next-attempt time, safe error
+  code, sent timestamp, timestamps
 
 ### flow_launch_subscriptions
 

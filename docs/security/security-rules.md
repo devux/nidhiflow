@@ -91,6 +91,20 @@ written to application or audit logs.
 - Exclude notification content, merchant hints, and financial values from logs,
   analytics, crash reports, and audit metadata.
 
+## Push Notifications
+
+- Keep Firebase service-account credentials in backend environment variables
+  only. Never expose private keys to the frontend or Android bundle.
+- Treat FCM tokens as sensitive personal data. Store the token only where
+  required for delivery, use a hash for lookup/deactivation, and never log or
+  return the raw token.
+- Android push registration must use Capacitor native push notification APIs.
+  Firebase Web Messaging and service-worker push must not run inside the
+  Android WebView.
+- Push payloads must remain privacy-safe and allowlisted; never include
+  financial amounts, notes, account identifiers, merchant text, or raw
+  notification-derived content.
+
 ## Files
 
 Validate signature/type/size, use generated storage keys, store outside the web

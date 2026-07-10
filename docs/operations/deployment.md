@@ -144,6 +144,10 @@ FLOW_MODEL=llama3.2:3b
 OLLAMA_BASE_URL=<private Ollama URL reachable by backend>
 EMAIL_FROM=<verified Resend sender, only when EMAIL_DELIVERY_PROVIDER=resend>
 RESEND_API_KEY=<Resend API key, only when EMAIL_DELIVERY_PROVIDER=resend>
+FIREBASE_PROJECT_ID=<Firebase project id, only when push delivery is enabled>
+FIREBASE_CLIENT_EMAIL=<Firebase service account client email>
+FIREBASE_PRIVATE_KEY=<Firebase service account private key with escaped newlines>
+TEST_PUSH_RATE_LIMIT_MAX=3
 ```
 
 Keep `AUTH_DEBUG_TOKENS_ENABLED=false` in normal production.
@@ -158,6 +162,19 @@ runs on the Vercel domain. The backend must set that cookie with
 `credentials: "include"`. If the cookie is blocked, `/auth/refresh` returns
 `INVALID_SESSION` and protected calls such as `/users/me` and `/workspaces`
 return `UNAUTHENTICATED` after the short access token expires.
+
+Backend push delivery is disabled unless `FIREBASE_PROJECT_ID`,
+`FIREBASE_CLIENT_EMAIL`, and `FIREBASE_PRIVATE_KEY` are configured together in
+Render or a local ignored `.env` file. The frontend and Android bundle must
+never receive the Firebase private key.
+
+For Capacitor Android push registration, place the Firebase Android
+`google-services.json` file at
+`codebase/apps/frontend/android/app/google-services.json` before running
+`npm run android:sync --workspace @nidhiflow/frontend` or building an APK. This
+file is ignored by git. Android push tokens must be obtained through the
+Capacitor native push-notifications plugin; do not configure Firebase Web
+Messaging inside the Android WebView for native app push.
 
 Email verification is parked. Current signup creates an active account and
 starts a session without a verification token. Keep

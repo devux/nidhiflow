@@ -119,6 +119,13 @@
 
 - In-app and email reminders for budgets, goals, and recurring entries
 - Notification preferences
+- Authenticated users can enable Firebase-backed push delivery from Profile on
+  supported Android builds. Enabling push requests Android notification
+  permission through Capacitor native push APIs; Android WebView builds must
+  not use Firebase Web Messaging/service-worker push for native delivery.
+- Push delivery supports budget alerts, goal/loan reminders, recurring
+  transaction reminders, monthly reports, security alerts, quiet hours, and a
+  safe test notification action.
 - In-app collaboration alerts notify other opted-in workspace members when a
   member creates, updates, or deletes transactions, budgets, goals, or loans.
 - Collaboration alerts identify the actor and action without copying financial

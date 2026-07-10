@@ -132,11 +132,12 @@ export async function notifyWorkspaceMembers(
 
   const copy = activityCopy[input.action];
   await Promise.all(
-    recipients.map((recipient) =>
-      repository.createNotification(
+    recipients.map(async (recipient) => {
+      const notificationId = createId("ntf");
+      await repository.createNotification(
         {
           body: `${context.actorDisplayName} ${copy.phrase} in ${context.workspaceName}.`,
-          id: createId("ntf"),
+          id: notificationId,
           payload: {
             action: input.action,
             actorUserId: input.actorUserId,
@@ -150,7 +151,15 @@ export async function notifyWorkspaceMembers(
           workspaceId: input.workspaceId,
         },
         queryable,
-      ),
-    ),
+      );
+      await repository.createPushDelivery(
+        {
+          id: createId("pnd"),
+          notificationId,
+          userId: recipient.userId,
+        },
+        queryable,
+      );
+    }),
   );
 }

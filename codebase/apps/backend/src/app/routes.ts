@@ -8,6 +8,7 @@ import {
   createFlowLaunchSubscriptionsRouter,
   createNotificationPreferencesRouter,
   createNotificationsRouter,
+  createPushTokensRouter,
 } from "../modules/notifications/notification.routes.js";
 import { createAuthRouter } from "../modules/auth/auth.routes.js";
 import { createOpenApiRouter } from "../modules/openapi/openapi.routes.js";
@@ -49,6 +50,7 @@ export function createApiRoutes({
     createNotificationPreferencesRouter({ database, environment }),
   );
   router.use("/notifications", createNotificationsRouter({ database, environment }));
+  router.use("/push-tokens", createPushTokensRouter({ database, environment }));
   router.use("/payments", createPaymentsRouter({ database, environment }));
   router.use(
     "/flow-launch-subscriptions",

@@ -21,6 +21,13 @@ export interface NotificationPreferencesRecord {
   flowLaunchEnabled: boolean;
   goalUpdatesEnabled: boolean;
   inAppEnabled: boolean;
+  monthlyReportsEnabled: boolean;
+  pushEnabled: boolean;
+  quietHoursEnabled: boolean;
+  quietHoursEnd: string;
+  quietHoursStart: string;
+  recurringRemindersEnabled: boolean;
+  securityAlertsEnabled: boolean;
   timezone: string;
   updatedAt: string;
   userId: string;
@@ -36,6 +43,31 @@ export interface FlowLaunchSubscriptionRecord {
 }
 
 export interface WorkspaceNotificationRecipient {
+  userId: string;
+}
+
+export interface PushTokenRecord {
+  browser: string | null;
+  createdAt: string;
+  deviceName: string | null;
+  id: string;
+  isActive: boolean;
+  lastUsedAt: string;
+  os: string | null;
+  platform: "android" | "web";
+  token: string;
+  tokenHash: string;
+  updatedAt: string;
+  userId: string;
+}
+
+export interface PushDeliveryRecord {
+  body: string;
+  id: string;
+  notificationId: string;
+  payload: Record<string, unknown>;
+  title: string;
+  type: string;
   userId: string;
 }
 
@@ -182,10 +214,17 @@ export class NotificationRepository {
     const result = await queryable.query<NotificationPreferencesRecord>(
       `SELECT user_id AS "userId",
               in_app_enabled AS "inAppEnabled",
+              push_enabled AS "pushEnabled",
               email_enabled AS "emailEnabled",
               bill_reminders_enabled AS "billRemindersEnabled",
               budget_alerts_enabled AS "budgetAlertsEnabled",
               goal_updates_enabled AS "goalUpdatesEnabled",
+              recurring_reminders_enabled AS "recurringRemindersEnabled",
+              monthly_reports_enabled AS "monthlyReportsEnabled",
+              security_alerts_enabled AS "securityAlertsEnabled",
+              quiet_hours_enabled AS "quietHoursEnabled",
+              to_char(quiet_hours_start, 'HH24:MI') AS "quietHoursStart",
+              to_char(quiet_hours_end, 'HH24:MI') AS "quietHoursEnd",
               flow_launch_enabled AS "flowLaunchEnabled",
               timezone,
               created_at AS "createdAt",
@@ -219,6 +258,13 @@ export class NotificationRepository {
       flowLaunchEnabled: boolean | undefined;
       goalUpdatesEnabled: boolean | undefined;
       inAppEnabled: boolean | undefined;
+      monthlyReportsEnabled: boolean | undefined;
+      pushEnabled: boolean | undefined;
+      quietHoursEnabled: boolean | undefined;
+      quietHoursEnd: string | undefined;
+      quietHoursStart: string | undefined;
+      recurringRemindersEnabled: boolean | undefined;
+      securityAlertsEnabled: boolean | undefined;
       timezone: string | undefined;
     }>,
     queryable: Queryable = this.database,
@@ -228,10 +274,17 @@ export class NotificationRepository {
 
     const fields: Array<[keyof typeof updates, string]> = [
       ["inAppEnabled", "in_app_enabled"],
+      ["pushEnabled", "push_enabled"],
       ["emailEnabled", "email_enabled"],
       ["billRemindersEnabled", "bill_reminders_enabled"],
       ["budgetAlertsEnabled", "budget_alerts_enabled"],
       ["goalUpdatesEnabled", "goal_updates_enabled"],
+      ["recurringRemindersEnabled", "recurring_reminders_enabled"],
+      ["monthlyReportsEnabled", "monthly_reports_enabled"],
+      ["securityAlertsEnabled", "security_alerts_enabled"],
+      ["quietHoursEnabled", "quiet_hours_enabled"],
+      ["quietHoursStart", "quiet_hours_start"],
+      ["quietHoursEnd", "quiet_hours_end"],
       ["flowLaunchEnabled", "flow_launch_enabled"],
       ["timezone", "timezone"],
     ];
@@ -300,5 +353,190 @@ export class NotificationRepository {
     );
 
     return result.rows[0] ?? null;
+  }
+
+  async upsertPushToken(
+    input: {
+      browser?: string;
+      deviceName?: string;
+      id: string;
+      os?: string;
+      platform: "android" | "web";
+      token: string;
+      tokenHash: string;
+      userId: string;
+    },
+    queryable: Queryable = this.database,
+  ) {
+    const result = await queryable.query<PushTokenRecord>(
+      `INSERT INTO push_tokens (
+         id,
+         user_id,
+         token,
+         token_hash,
+         platform,
+         device_name,
+         browser,
+         os
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       ON CONFLICT (token_hash)
+       DO UPDATE SET user_id = EXCLUDED.user_id,
+                     token = EXCLUDED.token,
+                     platform = EXCLUDED.platform,
+                     device_name = EXCLUDED.device_name,
+                     browser = EXCLUDED.browser,
+                     os = EXCLUDED.os,
+                     is_active = TRUE,
+                     last_used_at = CURRENT_TIMESTAMP,
+                     updated_at = CURRENT_TIMESTAMP
+       RETURNING id,
+                 user_id AS "userId",
+                 token,
+                 token_hash AS "tokenHash",
+                 platform,
+                 device_name AS "deviceName",
+                 browser,
+                 os,
+                 is_active AS "isActive",
+                 last_used_at AS "lastUsedAt",
+                 created_at AS "createdAt",
+                 updated_at AS "updatedAt"`,
+      [
+        input.id,
+        input.userId,
+        input.token,
+        input.tokenHash,
+        input.platform,
+        input.deviceName ?? null,
+        input.browser ?? null,
+        input.os ?? null,
+      ],
+    );
+
+    return result.rows[0] ?? null;
+  }
+
+  async deactivatePushToken(userId: string, tokenId: string, queryable: Queryable = this.database) {
+    const result = await queryable.query<Pick<PushTokenRecord, "id">>(
+      `UPDATE push_tokens
+          SET is_active = FALSE,
+              updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+          AND user_id = $2
+       RETURNING id`,
+      [tokenId, userId],
+    );
+
+    return result.rows[0] ?? null;
+  }
+
+  async deactivatePushTokenByHash(tokenHash: string, queryable: Queryable = this.database) {
+    await queryable.query(
+      `UPDATE push_tokens
+          SET is_active = FALSE,
+              updated_at = CURRENT_TIMESTAMP
+        WHERE token_hash = $1`,
+      [tokenHash],
+    );
+  }
+
+  async listActivePushTokens(userId: string, queryable: Queryable = this.database) {
+    const result = await queryable.query<PushTokenRecord>(
+      `SELECT id,
+              user_id AS "userId",
+              token,
+              token_hash AS "tokenHash",
+              platform,
+              device_name AS "deviceName",
+              browser,
+              os,
+              is_active AS "isActive",
+              last_used_at AS "lastUsedAt",
+              created_at AS "createdAt",
+              updated_at AS "updatedAt"
+         FROM push_tokens
+        WHERE user_id = $1
+          AND is_active = TRUE
+        ORDER BY last_used_at DESC`,
+      [userId],
+    );
+
+    return result.rows;
+  }
+
+  async createPushDelivery(
+    input: { id: string; notificationId: string; userId: string },
+    queryable: Queryable = this.database,
+  ) {
+    await queryable.query(
+      `INSERT INTO push_notification_deliveries (id, notification_id, user_id)
+       VALUES ($1, $2, $3)`,
+      [input.id, input.notificationId, input.userId],
+    );
+  }
+
+  async listPendingPushDeliveries(limit: number, queryable: Queryable = this.database) {
+    const result = await queryable.query<PushDeliveryRecord>(
+      `SELECT pnd.id,
+              pnd.notification_id AS "notificationId",
+              pnd.user_id AS "userId",
+              n.type,
+              n.title,
+              n.body,
+              n.payload
+         FROM push_notification_deliveries pnd
+         JOIN notifications n
+           ON n.id = pnd.notification_id
+        WHERE pnd.status = 'pending'
+          AND pnd.next_attempt_at <= CURRENT_TIMESTAMP
+        ORDER BY pnd.created_at ASC
+        LIMIT $1`,
+      [limit],
+    );
+
+    return result.rows;
+  }
+
+  async markPushDeliverySent(deliveryId: string, queryable: Queryable = this.database) {
+    await queryable.query(
+      `UPDATE push_notification_deliveries
+          SET status = 'sent',
+              sent_at = CURRENT_TIMESTAMP,
+              updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1`,
+      [deliveryId],
+    );
+  }
+
+  async markPushDeliverySkipped(
+    deliveryId: string,
+    reason: string,
+    queryable: Queryable = this.database,
+  ) {
+    await queryable.query(
+      `UPDATE push_notification_deliveries
+          SET status = 'skipped',
+              last_error_code = $2,
+              updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1`,
+      [deliveryId, reason],
+    );
+  }
+
+  async markPushDeliveryFailed(
+    deliveryId: string,
+    errorCode: string,
+    queryable: Queryable = this.database,
+  ) {
+    await queryable.query(
+      `UPDATE push_notification_deliveries
+          SET attempts = attempts + 1,
+              status = CASE WHEN attempts + 1 >= 5 THEN 'failed' ELSE 'pending' END,
+              next_attempt_at = CURRENT_TIMESTAMP + INTERVAL '5 minutes',
+              last_error_code = $2,
+              updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1`,
+      [deliveryId, errorCode],
+    );
   }
 }

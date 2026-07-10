@@ -4183,6 +4183,16 @@ p {
   background: var(--color-surface);
 }
 
+.notification-transaction-settings input[type="time"] {
+  width: 100%;
+  min-height: 2.75rem;
+  padding-inline: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+}
+
 .notification-transaction-settings__consent {
   grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
@@ -4193,6 +4203,12 @@ p {
   width: 1.25rem;
   height: 1.25rem;
   margin-top: 0.1rem;
+}
+
+.push-notification-settings__times {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
 }
 
 .android-download-card > .button {

@@ -59,6 +59,12 @@ amounts, notes, account names or numbers, merchant text, goal names, or other
 financial content into notification titles, bodies, or payloads. Honor each
 recipient's in-app notification preference.
 
+Push notification delivery uses the same privacy-safe notification title,
+body, and allowlisted payload. Firebase device tokens are user-scoped personal
+data, stored only for delivery, never logged in full, and never returned by API
+responses. Android native app push registration must use Capacitor native push
+notifications; do not use Firebase Web Messaging inside the Android WebView.
+
 ## Analytics
 
 Use privacy-preserving product analytics with no transaction descriptions,

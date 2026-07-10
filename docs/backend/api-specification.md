@@ -337,6 +337,9 @@ and optional bounded raw/parsed callback fields. Responses always expose
 | GET        | `/notifications`                      | Protected                   |
 | PATCH      | `/notifications/:notificationId/read` | Protected                   |
 | POST       | `/notifications/read-all`             | Protected                   |
+| POST       | `/notifications/test-push`            | Protected, rate limited     |
+| POST       | `/push-tokens`                        | Protected                   |
+| DELETE     | `/push-tokens/:tokenId`               | Protected                   |
 | GET, PATCH | `/users/me/notification-preferences`  | Protected                   |
 | POST       | `/flow-launch-subscriptions`          | Public consent or protected |
 | DELETE     | `/flow-launch-subscriptions/:token`   | Unsubscribe token           |
@@ -347,6 +350,13 @@ These events contain actor/action references and an allowlisted destination,
 not financial values, account identifiers, descriptions, or notes. Read
 operations are recipient-scoped. `POST /notifications/read-all` returns
 `{ "markedRead": number }`.
+
+Push-token APIs register Firebase Cloud Messaging tokens for the authenticated
+user. `platform` is `android` or `web`; Android app tokens must come from the
+Capacitor native push notification plugin, not Firebase Web Messaging inside
+the Android WebView. Token responses never echo the raw token. Test push
+delivery respects `pushEnabled`, quiet hours, active token state, and backend
+Firebase configuration.
 
 Flow launch subscriptions require an email address when used without an
 account. Store only hashed unsubscribe tokens server-side; non-production

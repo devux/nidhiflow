@@ -22,6 +22,8 @@ interface PreferencesResponseBody {
     emailEnabled: boolean;
     flowLaunchEnabled: boolean;
     inAppEnabled: boolean;
+    pushEnabled: boolean;
+    quietHoursEnabled: boolean;
     timezone: string;
   };
 }
@@ -36,6 +38,23 @@ interface FlowSubscriptionResponseBody {
 
 interface NotificationsResponseBody {
   data: unknown[];
+}
+
+interface PushTokenResponseBody {
+  data: {
+    id: string;
+    isActive: boolean;
+    platform: "android" | "web";
+    token?: string;
+  };
+}
+
+interface TestPushResponseBody {
+  data: {
+    configured: boolean;
+    sent: number;
+    skipped: number | string;
+  };
 }
 
 function buildDatabaseUrl(baseUrl: string, databaseName: string) {
@@ -130,6 +149,8 @@ describe("notification integration", () => {
       emailEnabled: false,
       flowLaunchEnabled: false,
       inAppEnabled: true,
+      pushEnabled: false,
+      quietHoursEnabled: false,
       timezone: "Asia/Kolkata",
     });
 
@@ -140,6 +161,8 @@ describe("notification integration", () => {
         billRemindersEnabled: false,
         emailEnabled: true,
         flowLaunchEnabled: true,
+        pushEnabled: true,
+        quietHoursEnabled: false,
       });
     const updatePreferencesBody = updatePreferencesResponse.body as PreferencesResponseBody;
 
@@ -148,7 +171,73 @@ describe("notification integration", () => {
       billRemindersEnabled: false,
       emailEnabled: true,
       flowLaunchEnabled: true,
+      pushEnabled: true,
     });
+
+    const invalidTokenResponse = await request(app)
+      .post("/api/v1/push-tokens")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        platform: "ios",
+        token: "x".repeat(40),
+      });
+
+    expect(invalidTokenResponse.status).toBe(422);
+
+    const pushTokenResponse = await request(app)
+      .post("/api/v1/push-tokens")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({
+        deviceName: "Pixel test",
+        os: "Android",
+        platform: "android",
+        token: `fcm-${"x".repeat(80)}`,
+      });
+    const pushTokenBody = pushTokenResponse.body as PushTokenResponseBody;
+
+    expect(pushTokenResponse.status).toBe(201);
+    expect(pushTokenBody.data).toMatchObject({
+      isActive: true,
+      platform: "android",
+    });
+    expect(pushTokenBody.data.token).toBeUndefined();
+
+    const testPushResponse = await request(app)
+      .post("/api/v1/notifications/test-push")
+      .set("Authorization", `Bearer ${accessToken}`);
+    const testPushBody = testPushResponse.body as TestPushResponseBody;
+
+    expect(testPushResponse.status).toBe(200);
+    expect(testPushBody.data).toMatchObject({
+      configured: false,
+      sent: 0,
+      skipped: "fcm_not_configured",
+    });
+
+    const secondRegisterResponse = await request(app)
+      .post("/api/v1/auth/register")
+      .send({
+        displayName: "Mina",
+        email: `mina-${unique}@example.com`,
+        locale: "en-IN",
+        password: "NotifySecret1234",
+        preferredCurrency: "INR",
+        theme: "light",
+        timezone: "Asia/Kolkata",
+      });
+    const secondAccessToken = (secondRegisterResponse.body as RegisterResponseBody).data
+      .accessToken;
+    const forbiddenDeleteResponse = await request(app)
+      .delete(`/api/v1/push-tokens/${pushTokenBody.data.id}`)
+      .set("Authorization", `Bearer ${secondAccessToken}`);
+
+    expect(forbiddenDeleteResponse.status).toBe(404);
+
+    const deleteTokenResponse = await request(app)
+      .delete(`/api/v1/push-tokens/${pushTokenBody.data.id}`)
+      .set("Authorization", `Bearer ${accessToken}`);
+
+    expect(deleteTokenResponse.status).toBe(200);
 
     const notificationsResponse = await request(app)
       .get("/api/v1/notifications")

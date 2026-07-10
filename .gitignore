@@ -8,3 +8,4 @@ coverage/
 .DS_Store
 .vite/
 .vscode/mcp.json
+codebase/apps/frontend/android/app/google-services.json

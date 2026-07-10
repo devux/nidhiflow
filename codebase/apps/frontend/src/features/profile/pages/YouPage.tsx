@@ -17,7 +17,14 @@ import { trackApiRequest } from "../../../app/providers/apiLoadingState";
 import { useGuestPreferences } from "../../../app/providers/GuestPreferencesProvider";
 import defaultProfileAvatar from "../../../assets/default-profile-avatar.png";
 import { environment } from "../../../config/environment";
-import { listAccounts, type AccountResource } from "../../../data/api/financeClient";
+import {
+  getNotificationPreferences,
+  listAccounts,
+  sendTestPush,
+  updateNotificationPreferences,
+  type AccountResource,
+  type NotificationPreferencesResource,
+} from "../../../data/api/financeClient";
 import {
   supportedCurrencies,
   supportedLocales,
@@ -35,6 +42,11 @@ import {
   supportsNotificationTransactions,
   type NotificationTransactionStatus,
 } from "../../notifications/native/notificationTransactions";
+import {
+  isNativeAndroid,
+  registerNativeAndroidPushToken,
+  unregisterStoredNativePushToken,
+} from "../../notifications/native/pushNotifications";
 
 const localeLabels: Record<SupportedLocale, string> = {
   "en-GB": "English (United Kingdom)",
@@ -72,11 +84,19 @@ export function YouPage() {
   const [notificationStatus, setNotificationStatus] =
     useState<NotificationTransactionStatus | null>(null);
   const [notificationAccountId, setNotificationAccountId] = useState("");
+  const [pushPreferences, setPushPreferences] = useState<NotificationPreferencesResource | null>(
+    null,
+  );
+  const [pushState, setPushState] = useState<"error" | "idle" | "loading" | "saved" | "sent">(
+    "idle",
+  );
+  const [pushMessage, setPushMessage] = useState("");
   const showNotificationTransactions =
     environment.ANDROID_NOTIFICATION_TRANSACTIONS_ENABLED &&
     supportsNotificationTransactions() &&
     isAuthenticated &&
     Boolean(accessToken && activeWorkspace);
+  const showNativePushNotifications = isAuthenticated && Boolean(accessToken) && isNativeAndroid();
 
   useEffect(() => {
     setDisplayName(profileName);
@@ -150,6 +170,32 @@ export function YouPage() {
       window.removeEventListener("focus", handleFocus);
     };
   }, [accessToken, activeWorkspace, showNotificationTransactions]);
+
+  useEffect(() => {
+    if (!showNativePushNotifications || !accessToken) return;
+    const pushAccessToken = accessToken;
+    let active = true;
+
+    async function loadPushPreferences() {
+      setPushState("loading");
+      try {
+        const loaded = await getNotificationPreferences({
+          accessToken: pushAccessToken,
+          trackLoading: false,
+        });
+        if (!active) return;
+        setPushPreferences(loaded);
+        setPushState("idle");
+      } catch {
+        if (active) setPushState("error");
+      }
+    }
+
+    void loadPushPreferences();
+    return () => {
+      active = false;
+    };
+  }, [accessToken, showNativePushNotifications]);
 
   async function persist(updatedPreferences: GuestPreferences) {
     setSaveState("idle");
@@ -276,6 +322,89 @@ export function YouPage() {
     }
   }
 
+  async function enablePushNotifications() {
+    if (!accessToken) return;
+    setPushState("loading");
+    setPushMessage("");
+    try {
+      const registered = await registerNativeAndroidPushToken(accessToken);
+      if (registered.status !== "registered") {
+        setPushMessage(
+          registered.status === "denied"
+            ? "Android notification permission was not granted."
+            : "Push notifications are not available on this device.",
+        );
+        setPushState("error");
+        return;
+      }
+
+      const updated = await updateNotificationPreferences({
+        accessToken,
+        preferences: { pushEnabled: true },
+      });
+      setPushPreferences(updated);
+      setPushState("saved");
+      setPushMessage("Push notifications enabled.");
+    } catch {
+      setPushState("error");
+      setPushMessage("Push notifications could not be enabled.");
+    }
+  }
+
+  async function disablePushNotifications() {
+    if (!accessToken) return;
+    setPushState("loading");
+    setPushMessage("");
+    try {
+      await unregisterStoredNativePushToken(accessToken);
+      const updated = await updateNotificationPreferences({
+        accessToken,
+        preferences: { pushEnabled: false },
+      });
+      setPushPreferences(updated);
+      setPushState("saved");
+      setPushMessage("Push notifications disabled.");
+    } catch {
+      setPushState("error");
+      setPushMessage("Push notifications could not be disabled.");
+    }
+  }
+
+  async function sendPushTest() {
+    if (!accessToken) return;
+    setPushState("loading");
+    setPushMessage("");
+    try {
+      const result = await sendTestPush({ accessToken });
+      setPushState("sent");
+      setPushMessage(
+        result.configured
+          ? `Test notification sent to ${result.sent} device${result.sent === 1 ? "" : "s"}.`
+          : "Push delivery is not configured on the backend yet.",
+      );
+    } catch {
+      setPushState("error");
+      setPushMessage("Test notification could not be sent.");
+    }
+  }
+
+  async function updatePushPreference(updates: Partial<NotificationPreferencesResource>) {
+    if (!accessToken || !pushPreferences) return;
+    setPushState("loading");
+    setPushMessage("");
+    try {
+      const updated = await updateNotificationPreferences({
+        accessToken,
+        preferences: updates,
+      });
+      setPushPreferences(updated);
+      setPushState("saved");
+    } catch {
+      setPushState("error");
+      setPushMessage("Notification preferences could not be updated.");
+    }
+  }
+
   const showAndroidDownload = !Capacitor.isNativePlatform();
 
   return (
@@ -389,6 +518,150 @@ export function YouPage() {
             >
               Download APK
             </a>
+          </Card>
+        </section>
+      ) : null}
+
+      {showNativePushNotifications ? (
+        <section aria-labelledby="push-notifications-title">
+          <div className="section-heading">
+            <h2 id="push-notifications-title">Push notifications</h2>
+          </div>
+          <Card className="notification-transaction-settings push-notification-settings">
+            <div>
+              <strong>Android push alerts</strong>
+              <p>
+                NidhiFlow can send privacy-safe workspace alerts to this Android device. Financial
+                amounts, notes, account names, and descriptions are not included.
+              </p>
+            </div>
+            {pushPreferences ? (
+              <>
+                <label className="notification-transaction-settings__consent">
+                  <input
+                    checked={pushPreferences.pushEnabled}
+                    disabled={pushState === "loading"}
+                    onChange={(event) =>
+                      event.target.checked
+                        ? void enablePushNotifications()
+                        : void disablePushNotifications()
+                    }
+                    type="checkbox"
+                  />
+                  <span>Enable push notifications on this Android device</span>
+                </label>
+                <label className="notification-transaction-settings__consent">
+                  <input
+                    checked={pushPreferences.budgetAlertsEnabled}
+                    disabled={pushState === "loading"}
+                    onChange={(event) =>
+                      void updatePushPreference({ budgetAlertsEnabled: event.target.checked })
+                    }
+                    type="checkbox"
+                  />
+                  <span>Budget alerts</span>
+                </label>
+                <label className="notification-transaction-settings__consent">
+                  <input
+                    checked={pushPreferences.goalUpdatesEnabled}
+                    disabled={pushState === "loading"}
+                    onChange={(event) =>
+                      void updatePushPreference({ goalUpdatesEnabled: event.target.checked })
+                    }
+                    type="checkbox"
+                  />
+                  <span>Goal and loan reminders</span>
+                </label>
+                <label className="notification-transaction-settings__consent">
+                  <input
+                    checked={pushPreferences.recurringRemindersEnabled}
+                    disabled={pushState === "loading"}
+                    onChange={(event) =>
+                      void updatePushPreference({
+                        recurringRemindersEnabled: event.target.checked,
+                      })
+                    }
+                    type="checkbox"
+                  />
+                  <span>Recurring transaction reminders</span>
+                </label>
+                <label className="notification-transaction-settings__consent">
+                  <input
+                    checked={pushPreferences.monthlyReportsEnabled}
+                    disabled={pushState === "loading"}
+                    onChange={(event) =>
+                      void updatePushPreference({ monthlyReportsEnabled: event.target.checked })
+                    }
+                    type="checkbox"
+                  />
+                  <span>Monthly reports</span>
+                </label>
+                <label className="notification-transaction-settings__consent">
+                  <input
+                    checked={pushPreferences.securityAlertsEnabled}
+                    disabled={pushState === "loading"}
+                    onChange={(event) =>
+                      void updatePushPreference({ securityAlertsEnabled: event.target.checked })
+                    }
+                    type="checkbox"
+                  />
+                  <span>Security alerts</span>
+                </label>
+                <label className="notification-transaction-settings__consent">
+                  <input
+                    checked={pushPreferences.quietHoursEnabled}
+                    disabled={pushState === "loading"}
+                    onChange={(event) =>
+                      void updatePushPreference({ quietHoursEnabled: event.target.checked })
+                    }
+                    type="checkbox"
+                  />
+                  <span>Quiet hours</span>
+                </label>
+                {pushPreferences.quietHoursEnabled ? (
+                  <div className="push-notification-settings__times">
+                    <label>
+                      Start
+                      <input
+                        disabled={pushState === "loading"}
+                        onChange={(event) =>
+                          void updatePushPreference({ quietHoursStart: event.target.value })
+                        }
+                        type="time"
+                        value={pushPreferences.quietHoursStart}
+                      />
+                    </label>
+                    <label>
+                      End
+                      <input
+                        disabled={pushState === "loading"}
+                        onChange={(event) =>
+                          void updatePushPreference({ quietHoursEnd: event.target.value })
+                        }
+                        type="time"
+                        value={pushPreferences.quietHoursEnd}
+                      />
+                    </label>
+                  </div>
+                ) : null}
+                <Button
+                  disabled={pushState === "loading" || !pushPreferences.pushEnabled}
+                  fullWidth
+                  onClick={() => void sendPushTest()}
+                  variant="secondary"
+                >
+                  Send test notification
+                </Button>
+              </>
+            ) : null}
+            {pushMessage ? (
+              <div
+                className={pushState === "error" ? "error-message" : "success-message"}
+                role={pushState === "error" ? "alert" : "status"}
+              >
+                {pushMessage}
+              </div>
+            ) : null}
           </Card>
         </section>
       ) : null}

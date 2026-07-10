@@ -1,5 +1,5 @@
-import { Suspense, lazy } from "react";
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Suspense, lazy, useEffect } from "react";
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 
 import type { GuestPreferencesRepository } from "../data/guest/guestPreferencesRepository";
 import type { GuestTransactionRepository } from "../data/guest/guestTransactionRepository";
@@ -74,6 +74,26 @@ function RouteLoadingFallback() {
 
 function AppRoutes() {
   const { isAuthenticated, isCheckingSession, user } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const allowedPushPaths = new Set([
+      "/activity",
+      "/budget",
+      "/goals",
+      "/liabilities",
+      "/notifications",
+    ]);
+    const openPushDestination = (event: Event) => {
+      const path = (event as CustomEvent<{ path?: string }>).detail?.path;
+      if (path && allowedPushPaths.has(path)) {
+        void navigate(path);
+      }
+    };
+
+    window.addEventListener("nidhiflow:push-open", openPushDestination);
+    return () => window.removeEventListener("nidhiflow:push-open", openPushDestination);
+  }, [navigate]);
 
   if (isCheckingSession) {
     return <SplashScreen />;

@@ -1881,6 +1881,22 @@ const paths = {
       ),
     }),
   },
+  "/api/v1/notifications/test-push": {
+    post: operation({
+      tags: ["Notifications"],
+      summary: "Send test push notification",
+      description:
+        "Sends a privacy-safe test push to the authenticated user's active push tokens when push notifications are enabled.",
+      operationId: "sendTestPushNotification",
+      security: bearerSecurity,
+      responses: responseSet(
+        {
+          "200": successResponse("Test push request processed.", ref("TestPushResult")),
+        },
+        { auth: true, rateLimit: true },
+      ),
+    }),
+  },
   "/api/v1/users/me/notification-preferences": {
     get: operation({
       tags: ["Notifications"],
@@ -1913,6 +1929,42 @@ const paths = {
           ),
         },
         { auth: true, validation: true },
+      ),
+    }),
+  },
+  "/api/v1/push-tokens": {
+    post: operation({
+      tags: ["Notifications"],
+      summary: "Register push token",
+      description:
+        "Registers or refreshes a Firebase Cloud Messaging token for the authenticated user. Android tokens must come from the Capacitor native push plugin, not Firebase Web Messaging inside the Android WebView.",
+      operationId: "registerPushToken",
+      security: bearerSecurity,
+      requestBody: requestBody(ref("RegisterPushTokenRequest")),
+      responses: responseSet(
+        {
+          "201": successResponse("Push token registered.", ref("PushToken")),
+        },
+        { auth: true, validation: true },
+      ),
+    }),
+  },
+  "/api/v1/push-tokens/{tokenId}": {
+    delete: operation({
+      tags: ["Notifications"],
+      summary: "Deactivate push token",
+      description: "Deactivates one push token owned by the authenticated user.",
+      operationId: "deactivatePushToken",
+      security: bearerSecurity,
+      parameters: [parameterRef("tokenId")],
+      responses: responseSet(
+        {
+          "200": successResponse("Push token removed.", {
+            type: "object",
+            properties: { deactivated: { type: "boolean" } },
+          }),
+        },
+        { auth: true, notFound: true, validation: true },
       ),
     }),
   },
@@ -2097,6 +2149,12 @@ export const openApiDocument = {
       notificationId: {
         in: "path",
         name: "notificationId",
+        required: true,
+        schema: { type: "string" },
+      },
+      tokenId: {
+        in: "path",
+        name: "tokenId",
         required: true,
         schema: { type: "string" },
       },
@@ -2581,12 +2639,48 @@ export const openApiDocument = {
         type: "object",
         properties: {
           inAppEnabled: { type: "boolean" },
+          pushEnabled: { type: "boolean" },
           emailEnabled: { type: "boolean" },
           billRemindersEnabled: { type: "boolean" },
           budgetAlertsEnabled: { type: "boolean" },
           goalUpdatesEnabled: { type: "boolean" },
+          recurringRemindersEnabled: { type: "boolean" },
+          monthlyReportsEnabled: { type: "boolean" },
+          securityAlertsEnabled: { type: "boolean" },
+          quietHoursEnabled: { type: "boolean" },
+          quietHoursStart: {
+            example: "22:00",
+            pattern: "^([01]\\d|2[0-3]):[0-5]\\d$",
+            type: "string",
+          },
+          quietHoursEnd: {
+            example: "07:00",
+            pattern: "^([01]\\d|2[0-3]):[0-5]\\d$",
+            type: "string",
+          },
           flowLaunchEnabled: { type: "boolean" },
           timezone: { type: "string" },
+        },
+      },
+      PushToken: {
+        type: "object",
+        properties: {
+          id,
+          platform: { enum: ["android", "web"], type: "string" },
+          deviceName: { nullable: true, type: "string" },
+          browser: { nullable: true, type: "string" },
+          os: { nullable: true, type: "string" },
+          isActive: { type: "boolean" },
+        },
+      },
+      TestPushResult: {
+        type: "object",
+        properties: {
+          configured: { type: "boolean" },
+          sent: { minimum: 0, type: "integer" },
+          skipped: {
+            oneOf: [{ type: "integer" }, { type: "string" }],
+          },
         },
       },
       Feedback: {
@@ -3013,7 +3107,33 @@ export const openApiDocument = {
           flowLaunchEnabled: { type: "boolean" },
           goalUpdatesEnabled: { type: "boolean" },
           inAppEnabled: { type: "boolean" },
+          monthlyReportsEnabled: { type: "boolean" },
+          pushEnabled: { type: "boolean" },
+          quietHoursEnabled: { type: "boolean" },
+          quietHoursEnd: {
+            example: "07:00",
+            pattern: "^([01]\\d|2[0-3]):[0-5]\\d$",
+            type: "string",
+          },
+          quietHoursStart: {
+            example: "22:00",
+            pattern: "^([01]\\d|2[0-3]):[0-5]\\d$",
+            type: "string",
+          },
+          recurringRemindersEnabled: { type: "boolean" },
+          securityAlertsEnabled: { type: "boolean" },
           timezone: { type: "string" },
+        },
+      },
+      RegisterPushTokenRequest: {
+        type: "object",
+        required: ["platform", "token"],
+        properties: {
+          browser: { maxLength: 80, type: "string" },
+          deviceName: { maxLength: 120, type: "string" },
+          os: { maxLength: 80, type: "string" },
+          platform: { enum: ["android", "web"], type: "string" },
+          token: { maxLength: 4096, minLength: 20, type: "string" },
         },
       },
       FlowLaunchSubscriptionRequest: {

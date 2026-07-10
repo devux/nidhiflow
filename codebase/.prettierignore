@@ -1,4 +1,5 @@
 apps/frontend/android/app/src/main/assets/
+apps/frontend/android/app/google-services.json
 apps/frontend/android/**/build/
 **/dist/
 **/coverage/

@@ -5,6 +5,7 @@ import type { AuthContext } from "../../app/middleware/authenticate.js";
 import type { NotificationService } from "./notification.service.js";
 import type {
   CreateFlowLaunchSubscriptionBody,
+  PushTokenBody,
   UpdateNotificationPreferencesBody,
 } from "./notification.schemas.js";
 
@@ -65,6 +66,37 @@ export class NotificationController {
     sendSuccess(response, {
       data: preferences,
       message: "Notification preferences updated successfully.",
+    });
+  };
+
+  registerPushToken = async (request: Request<never, never, PushTokenBody>, response: Response) => {
+    const auth = getAuthContext(response);
+    const token = await this.service.registerPushToken(auth.userId, request.body);
+
+    sendSuccess(response, {
+      data: token,
+      message: "Push token registered successfully.",
+      status: 201,
+    });
+  };
+
+  unregisterPushToken = async (request: Request<{ tokenId: string }>, response: Response) => {
+    const auth = getAuthContext(response);
+    const result = await this.service.unregisterPushToken(auth.userId, request.params.tokenId);
+
+    sendSuccess(response, {
+      data: result,
+      message: "Push token removed successfully.",
+    });
+  };
+
+  sendTestPush = async (_request: Request, response: Response) => {
+    const auth = getAuthContext(response);
+    const result = await this.service.sendTestPush(auth.userId);
+
+    sendSuccess(response, {
+      data: result,
+      message: "Test push request processed successfully.",
     });
   };
 

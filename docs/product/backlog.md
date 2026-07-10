@@ -281,3 +281,5 @@ physical-device validation across supported UPI applications and banks.
 ## To do list
 
 Auth signup , email verification and login ,forgot password, change password is mandetory
+
+chat page for members

@@ -26,8 +26,18 @@ describe("workspace activity notifications", () => {
       database,
     );
 
-    expect(query).toHaveBeenCalledTimes(4);
-    for (const call of query.mock.calls.slice(2)) {
+    expect(query).toHaveBeenCalledTimes(6);
+    const notificationCalls = query.mock.calls
+      .slice(2)
+      .filter((call) => String(call[0]).includes("INSERT INTO notifications"));
+    const deliveryCalls = query.mock.calls
+      .slice(2)
+      .filter((call) => String(call[0]).includes("INSERT INTO push_notification_deliveries"));
+
+    expect(notificationCalls).toHaveLength(2);
+    expect(deliveryCalls).toHaveLength(2);
+
+    for (const call of notificationCalls) {
       const values = call[1] as unknown[];
       expect(values[2]).toBe("wsp_one");
       expect(values[3]).toBe("workspace_activity");
@@ -40,6 +50,13 @@ describe("workspace activity notifications", () => {
         resourceId: "txn_one",
         resourceType: "transaction",
       });
+    }
+
+    for (const call of deliveryCalls) {
+      const values = call[1] as unknown[];
+      expect(values[0]).toEqual(expect.stringMatching(/^pnd_/));
+      expect(values[1]).toEqual(expect.stringMatching(/^ntf_/));
+      expect(["usr_two", "usr_three"]).toContain(values[2]);
     }
   });
 

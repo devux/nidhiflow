@@ -77,6 +77,32 @@ export interface NotificationResource {
   workspaceId: string | null;
 }
 
+export interface NotificationPreferencesResource {
+  billRemindersEnabled: boolean;
+  budgetAlertsEnabled: boolean;
+  emailEnabled: boolean;
+  flowLaunchEnabled: boolean;
+  goalUpdatesEnabled: boolean;
+  inAppEnabled: boolean;
+  monthlyReportsEnabled: boolean;
+  pushEnabled: boolean;
+  quietHoursEnabled: boolean;
+  quietHoursEnd: string;
+  quietHoursStart: string;
+  recurringRemindersEnabled: boolean;
+  securityAlertsEnabled: boolean;
+  timezone: string;
+}
+
+export interface PushTokenResource {
+  browser: string | null;
+  deviceName: string | null;
+  id: string;
+  isActive: boolean;
+  os: string | null;
+  platform: "android" | "web";
+}
+
 export interface BudgetResource {
   categoryId: string | null;
   currency: SupportedCurrency;
@@ -620,6 +646,78 @@ export async function markAllNotificationsRead(input: {
 }): Promise<{ markedRead: number }> {
   const result = await apiRequest<{ markedRead: number }>(
     "/notifications/read-all",
+    input.accessToken,
+    { method: "POST" },
+  );
+  return result.data;
+}
+
+export async function getNotificationPreferences(input: {
+  accessToken: string;
+  trackLoading?: boolean;
+}): Promise<NotificationPreferencesResource> {
+  const result = await apiRequest<NotificationPreferencesResource>(
+    "/users/me/notification-preferences",
+    input.accessToken,
+    { method: "GET" },
+    { trackLoading: input.trackLoading },
+  );
+  return result.data;
+}
+
+export async function updateNotificationPreferences(input: {
+  accessToken: string;
+  preferences: Partial<NotificationPreferencesResource>;
+}): Promise<NotificationPreferencesResource> {
+  const result = await apiRequest<NotificationPreferencesResource>(
+    "/users/me/notification-preferences",
+    input.accessToken,
+    {
+      body: JSON.stringify(input.preferences),
+      method: "PATCH",
+    },
+  );
+  return result.data;
+}
+
+export async function registerPushToken(input: {
+  accessToken: string;
+  browser?: string;
+  deviceName?: string;
+  os?: string;
+  platform: "android" | "web";
+  token: string;
+}): Promise<PushTokenResource> {
+  const result = await apiRequest<PushTokenResource>("/push-tokens", input.accessToken, {
+    body: JSON.stringify({
+      browser: input.browser,
+      deviceName: input.deviceName,
+      os: input.os,
+      platform: input.platform,
+      token: input.token,
+    }),
+    method: "POST",
+  });
+  return result.data;
+}
+
+export async function unregisterPushToken(input: {
+  accessToken: string;
+  tokenId: string;
+}): Promise<{ deactivated: boolean }> {
+  const result = await apiRequest<{ deactivated: boolean }>(
+    `/push-tokens/${input.tokenId}`,
+    input.accessToken,
+    { method: "DELETE" },
+  );
+  return result.data;
+}
+
+export async function sendTestPush(input: {
+  accessToken: string;
+}): Promise<{ configured: boolean; sent: number; skipped?: number | string }> {
+  const result = await apiRequest<{ configured: boolean; sent: number; skipped?: number | string }>(
+    "/notifications/test-push",
     input.accessToken,
     { method: "POST" },
   );

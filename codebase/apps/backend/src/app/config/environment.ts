@@ -15,6 +15,7 @@ const environmentSchema = z
     API_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(100),
     AUTH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(10),
     FEEDBACK_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(5),
+    TEST_PUSH_RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(3),
     ANDROID_NOTIFICATION_TRANSACTIONS_ENABLED: booleanString.default("false"),
     FLOW_AI_ENABLED: booleanString.default("false"),
     FLOW_AI_TIMEOUT_MS: z.coerce.number().int().min(5_000).max(120_000).default(60_000),
@@ -24,6 +25,9 @@ const environmentSchema = z
     EMAIL_DELIVERY_PROVIDER: z.enum(["none", "resend"]).default("none"),
     EMAIL_FROM: z.string().trim().min(3).optional(),
     RESEND_API_KEY: z.string().trim().min(1).optional(),
+    FIREBASE_PROJECT_ID: z.string().trim().min(1).optional(),
+    FIREBASE_CLIENT_EMAIL: z.string().trim().email().optional(),
+    FIREBASE_PRIVATE_KEY: z.string().trim().min(1).optional(),
     JWT_ACCESS_SECRET: z.string().min(32).optional(),
     JWT_ACCESS_ISSUER: z.string().min(1).default("nidhiflow.local"),
     JWT_ACCESS_AUDIENCE: z.string().min(1).default("nidhiflow-app"),
@@ -64,6 +68,21 @@ const environmentSchema = z
         code: z.ZodIssueCode.custom,
         message: "EMAIL_FROM is required when email delivery is enabled.",
         path: ["EMAIL_FROM"],
+      });
+    }
+
+    const firebaseFields = [
+      value.FIREBASE_PROJECT_ID,
+      value.FIREBASE_CLIENT_EMAIL,
+      value.FIREBASE_PRIVATE_KEY,
+    ].filter(Boolean);
+
+    if (firebaseFields.length > 0 && firebaseFields.length < 3) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY must be configured together.",
+        path: ["FIREBASE_PROJECT_ID"],
       });
     }
   });
